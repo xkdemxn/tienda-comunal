@@ -7,7 +7,7 @@ escaneo de codigo de barras desde la camara del celular.
 ## Stack
 
 - **Backend:** Spring Boot 3.3, Java 17, Spring Security + JWT, Spring Data JPA
-- **Base de datos:** MySQL
+- **Base de datos:** PostgreSQL
 - **Frontend de escaneo:** HTML + JS puro con la libreria `html5-qrcode`
   (servido por el propio Spring Boot en `/scanner.html`)
 - **Despliegue sugerido:** Railway (o cualquier plataforma con soporte Docker)
@@ -32,9 +32,11 @@ src/main/resources/
 
 ## Como correrlo en local
 
-1. Crea una base de datos MySQL local llamada `tienda_inventario`
+1. Crea una base de datos PostgreSQL local llamada `tienda_inventario`
+   (por ejemplo: `createdb tienda_inventario` o `CREATE DATABASE tienda_inventario;`
+   desde `psql`)
 2. Ajusta `src/main/resources/application.properties` si tu usuario/password
-   de MySQL son distintos a `root`/`root` (o usa las variables de entorno,
+   de PostgreSQL son distintos a `root`/`root` (o usa las variables de entorno,
    ver mas abajo)
 3. Ejecuta:
    ```bash
@@ -54,9 +56,9 @@ src/main/resources/
 
 | Variable | Descripcion | Ejemplo |
 |---|---|---|
-| `SPRING_DATASOURCE_URL` | URL JDBC de MySQL | `jdbc:mysql://host:3306/railway` |
-| `SPRING_DATASOURCE_USERNAME` | Usuario de MySQL | `root` |
-| `SPRING_DATASOURCE_PASSWORD` | Password de MySQL | *(la que te da Railway)* |
+| `SPRING_DATASOURCE_URL` | URL JDBC de PostgreSQL | `jdbc:postgresql://host:5432/tienda_inventario` |
+| `SPRING_DATASOURCE_USERNAME` | Usuario de PostgreSQL | `root` |
+| `SPRING_DATASOURCE_PASSWORD` | Password de PostgreSQL | *(la que te da tu proveedor)* |
 | `PORT` | Puerto de la app (Railway lo inyecta solo) | `8080` |
 | `JWT_SECRET` | Clave secreta para firmar tokens JWT | *(genera una larga y aleatoria)* |
 | `JWT_EXPIRATION_MS` | Duracion del token en milisegundos | `86400000` (24h) |
