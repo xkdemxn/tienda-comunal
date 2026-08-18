@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventario</title>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --accent: #22c55e;
+    --accent-dark: #16a34a;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --danger: #ef4444;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 16px;
+  }
+  h1 { font-size: 20px; margin: 0 0 16px; }
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  #reader {
+    width: 100%;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  input, select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: var(--text);
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+  button {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    background: var(--accent);
+    color: #0f172a;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    margin-bottom: 8px;
+  }
+  button:active { background: var(--accent-dark); }
+  button.secundario {
+    background: transparent;
+    border: 1px solid #334155;
+    color: var(--text);
+  }
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .tabs button {
+    margin-bottom: 0;
+    background: transparent;
+    border: 1px solid #334155;
+    color: var(--muted);
+  }
+  .tabs button.activa {
+    background: var(--accent);
+    color: #0f172a;
+    border-color: var(--accent);
+  }
+  .item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #334155;
+    font-size: 14px;
+    gap: 10px;
+  }
+  .item:last-child { border-bottom: none; }
+  .item small { color: var(--muted); display: block; }
+  .item button {
+    width: auto;
+    padding: 8px 12px;
+    margin-bottom: 0;
+    white-space: nowrap;
+  }
+  .msg {
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+  .msg.ok { background: #14532d; color: #bbf7d0; }
+  .msg.error { background: #450a0a; color: #fecaca; }
+  .oculto { display: none; }
+  .modal-fondo {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 10;
+  }
+  .modal {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 16px;
+    max-width: 340px;
+    width: 100%;
+    text-align: center;
+  }
+  .modal img {
+    width: 100%;
+    background: #fff;
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 12px;
+  }
+  .modal-fondo.oculto { display: none; }
+</style>
+</head>
+<body>
+
+<h1>📦 Inventario</h1>
+
+<!-- Login -->
+<div class="card" id="loginCard">
+  <input type="email" id="email" placeholder="Email">
+  <input type="password" id="password" placeholder="Contrasena">
+  <button onclick="login()">Iniciar sesion</button>
+  <div id="loginMsg"></div>
+</div>
+
+<!-- Panel principal (oculto hasta iniciar sesion) -->
+<div id="panel" class="oculto">
+
+  <div class="tabs">
+    <button id="tabBtnCodigos" class="activa" onclick="mostrarTab('codigos')">Codigos de barra</button>
+    <button id="tabBtnEscaneo" onclick="mostrarTab('escaneo')">Escanear entrada</button>
+  </div>
+
+  <!-- Tab: lista de codigos de barra -->
+  <div id="tabCodigos">
+    <div class="card">
+      <input type="text" id="buscarProducto" placeholder="Buscar por nombre..." oninput="filtrarProductos()">
+      <div id="listaProductos">Cargando productos...</div>
+    </div>
+  </div>
+
+  <!-- Tab: escanear para registrar entrada -->
+  <div id="tabEscaneo" class="oculto">
+    <div class="card">
+      <div id="reader"></div>
+      <button class="secundario" onclick="reiniciarCamara()">Reiniciar camara</button>
+    </div>
+
+    <div id="mensaje"></div>
+
+    <div class="card oculto" id="cardProductoEscaneado">
+      <strong id="nombreEscaneado"></strong>
+      <p style="color:var(--muted); font-size:13px; margin:4px 0 12px">
+        Stock actual: <span id="stockEscaneado"></span>
+      </p>
+      <input type="number" id="cantidadEntrada" placeholder="Cantidad a ingresar" min="1" value="1">
+      <input type="text" id="motivoEntrada" placeholder="Motivo (ej: reposicion de proveedor)">
+      <button onclick="registrarEntrada()">Registrar entrada</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal para ver/imprimir el codigo de barras -->
+<div id="modalFondo" class="modal-fondo oculto" onclick="cerrarModalSiFondo(event)">
+  <div class="modal">
+    <img id="modalImagen" alt="Codigo de barras">
+    <button onclick="imprimirCodigo()">Imprimir</button>
+    <button class="secundario" onclick="cerrarModal()">Cerrar</button>
+  </div>
+</div>
+
+<script>
+const API_BASE = window.location.origin + "/api";
+let token = localStorage.getItem("token") || "";
+let productos = [];
+let html5QrCode;
+let escaneando = false;
+let productoEscaneado = null;
+
+// ---------- LOGIN ----------
+async function login() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  const msgDiv = document.getElementById("loginMsg");
+
+  try {
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    if (!res.ok) throw new Error((await res.json()).mensaje || "Error al iniciar sesion");
+
+    const data = await res.json();
+    token = data.token;
+    localStorage.setItem("token", token);
+    mostrarPanel();
+  } catch (e) {
+    msgDiv.innerHTML = `<div class="msg error">${e.message}</div>`;
+  }
+}
+
+if (token) {
+  window.addEventListener("load", mostrarPanel);
+}
+
+function mostrarPanel() {
+  document.getElementById("loginCard").classList.add("oculto");
+  document.getElementById("panel").classList.remove("oculto");
+  cargarProductos();
+}
+
+// ---------- TABS ----------
+function mostrarTab(tab) {
+  const esCodigos = tab === "codigos";
+  document.getElementById("tabCodigos").classList.toggle("oculto", !esCodigos);
+  document.getElementById("tabEscaneo").classList.toggle("oculto", esCodigos);
+  document.getElementById("tabBtnCodigos").classList.toggle("activa", esCodigos);
+  document.getElementById("tabBtnEscaneo").classList.toggle("activa", !esCodigos);
+
+  if (esCodigos) {
+    detenerCamara();
+  } else {
+    iniciarCamara();
+  }
+}
+
+// ---------- LISTA DE PRODUCTOS / CODIGOS DE BARRA ----------
+async function cargarProductos() {
+  const div = document.getElementById("listaProductos");
+  try {
+    const res = await fetch(`${API_BASE}/productos`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error("No se pudieron cargar los productos");
+    productos = await res.json();
+    renderProductos(productos);
+  } catch (e) {
+    div.innerHTML = `<div class="msg error">${e.message}</div>`;
+  }
+}
+
+function filtrarProductos() {
+  const texto = document.getElementById("buscarProducto").value.toLowerCase();
+  renderProductos(productos.filter(p => p.nombre.toLowerCase().includes(texto)));
+}
+
+function renderProductos(lista) {
+  const div = document.getElementById("listaProductos");
+  if (lista.length === 0) {
+    div.innerHTML = `<p style="color:var(--muted)">Sin productos</p>`;
+    return;
+  }
+  div.innerHTML = "";
+  lista.forEach(p => {
+    div.innerHTML += `
+      <div class="item">
+        <div>
+          ${p.nombre}
+          <small>${p.codigoBarras}</small>
+        </div>
+        <button onclick="verCodigoBarras(${p.id})">Ver</button>
+      </div>`;
+  });
+}
+
+async function verCodigoBarras(id) {
+  try {
+    const res = await fetch(`${API_BASE}/productos/${id}/codigo-barras`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error("No se pudo generar el codigo de barras");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    document.getElementById("modalImagen").src = url;
+    document.getElementById("modalFondo").classList.remove("oculto");
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+function cerrarModal() {
+  document.getElementById("modalFondo").classList.add("oculto");
+}
+
+function cerrarModalSiFondo(event) {
+  if (event.target.id === "modalFondo") cerrarModal();
+}
+
+function imprimirCodigo() {
+  const src = document.getElementById("modalImagen").src;
+  const ventana = window.open("", "_blank");
+  ventana.document.write(`<img src="${src}" style="width:100%" onload="window.print()">`);
+}
+
+// ---------- CAMARA / ESCANEO PARA ENTRADA DE INVENTARIO ----------
+function iniciarCamara() {
+  if (escaneando) return;
+  html5QrCode = new Html5Qrcode("reader");
+  const config = { fps: 10, qrbox: { width: 250, height: 120 } };
+
+  html5QrCode.start(
+    { facingMode: "environment" },
+    config,
+    onCodigoDetectado,
+    () => {}
+  ).then(() => { escaneando = true; });
+}
+
+function detenerCamara() {
+  if (html5QrCode && escaneando) {
+    html5QrCode.stop().then(() => { escaneando = false; });
+  }
+}
+
+function reiniciarCamara() {
+  detenerCamara();
+  setTimeout(iniciarCamara, 300);
+}
+
+let ultimoCodigo = "";
+let ultimoTiempo = 0;
+
+async function onCodigoDetectado(codigo) {
+  const ahora = Date.now();
+  if (codigo === ultimoCodigo && ahora - ultimoTiempo < 2000) return;
+  ultimoCodigo = codigo;
+  ultimoTiempo = ahora;
+
+  try {
+    const res = await fetch(`${API_BASE}/escaneo/${codigo}`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error((await res.json()).mensaje || "Codigo no reconocido");
+
+    productoEscaneado = await res.json();
+    document.getElementById("nombreEscaneado").innerText = productoEscaneado.nombre;
+    document.getElementById("stockEscaneado").innerText = productoEscaneado.stockActual;
+    document.getElementById("cardProductoEscaneado").classList.remove("oculto");
+    mostrarMensaje(`Detectado: ${productoEscaneado.nombre}`, "ok");
+  } catch (e) {
+    mostrarMensaje(e.message, "error");
+  }
+}
+
+function mostrarMensaje(texto, tipo) {
+  const div = document.getElementById("mensaje");
+  div.innerHTML = `<div class="msg ${tipo}">${texto}</div>`;
+  setTimeout(() => { div.innerHTML = ""; }, 2500);
+}
+
+async function registrarEntrada() {
+  if (!productoEscaneado) return;
+
+  const cantidad = parseInt(document.getElementById("cantidadEntrada").value, 10);
+  const motivo = document.getElementById("motivoEntrada").value.trim();
+
+  if (!cantidad || cantidad < 1) {
+    mostrarMensaje("Cantidad invalida", "error");
+    return;
+  }
+  if (!motivo) {
+    mostrarMensaje("Indica un motivo", "error");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/inventario/ajuste`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        codigoBarras: productoEscaneado.codigoBarras,
+        cantidad,
+        motivo,
+        esPositivo: true
+      })
+    });
+    if (!res.ok) throw new Error((await res.json()).mensaje || "Error al registrar la entrada");
+
+    const producto = await res.json();
+    mostrarMensaje(`Stock actualizado: ${producto.nombre} ahora tiene ${producto.stockActual}`, "ok");
+    document.getElementById("cardProductoEscaneado").classList.add("oculto");
+    document.getElementById("cantidadEntrada").value = "1";
+    document.getElementById("motivoEntrada").value = "";
+    productoEscaneado = null;
+  } catch (e) {
+    mostrarMensaje(e.message, "error");
+  }
+}
+</script>
+
+</body>
+</html>
