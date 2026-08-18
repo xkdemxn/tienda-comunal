@@ -24,6 +24,7 @@
     padding: 16px;
   }
   h1 { font-size: 20px; margin: 0 0 16px; }
+  h2 { font-size: 15px; margin: 0 0 12px; }
   .card {
     background: var(--card);
     border-radius: 12px;
@@ -44,6 +45,13 @@
     color: var(--text);
     font-size: 14px;
     margin-bottom: 10px;
+  }
+  input[readonly] { color: var(--muted); }
+  label.campo {
+    font-size: 12px;
+    color: var(--muted);
+    display: block;
+    margin: -4px 0 4px;
   }
   button {
     width: 100%;
@@ -150,7 +158,7 @@
 
   <div class="tabs">
     <button id="tabBtnCodigos" class="activa" onclick="mostrarTab('codigos')">Codigos de barra</button>
-    <button id="tabBtnEscaneo" onclick="mostrarTab('escaneo')">Escanear entrada</button>
+    <button id="tabBtnEscaneo" onclick="mostrarTab('escaneo')">Agregar stock</button>
   </div>
 
   <!-- Tab: lista de codigos de barra -->
@@ -161,23 +169,54 @@
     </div>
   </div>
 
-  <!-- Tab: escanear para registrar entrada -->
+  <!-- Tab: escanear para agregar stock / dar de alta productos -->
   <div id="tabEscaneo" class="oculto">
+
+    <div class="card">
+      <label class="campo">Que estas guardando (opcional, ayuda a categorizar productos nuevos)</label>
+      <select id="categoriaSesion">
+        <option value="">Sin categoria</option>
+      </select>
+    </div>
+
     <div class="card">
       <div id="reader"></div>
       <button class="secundario" onclick="reiniciarCamara()">Reiniciar camara</button>
+      <button class="secundario" onclick="abrirFormularioManual()">Agregar producto sin codigo de barras</button>
     </div>
 
     <div id="mensaje"></div>
 
-    <div class="card oculto" id="cardProductoEscaneado">
-      <strong id="nombreEscaneado"></strong>
-      <p style="color:var(--muted); font-size:13px; margin:4px 0 12px">
-        Stock actual: <span id="stockEscaneado"></span>
-      </p>
-      <input type="number" id="cantidadEntrada" placeholder="Cantidad a ingresar" min="1" value="1">
-      <input type="text" id="motivoEntrada" placeholder="Motivo (ej: reposicion de proveedor)">
-      <button onclick="registrarEntrada()">Registrar entrada</button>
+    <!-- Formulario de producto nuevo: aparece cuando se escanea un codigo que no existe,
+         o al usar el boton de "sin codigo de barras" -->
+    <div class="card oculto" id="cardProductoNuevo">
+      <h2>Producto nuevo</h2>
+
+      <label class="campo">Codigo de barras</label>
+      <input type="text" id="nuevoCodigoBarras" readonly>
+
+      <label class="campo">Categoria</label>
+      <select id="nuevoCategoria">
+        <option value="">Sin categoria</option>
+      </select>
+
+      <label class="campo">Nombre</label>
+      <input type="text" id="nuevoNombre" placeholder="Ej: Coca Cola 600ml">
+
+      <label class="campo">Precio de venta</label>
+      <input type="number" id="nuevoPrecioVenta" step="0.01" min="0">
+
+      <label class="campo">Precio de compra (opcional)</label>
+      <input type="number" id="nuevoPrecioCompra" step="0.01" min="0">
+
+      <label class="campo">Cantidad inicial en stock</label>
+      <input type="number" id="nuevoStockActual" min="1" value="1">
+
+      <label class="campo">Stock minimo (alerta de stock bajo)</label>
+      <input type="number" id="nuevoStockMinimo" min="0" value="5">
+
+      <button onclick="guardarProductoNuevo()">Guardar producto</button>
+      <button class="secundario" onclick="cerrarFormularioNuevo()">Cancelar</button>
     </div>
   </div>
 
@@ -196,9 +235,10 @@
 const API_BASE = window.location.origin + "/api";
 let token = localStorage.getItem("token") || "";
 let productos = [];
+let categorias = [];
 let html5QrCode;
 let escaneando = false;
-let productoEscaneado = null;
+let codigoFormularioActual = null;
 
 // ---------- LOGIN ----------
 async function login() {
@@ -231,6 +271,7 @@ function mostrarPanel() {
   document.getElementById("loginCard").classList.add("oculto");
   document.getElementById("panel").classList.remove("oculto");
   cargarProductos();
+  cargarCategorias();
 }
 
 // ---------- TABS ----------
@@ -245,6 +286,29 @@ function mostrarTab(tab) {
     detenerCamara();
   } else {
     iniciarCamara();
+  }
+}
+
+// ---------- CATEGORIAS ----------
+async function cargarCategorias() {
+  try {
+    const res = await fetch(`${API_BASE}/categorias`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+    categorias = await res.json();
+
+    [document.getElementById("categoriaSesion"), document.getElementById("nuevoCategoria")]
+      .forEach(select => {
+        categorias.forEach(c => {
+          const opcion = document.createElement("option");
+          opcion.value = c.id;
+          opcion.innerText = c.nombre;
+          select.appendChild(opcion);
+        });
+      });
+  } catch (e) {
+    // Sin categorias no bloqueamos el flujo, simplemente queda "Sin categoria"
   }
 }
 
@@ -316,7 +380,7 @@ function imprimirCodigo() {
   ventana.document.write(`<img src="${src}" style="width:100%" onload="window.print()">`);
 }
 
-// ---------- CAMARA / ESCANEO PARA ENTRADA DE INVENTARIO ----------
+// ---------- CAMARA / ESCANEO PARA AGREGAR STOCK ----------
 function iniciarCamara() {
   if (escaneando) return;
   html5QrCode = new Html5Qrcode("reader");
@@ -345,6 +409,9 @@ let ultimoCodigo = "";
 let ultimoTiempo = 0;
 
 async function onCodigoDetectado(codigo) {
+  // Evita registrar el mismo codigo varias veces por segundo mientras la camara sigue enfocada.
+  // Para sumar mas unidades del mismo producto (ej: una paca de 12), se vuelve a escanear
+  // pasado ese margen, una vez por cada unidad fisica.
   const ahora = Date.now();
   if (codigo === ultimoCodigo && ahora - ultimoTiempo < 2000) return;
   ultimoCodigo = codigo;
@@ -354,13 +421,39 @@ async function onCodigoDetectado(codigo) {
     const res = await fetch(`${API_BASE}/escaneo/${codigo}`, {
       headers: { "Authorization": `Bearer ${token}` }
     });
-    if (!res.ok) throw new Error((await res.json()).mensaje || "Codigo no reconocido");
 
-    productoEscaneado = await res.json();
-    document.getElementById("nombreEscaneado").innerText = productoEscaneado.nombre;
-    document.getElementById("stockEscaneado").innerText = productoEscaneado.stockActual;
-    document.getElementById("cardProductoEscaneado").classList.remove("oculto");
-    mostrarMensaje(`Detectado: ${productoEscaneado.nombre}`, "ok");
+    if (res.ok) {
+      // El producto ya existe: solo sumamos 1 unidad de stock, sin pedir nada mas.
+      const producto = await res.json();
+      await registrarEntradaRapida(producto.codigoBarras, producto.nombre);
+    } else {
+      // Codigo nunca visto: pedimos las caracteristicas del producto una sola vez.
+      abrirFormularioProductoNuevo(codigo);
+    }
+  } catch (e) {
+    mostrarMensaje(e.message, "error");
+  }
+}
+
+async function registrarEntradaRapida(codigoBarras, nombre) {
+  try {
+    const res = await fetch(`${API_BASE}/inventario/ajuste`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        codigoBarras,
+        cantidad: 1,
+        motivo: "Entrada por escaneo",
+        esPositivo: true
+      })
+    });
+    if (!res.ok) throw new Error((await res.json()).mensaje || "Error al actualizar el stock");
+
+    const producto = await res.json();
+    mostrarMensaje(`Stock actualizado: ${producto.nombre} → ${producto.stockActual}`, "ok");
   } catch (e) {
     mostrarMensaje(e.message, "error");
   }
@@ -372,43 +465,86 @@ function mostrarMensaje(texto, tipo) {
   setTimeout(() => { div.innerHTML = ""; }, 2500);
 }
 
-async function registrarEntrada() {
-  if (!productoEscaneado) return;
+// ---------- FORMULARIO DE PRODUCTO NUEVO ----------
+let formularioEsManual = false;
 
-  const cantidad = parseInt(document.getElementById("cantidadEntrada").value, 10);
-  const motivo = document.getElementById("motivoEntrada").value.trim();
+function abrirFormularioProductoNuevo(codigo) {
+  formularioEsManual = false;
+  codigoFormularioActual = codigo;
+  document.getElementById("nuevoCodigoBarras").value = codigo;
+  document.getElementById("nuevoCategoria").value = document.getElementById("categoriaSesion").value;
+  document.getElementById("nuevoNombre").value = "";
+  document.getElementById("nuevoPrecioVenta").value = "";
+  document.getElementById("nuevoPrecioCompra").value = "";
+  document.getElementById("nuevoStockActual").value = "1";
+  document.getElementById("nuevoStockMinimo").value = "5";
+  document.getElementById("cardProductoNuevo").classList.remove("oculto");
+  mostrarMensaje("Codigo nuevo, completa los datos del producto", "ok");
+}
 
-  if (!cantidad || cantidad < 1) {
-    mostrarMensaje("Cantidad invalida", "error");
+function abrirFormularioManual() {
+  const codigoInterno = `MANUAL-${Date.now()}`;
+  abrirFormularioProductoNuevo(codigoInterno);
+  formularioEsManual = true;
+}
+
+function cerrarFormularioNuevo() {
+  document.getElementById("cardProductoNuevo").classList.add("oculto");
+  codigoFormularioActual = null;
+}
+
+async function guardarProductoNuevo() {
+  const nombre = document.getElementById("nuevoNombre").value.trim();
+  const precioVenta = parseFloat(document.getElementById("nuevoPrecioVenta").value);
+  const precioCompraTexto = document.getElementById("nuevoPrecioCompra").value;
+  const stockActual = parseInt(document.getElementById("nuevoStockActual").value, 10);
+  const stockMinimo = parseInt(document.getElementById("nuevoStockMinimo").value, 10);
+  const categoriaId = document.getElementById("nuevoCategoria").value;
+
+  if (!nombre) {
+    mostrarMensaje("Falta el nombre del producto", "error");
     return;
   }
-  if (!motivo) {
-    mostrarMensaje("Indica un motivo", "error");
+  if (!precioVenta || precioVenta <= 0) {
+    mostrarMensaje("Precio de venta invalido", "error");
     return;
   }
+  if (!stockActual || stockActual < 1) {
+    mostrarMensaje("Cantidad inicial invalida", "error");
+    return;
+  }
+
+  const body = {
+    codigoBarras: codigoFormularioActual,
+    nombre,
+    precioVenta,
+    precioCompra: precioCompraTexto ? parseFloat(precioCompraTexto) : null,
+    stockActual,
+    stockMinimo: stockMinimo || 5,
+    categoria: categoriaId ? { id: parseInt(categoriaId, 10) } : null
+  };
 
   try {
-    const res = await fetch(`${API_BASE}/inventario/ajuste`, {
+    const res = await fetch(`${API_BASE}/productos`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`
       },
-      body: JSON.stringify({
-        codigoBarras: productoEscaneado.codigoBarras,
-        cantidad,
-        motivo,
-        esPositivo: true
-      })
+      body: JSON.stringify(body)
     });
-    if (!res.ok) throw new Error((await res.json()).mensaje || "Error al registrar la entrada");
+    if (!res.ok) throw new Error((await res.json()).mensaje || "Error al crear el producto");
 
     const producto = await res.json();
-    mostrarMensaje(`Stock actualizado: ${producto.nombre} ahora tiene ${producto.stockActual}`, "ok");
-    document.getElementById("cardProductoEscaneado").classList.add("oculto");
-    document.getElementById("cantidadEntrada").value = "1";
-    document.getElementById("motivoEntrada").value = "";
-    productoEscaneado = null;
+    mostrarMensaje(`Producto creado: ${producto.nombre}`, "ok");
+    cerrarFormularioNuevo();
+    await cargarProductos();
+
+    // Si no tiene un codigo fisico real, ofrecemos imprimir la etiqueta generada
+    // para poder pegarla en el producto y que quede escaneable a futuro.
+    if (formularioEsManual) {
+      verCodigoBarras(producto.id);
+    }
   } catch (e) {
     mostrarMensaje(e.message, "error");
   }

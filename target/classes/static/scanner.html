@@ -80,6 +80,17 @@
     font-weight: 700;
     margin-top: 12px;
   }
+  .total small {
+    display: block;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--muted);
+  }
+  .resultados-busqueda .item button {
+    width: auto;
+    padding: 8px 12px;
+    margin-bottom: 0;
+  }
   .msg {
     padding: 10px;
     border-radius: 8px;
@@ -114,21 +125,21 @@
   <div id="mensaje"></div>
 
   <div class="card">
+    <label style="font-size:13px; color:var(--muted)">Producto sin codigo de barras (ej: pan)</label>
+    <input type="text" id="buscarProductoVenta" placeholder="Buscar por nombre..." oninput="buscarProductoParaVenta()">
+    <div id="resultadosBusquedaVenta" class="resultados-busqueda"></div>
+  </div>
+
+  <div class="card">
     <strong>Carrito</strong>
     <div id="carrito"></div>
     <div class="total">
-      <span>Total</span>
+      <span>Total <small id="unidadesCarrito">0 productos</small></span>
       <span id="totalCarrito">$0.00</span>
     </div>
   </div>
 
   <div class="card">
-    <label style="font-size:13px; color:var(--muted)">Convertir a otra moneda (opcional)</label>
-    <select id="monedaDestino">
-      <option value="">Ninguna</option>
-      <option value="USD">USD</option>
-      <option value="EUR">EUR</option>
-    </select>
     <button onclick="confirmarVenta()">Confirmar venta</button>
     <button class="secundario" onclick="vaciarCarrito()">Vaciar carrito</button>
   </div>
@@ -255,10 +266,12 @@ function renderCarrito() {
   const div = document.getElementById("carrito");
   div.innerHTML = "";
   let total = 0;
+  let unidades = 0;
 
   carrito.forEach((item, idx) => {
     const subtotal = item.precio * item.cantidad;
     total += subtotal;
+    unidades += item.cantidad;
     div.innerHTML += `
       <div class="item">
         <div>
@@ -274,6 +287,8 @@ function renderCarrito() {
   });
 
   document.getElementById("totalCarrito").innerText = `$${total.toFixed(2)}`;
+  document.getElementById("unidadesCarrito").innerText =
+    `${unidades} producto${unidades === 1 ? "" : "s"}`;
 }
 
 function quitarDelCarrito(idx) {
@@ -286,6 +301,64 @@ function vaciarCarrito() {
   renderCarrito();
 }
 
+// ---------- BUSQUEDA MANUAL (productos sin codigo de barras, ej: pan) ----------
+let temporizadorBusqueda;
+
+function buscarProductoParaVenta() {
+  clearTimeout(temporizadorBusqueda);
+  const texto = document.getElementById("buscarProductoVenta").value.trim();
+  const div = document.getElementById("resultadosBusquedaVenta");
+
+  if (texto.length < 2) {
+    div.innerHTML = "";
+    return;
+  }
+
+  temporizadorBusqueda = setTimeout(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/productos/buscar?nombre=${encodeURIComponent(texto)}`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error("Error al buscar productos");
+
+      const productos = await res.json();
+      if (productos.length === 0) {
+        div.innerHTML = `<p style="color:var(--muted); font-size:13px; margin:8px 0 0">Sin resultados</p>`;
+        return;
+      }
+
+      div.innerHTML = "";
+      productos.forEach(p => {
+        div.innerHTML += `
+          <div class="item">
+            <div>
+              ${p.nombre}
+              <small>Stock: ${p.stockActual} · $${Number(p.precioVenta).toFixed(2)}</small>
+            </div>
+            <button onclick="agregarProductoBuscado(${p.id})">Agregar</button>
+          </div>`;
+      });
+      window.__resultadosBusqueda = productos;
+    } catch (e) {
+      div.innerHTML = `<div class="msg error">${e.message}</div>`;
+    }
+  }, 300);
+}
+
+function agregarProductoBuscado(id) {
+  const producto = (window.__resultadosBusqueda || []).find(p => p.id === id);
+  if (!producto) return;
+
+  agregarAlCarrito({
+    codigoBarras: producto.codigoBarras,
+    nombre: producto.nombre,
+    precioVenta: producto.precioVenta
+  });
+  mostrarMensaje(`Agregado: ${producto.nombre}`, "ok");
+  document.getElementById("buscarProductoVenta").value = "";
+  document.getElementById("resultadosBusquedaVenta").innerHTML = "";
+}
+
 // ---------- CONFIRMAR VENTA ----------
 async function confirmarVenta() {
   if (carrito.length === 0) {
@@ -293,10 +366,8 @@ async function confirmarVenta() {
     return;
   }
 
-  const monedaDestino = document.getElementById("monedaDestino").value;
   const body = {
-    items: carrito.map(i => ({ codigoBarras: i.codigoBarras, cantidad: i.cantidad })),
-    monedaDestino: monedaDestino || null
+    items: carrito.map(i => ({ codigoBarras: i.codigoBarras, cantidad: i.cantidad }))
   };
 
   try {
@@ -311,11 +382,7 @@ async function confirmarVenta() {
     if (!res.ok) throw new Error((await res.json()).mensaje || "Error al registrar la venta");
 
     const venta = await res.json();
-    let texto = `Venta registrada: $${venta.totalMonedaLocal}`;
-    if (venta.totalMonedaDestino) {
-      texto += ` (${venta.totalMonedaDestino} ${venta.monedaDestino})`;
-    }
-    mostrarMensaje(texto, "ok");
+    mostrarMensaje(`Venta registrada: $${venta.totalMonedaLocal}`, "ok");
     vaciarCarrito();
   } catch (e) {
     mostrarMensaje(e.message, "error");
