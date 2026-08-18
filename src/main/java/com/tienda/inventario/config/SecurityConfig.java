@@ -63,9 +63,10 @@ public class SecurityConfig {
                         .requestMatchers("GET", "/api/productos/**").hasAnyRole("ADMIN", "VENDEDOR")
                         // registrar ventas: admin y vendedor
                         .requestMatchers("/api/ventas/**").hasAnyRole("ADMIN", "VENDEDOR")
-                        // todo lo de inventario/compras/reportes solo admin
+                        // todo lo de inventario/compras/reportes/admin solo admin
                         .requestMatchers("/api/inventario/**", "/api/compras/**",
-                                "/api/reportes/**", "/api/proveedores/**", "/api/categorias/**")
+                                "/api/reportes/**", "/api/proveedores/**", "/api/categorias/**",
+                                "/api/admin/**")
                         .hasRole("ADMIN")
                         .requestMatchers("/api/productos/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
