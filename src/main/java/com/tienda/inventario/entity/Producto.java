@@ -22,7 +22,15 @@ public class Producto {
     private Long id;
 
     @Column(nullable = false, unique = true, length = 64)
-    private String codigoBarras; // EAN/UPC leido por la camara
+    private String codigoBarras; // EAN/UPC leido por la camara, identifica UNA unidad
+
+    // Codigo de barras del paquete/caja (ej: la paca de 12 botellas), opcional.
+    // El stock siempre se lleva en unidades: escanear este codigo suma
+    // "unidadesPorCaja" de una sola vez en vez de escanear unidad por unidad.
+    @Column(unique = true, length = 64)
+    private String codigoBarrasCaja;
+
+    private Integer unidadesPorCaja;
 
     @Column(nullable = false, length = 150)
     private String nombre;

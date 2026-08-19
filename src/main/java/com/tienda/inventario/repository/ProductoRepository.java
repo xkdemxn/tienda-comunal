@@ -10,6 +10,8 @@ import java.util.Optional;
 public interface ProductoRepository extends JpaRepository<Producto, Long> {
     Optional<Producto> findByCodigoBarras(String codigoBarras);
     boolean existsByCodigoBarras(String codigoBarras);
+    Optional<Producto> findByCodigoBarrasCaja(String codigoBarrasCaja);
+    boolean existsByCodigoBarrasCaja(String codigoBarrasCaja);
     List<Producto> findByNombreContainingIgnoreCaseAndActivoTrue(String nombre);
 
     @Query("SELECT p FROM Producto p WHERE p.activo = true AND p.stockActual <= p.stockMinimo")

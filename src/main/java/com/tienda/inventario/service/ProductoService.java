@@ -35,11 +35,22 @@ public class ProductoService {
                 .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado con codigo: " + codigo));
     }
 
+    public Producto obtenerPorCodigoCaja(String codigo) {
+        return productoRepository.findByCodigoBarrasCaja(codigo)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Ningun producto tiene ese codigo registrado como caja: " + codigo));
+    }
+
     @Transactional
     public Producto crear(Producto producto) {
         if (productoRepository.existsByCodigoBarras(producto.getCodigoBarras())) {
             throw new IllegalArgumentException(
                     "Ya existe un producto con el codigo de barras: " + producto.getCodigoBarras());
+        }
+        if (producto.getCodigoBarrasCaja() != null && !producto.getCodigoBarrasCaja().isBlank()
+                && productoRepository.existsByCodigoBarrasCaja(producto.getCodigoBarrasCaja())) {
+            throw new IllegalArgumentException(
+                    "Ya existe un producto con ese codigo de caja: " + producto.getCodigoBarrasCaja());
         }
         return productoRepository.save(producto);
     }
@@ -54,6 +65,8 @@ public class ProductoService {
         producto.setStockMinimo(datos.getStockMinimo());
         producto.setCategoria(datos.getCategoria());
         producto.setProveedor(datos.getProveedor());
+        producto.setCodigoBarrasCaja(datos.getCodigoBarrasCaja());
+        producto.setUnidadesPorCaja(datos.getUnidadesPorCaja());
         // El stock NO se edita aqui directamente: siempre debe pasar por
         // InventarioService (venta, compra, ajuste) para quedar en el kardex.
         return productoRepository.save(producto);

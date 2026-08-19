@@ -36,6 +36,13 @@
     border-radius: 10px;
     overflow: hidden;
   }
+  .controles-camara {
+    display: flex;
+    gap: 8px;
+  }
+  .controles-camara button {
+    margin-bottom: 8px;
+  }
   input, select {
     width: 100%;
     padding: 10px;
@@ -71,6 +78,11 @@
     border: 1px solid #334155;
     color: var(--text);
   }
+  button.secundario.activo {
+    background: var(--accent);
+    color: #0f172a;
+    border-color: var(--accent);
+  }
   .tabs {
     display: flex;
     gap: 8px;
@@ -81,6 +93,8 @@
     background: transparent;
     border: 1px solid #334155;
     color: var(--muted);
+    font-size: 13px;
+    padding: 10px 8px;
   }
   .tabs button.activa {
     background: var(--accent);
@@ -104,6 +118,15 @@
     margin-bottom: 0;
     white-space: nowrap;
   }
+  .badge {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .badge.ok { background: #14532d; color: #bbf7d0; }
+  .badge.bajo { background: #450a0a; color: #fecaca; }
   .msg {
     padding: 10px;
     border-radius: 8px;
@@ -157,11 +180,12 @@
 <div id="panel" class="oculto">
 
   <div class="tabs">
-    <button id="tabBtnCodigos" class="activa" onclick="mostrarTab('codigos')">Codigos de barra</button>
+    <button id="tabBtnCodigos" class="activa" onclick="mostrarTab('codigos')">Productos y stock</button>
     <button id="tabBtnEscaneo" onclick="mostrarTab('escaneo')">Agregar stock</button>
+    <button id="tabBtnEstadisticas" onclick="mostrarTab('estadisticas')">Estadisticas</button>
   </div>
 
-  <!-- Tab: lista de codigos de barra -->
+  <!-- Tab: lista de productos con su stock actual -->
   <div id="tabCodigos">
     <div class="card">
       <input type="text" id="buscarProducto" placeholder="Buscar por nombre..." oninput="filtrarProductos()">
@@ -181,7 +205,11 @@
 
     <div class="card">
       <div id="reader"></div>
-      <button class="secundario" onclick="reiniciarCamara()">Reiniciar camara</button>
+      <div class="controles-camara">
+        <button class="secundario" onclick="reiniciarCamara()">Reiniciar</button>
+        <button class="secundario" id="btnFlash" onclick="toggleFlash()">🔦 Flash</button>
+        <button class="secundario" onclick="enfocarCamara()">🎯 Enfocar</button>
+      </div>
       <button class="secundario" onclick="abrirFormularioManual()">Agregar producto sin codigo de barras</button>
     </div>
 
@@ -192,7 +220,7 @@
     <div class="card oculto" id="cardProductoNuevo">
       <h2>Producto nuevo</h2>
 
-      <label class="campo">Codigo de barras</label>
+      <label class="campo">Codigo de barras (unidad)</label>
       <input type="text" id="nuevoCodigoBarras" readonly>
 
       <label class="campo">Categoria</label>
@@ -215,9 +243,28 @@
       <label class="campo">Stock minimo (alerta de stock bajo)</label>
       <input type="number" id="nuevoStockMinimo" min="0" value="5">
 
+      <label class="campo">Codigo de barras de la caja/paquete (opcional)</label>
+      <input type="text" id="nuevoCodigoCaja" placeholder="Si el proveedor te lo vende por caja">
+
+      <label class="campo">Unidades por caja (si pusiste codigo de caja)</label>
+      <input type="number" id="nuevoUnidadesPorCaja" min="1" placeholder="Ej: 12">
+
       <button onclick="guardarProductoNuevo()">Guardar producto</button>
       <button class="secundario" onclick="cerrarFormularioNuevo()">Cancelar</button>
     </div>
+  </div>
+
+  <!-- Tab: estadisticas de venta -->
+  <div id="tabEstadisticas" class="oculto">
+    <div class="card">
+      <label class="campo">Desde</label>
+      <input type="date" id="statsDesde">
+      <label class="campo">Hasta</label>
+      <input type="date" id="statsHasta">
+      <button onclick="cargarEstadisticas()">Consultar</button>
+    </div>
+
+    <div id="statsResultado"></div>
   </div>
 
 </div>
@@ -276,16 +323,17 @@ function mostrarPanel() {
 
 // ---------- TABS ----------
 function mostrarTab(tab) {
-  const esCodigos = tab === "codigos";
-  document.getElementById("tabCodigos").classList.toggle("oculto", !esCodigos);
-  document.getElementById("tabEscaneo").classList.toggle("oculto", esCodigos);
-  document.getElementById("tabBtnCodigos").classList.toggle("activa", esCodigos);
-  document.getElementById("tabBtnEscaneo").classList.toggle("activa", !esCodigos);
+  document.getElementById("tabCodigos").classList.toggle("oculto", tab !== "codigos");
+  document.getElementById("tabEscaneo").classList.toggle("oculto", tab !== "escaneo");
+  document.getElementById("tabEstadisticas").classList.toggle("oculto", tab !== "estadisticas");
+  document.getElementById("tabBtnCodigos").classList.toggle("activa", tab === "codigos");
+  document.getElementById("tabBtnEscaneo").classList.toggle("activa", tab === "escaneo");
+  document.getElementById("tabBtnEstadisticas").classList.toggle("activa", tab === "estadisticas");
 
-  if (esCodigos) {
-    detenerCamara();
-  } else {
+  if (tab === "escaneo") {
     iniciarCamara();
+  } else {
+    detenerCamara();
   }
 }
 
@@ -312,7 +360,7 @@ async function cargarCategorias() {
   }
 }
 
-// ---------- LISTA DE PRODUCTOS / CODIGOS DE BARRA ----------
+// ---------- LISTA DE PRODUCTOS / STOCK ----------
 async function cargarProductos() {
   const div = document.getElementById("listaProductos");
   try {
@@ -340,13 +388,20 @@ function renderProductos(lista) {
   }
   div.innerHTML = "";
   lista.forEach(p => {
+    const bajo = p.stockActual <= p.stockMinimo;
+    const infoCaja = p.codigoBarrasCaja
+      ? ` · caja de ${p.unidadesPorCaja}: ${p.codigoBarrasCaja}`
+      : "";
     div.innerHTML += `
       <div class="item">
         <div>
           ${p.nombre}
-          <small>${p.codigoBarras}</small>
+          <small>${p.codigoBarras}${infoCaja}</small>
         </div>
-        <button onclick="verCodigoBarras(${p.id})">Ver</button>
+        <div style="display:flex; align-items:center; gap:8px">
+          <span class="badge ${bajo ? "bajo" : "ok"}">${p.stockActual} en stock</span>
+          <button onclick="verCodigoBarras(${p.id})">Ver</button>
+        </div>
       </div>`;
   });
 }
@@ -396,7 +451,11 @@ function iniciarCamara() {
 
 function detenerCamara() {
   if (html5QrCode && escaneando) {
-    html5QrCode.stop().then(() => { escaneando = false; });
+    html5QrCode.stop().then(() => {
+      escaneando = false;
+      flashActivo = false;
+      document.getElementById("btnFlash").classList.remove("activo");
+    });
   }
 }
 
@@ -405,37 +464,83 @@ function reiniciarCamara() {
   setTimeout(iniciarCamara, 300);
 }
 
+// ---------- CAMARA: FLASH / ENFOQUE ----------
+let flashActivo = false;
+
+async function toggleFlash() {
+  if (!html5QrCode || !escaneando) return;
+  const encender = !flashActivo;
+  try {
+    await html5QrCode.applyVideoConstraints({
+      torch: encender,
+      advanced: [{ torch: encender }]
+    });
+    const settings = html5QrCode.getRunningTrackSettings();
+    if (settings.torch !== encender) throw new Error("No soportado");
+    flashActivo = encender;
+    document.getElementById("btnFlash").classList.toggle("activo", flashActivo);
+  } catch (e) {
+    mostrarMensaje("Tu camara no permite controlar el flash desde el navegador", "error");
+  }
+}
+
+async function enfocarCamara() {
+  if (!html5QrCode || !escaneando) return;
+  try {
+    await html5QrCode.applyVideoConstraints({
+      advanced: [{ focusMode: "continuous" }]
+    });
+    mostrarMensaje("Enfoque ajustado", "ok");
+  } catch (e) {
+    mostrarMensaje("Tu camara no permite ajustar el enfoque manualmente", "error");
+  }
+}
+
 let ultimoCodigo = "";
 let ultimoTiempo = 0;
 
 async function onCodigoDetectado(codigo) {
   // Evita registrar el mismo codigo varias veces por segundo mientras la camara sigue enfocada.
-  // Para sumar mas unidades del mismo producto (ej: una paca de 12), se vuelve a escanear
-  // pasado ese margen, una vez por cada unidad fisica.
+  // Para sumar mas unidades del mismo producto, se vuelve a escanear pasado ese margen,
+  // una vez por cada unidad (o una sola vez si se escanea el codigo de la caja completa).
   const ahora = Date.now();
   if (codigo === ultimoCodigo && ahora - ultimoTiempo < 2000) return;
   ultimoCodigo = codigo;
   ultimoTiempo = ahora;
 
   try {
-    const res = await fetch(`${API_BASE}/escaneo/${codigo}`, {
+    const resUnidad = await fetch(`${API_BASE}/escaneo/${codigo}`, {
       headers: { "Authorization": `Bearer ${token}` }
     });
 
-    if (res.ok) {
-      // El producto ya existe: solo sumamos 1 unidad de stock, sin pedir nada mas.
-      const producto = await res.json();
-      await registrarEntradaRapida(producto.codigoBarras, producto.nombre);
-    } else {
-      // Codigo nunca visto: pedimos las caracteristicas del producto una sola vez.
-      abrirFormularioProductoNuevo(codigo);
+    if (resUnidad.ok) {
+      // Coincide con el codigo de UNA unidad: sumamos 1, sin pedir nada mas.
+      const producto = await resUnidad.json();
+      await registrarEntradaRapida(producto.codigoBarras, 1, "Entrada por escaneo");
+      return;
     }
+
+    const resCaja = await fetch(`${API_BASE}/productos/caja/${codigo}`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+
+    if (resCaja.ok) {
+      // Coincide con el codigo de la CAJA: sumamos todas sus unidades de una vez.
+      const producto = await resCaja.json();
+      const unidades = producto.unidadesPorCaja || 1;
+      await registrarEntradaRapida(producto.codigoBarras, unidades,
+        `Entrada por caja escaneada (${unidades} unidades)`);
+      return;
+    }
+
+    // Ni unidad ni caja: codigo nunca visto, pedimos las caracteristicas una sola vez.
+    abrirFormularioProductoNuevo(codigo);
   } catch (e) {
     mostrarMensaje(e.message, "error");
   }
 }
 
-async function registrarEntradaRapida(codigoBarras, nombre) {
+async function registrarEntradaRapida(codigoBarras, cantidad, motivo) {
   try {
     const res = await fetch(`${API_BASE}/inventario/ajuste`, {
       method: "POST",
@@ -443,12 +548,7 @@ async function registrarEntradaRapida(codigoBarras, nombre) {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`
       },
-      body: JSON.stringify({
-        codigoBarras,
-        cantidad: 1,
-        motivo: "Entrada por escaneo",
-        esPositivo: true
-      })
+      body: JSON.stringify({ codigoBarras, cantidad, motivo, esPositivo: true })
     });
     if (!res.ok) throw new Error((await res.json()).mensaje || "Error al actualizar el stock");
 
@@ -478,6 +578,8 @@ function abrirFormularioProductoNuevo(codigo) {
   document.getElementById("nuevoPrecioCompra").value = "";
   document.getElementById("nuevoStockActual").value = "1";
   document.getElementById("nuevoStockMinimo").value = "5";
+  document.getElementById("nuevoCodigoCaja").value = "";
+  document.getElementById("nuevoUnidadesPorCaja").value = "";
   document.getElementById("cardProductoNuevo").classList.remove("oculto");
   mostrarMensaje("Codigo nuevo, completa los datos del producto", "ok");
 }
@@ -500,6 +602,8 @@ async function guardarProductoNuevo() {
   const stockActual = parseInt(document.getElementById("nuevoStockActual").value, 10);
   const stockMinimo = parseInt(document.getElementById("nuevoStockMinimo").value, 10);
   const categoriaId = document.getElementById("nuevoCategoria").value;
+  const codigoCaja = document.getElementById("nuevoCodigoCaja").value.trim();
+  const unidadesPorCajaTexto = document.getElementById("nuevoUnidadesPorCaja").value;
 
   if (!nombre) {
     mostrarMensaje("Falta el nombre del producto", "error");
@@ -513,6 +617,10 @@ async function guardarProductoNuevo() {
     mostrarMensaje("Cantidad inicial invalida", "error");
     return;
   }
+  if (codigoCaja && (!unidadesPorCajaTexto || parseInt(unidadesPorCajaTexto, 10) < 1)) {
+    mostrarMensaje("Indica cuantas unidades trae la caja", "error");
+    return;
+  }
 
   const body = {
     codigoBarras: codigoFormularioActual,
@@ -521,7 +629,9 @@ async function guardarProductoNuevo() {
     precioCompra: precioCompraTexto ? parseFloat(precioCompraTexto) : null,
     stockActual,
     stockMinimo: stockMinimo || 5,
-    categoria: categoriaId ? { id: parseInt(categoriaId, 10) } : null
+    categoria: categoriaId ? { id: parseInt(categoriaId, 10) } : null,
+    codigoBarrasCaja: codigoCaja || null,
+    unidadesPorCaja: unidadesPorCajaTexto ? parseInt(unidadesPorCajaTexto, 10) : null
   };
 
   try {
@@ -547,6 +657,73 @@ async function guardarProductoNuevo() {
     }
   } catch (e) {
     mostrarMensaje(e.message, "error");
+  }
+}
+
+// ---------- ESTADISTICAS DE VENTA ----------
+function fechaHoyISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function prepararFechasStats() {
+  const hasta = document.getElementById("statsHasta");
+  const desde = document.getElementById("statsDesde");
+  if (!hasta.value) hasta.value = fechaHoyISO();
+  if (!desde.value) {
+    const hace30 = new Date();
+    hace30.setDate(hace30.getDate() - 30);
+    desde.value = hace30.toISOString().slice(0, 10);
+  }
+}
+
+async function cargarEstadisticas() {
+  prepararFechasStats();
+  const desde = `${document.getElementById("statsDesde").value}T00:00:00`;
+  const hasta = `${document.getElementById("statsHasta").value}T23:59:59`;
+  const div = document.getElementById("statsResultado");
+  div.innerHTML = `<p style="color:var(--muted)">Cargando...</p>`;
+
+  try {
+    const res = await fetch(`${API_BASE}/reportes/ventas?desde=${desde}&hasta=${hasta}`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error((await res.json()).mensaje || "Error al cargar estadisticas");
+
+    const r = await res.json();
+    let html = `
+      <div class="card">
+        <div class="item"><div>Total vendido</div><strong>$${Number(r.totalVendido).toFixed(2)}</strong></div>
+        <div class="item"><div>Cantidad de ventas</div><strong>${r.cantidadVentas}</strong></div>
+      </div>
+      <div class="card">
+        <h2>Mas vendidos</h2>`;
+
+    const masVendidos = Object.entries(r.productosMasVendidos || {});
+    if (masVendidos.length === 0) {
+      html += `<p style="color:var(--muted)">Sin ventas en este rango</p>`;
+    } else {
+      masVendidos.forEach(([nombre, cantidad]) => {
+        html += `<div class="item"><div>${nombre}</div><strong>${cantidad}</strong></div>`;
+      });
+    }
+    html += `</div><div class="card"><h2>Stock bajo</h2>`;
+
+    if (!r.productosStockBajo || r.productosStockBajo.length === 0) {
+      html += `<p style="color:var(--muted)">Ningun producto con stock bajo</p>`;
+    } else {
+      r.productosStockBajo.forEach(p => {
+        html += `
+          <div class="item">
+            <div>${p.nombre}<small>${p.codigoBarras}</small></div>
+            <span class="badge bajo">${p.stockActual}/${p.stockMinimo}</span>
+          </div>`;
+      });
+    }
+    html += `</div>`;
+
+    div.innerHTML = html;
+  } catch (e) {
+    div.innerHTML = `<div class="msg error">${e.message}</div>`;
   }
 }
 </script>

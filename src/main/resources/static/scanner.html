@@ -35,6 +35,18 @@
     border-radius: 10px;
     overflow: hidden;
   }
+  .controles-camara {
+    display: flex;
+    gap: 8px;
+  }
+  .controles-camara button {
+    margin-bottom: 8px;
+  }
+  button.secundario.activo {
+    background: var(--accent);
+    color: #0f172a;
+    border-color: var(--accent);
+  }
   input, select {
     width: 100%;
     padding: 10px;
@@ -119,7 +131,11 @@
 
   <div class="card">
     <div id="reader"></div>
-    <button class="secundario" onclick="reiniciarCamara()">Reiniciar camara</button>
+    <div class="controles-camara">
+      <button class="secundario" onclick="reiniciarCamara()">Reiniciar</button>
+      <button class="secundario" id="btnFlash" onclick="toggleFlash()">🔦 Flash</button>
+      <button class="secundario" onclick="enfocarCamara()">🎯 Enfocar</button>
+    </div>
   </div>
 
   <div id="mensaje"></div>
@@ -200,6 +216,8 @@ function iniciarCamara() {
 }
 
 function reiniciarCamara() {
+  flashActivo = false;
+  document.getElementById("btnFlash").classList.remove("activo");
   if (html5QrCode && escaneando) {
     html5QrCode.stop().then(() => {
       escaneando = false;
@@ -207,6 +225,38 @@ function reiniciarCamara() {
     });
   } else {
     iniciarCamara();
+  }
+}
+
+// ---------- CAMARA: FLASH / ENFOQUE ----------
+let flashActivo = false;
+
+async function toggleFlash() {
+  if (!html5QrCode || !escaneando) return;
+  const encender = !flashActivo;
+  try {
+    await html5QrCode.applyVideoConstraints({
+      torch: encender,
+      advanced: [{ torch: encender }]
+    });
+    const settings = html5QrCode.getRunningTrackSettings();
+    if (settings.torch !== encender) throw new Error("No soportado");
+    flashActivo = encender;
+    document.getElementById("btnFlash").classList.toggle("activo", flashActivo);
+  } catch (e) {
+    mostrarMensaje("Tu camara no permite controlar el flash desde el navegador", "error");
+  }
+}
+
+async function enfocarCamara() {
+  if (!html5QrCode || !escaneando) return;
+  try {
+    await html5QrCode.applyVideoConstraints({
+      advanced: [{ focusMode: "continuous" }]
+    });
+    mostrarMensaje("Enfoque ajustado", "ok");
+  } catch (e) {
+    mostrarMensaje("Tu camara no permite ajustar el enfoque manualmente", "error");
   }
 }
 

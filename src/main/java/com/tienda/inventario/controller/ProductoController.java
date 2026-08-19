@@ -37,6 +37,13 @@ public class ProductoController {
         return ResponseEntity.ok(productoService.productosConStockBajo());
     }
 
+    // Consulta si un codigo escaneado corresponde al codigo de CAJA de algun
+    // producto (para diferenciarlo del escaneo de la unidad)
+    @GetMapping("/caja/{codigo}")
+    public ResponseEntity<Producto> obtenerPorCodigoCaja(@PathVariable String codigo) {
+        return ResponseEntity.ok(productoService.obtenerPorCodigoCaja(codigo));
+    }
+
     @GetMapping(value = "/{id}/codigo-barras", produces = MediaType.IMAGE_PNG_VALUE)
     public ResponseEntity<byte[]> codigoBarras(@PathVariable Long id) {
         return ResponseEntity.ok(productoService.generarImagenCodigoBarras(id));
