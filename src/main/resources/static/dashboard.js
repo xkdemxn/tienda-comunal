@@ -98,10 +98,7 @@ function mostrarMensajeEn(divId, texto, tipo) {
 async function obtenerCamaraTrasera() {
   try {
     const camaras = await Html5Qrcode.getCameras();
-    if (!camaras || camaras.length === 0) {
-      alert("DEBUG camaras: ninguna detectada"); // TEMPORAL: quitar despues de diagnosticar
-      return { facingMode: "environment" };
-    }
+    if (!camaras || camaras.length === 0) return { facingMode: "environment" };
 
     const traseras = camaras.filter(c => /back|trasera|rear|environment/i.test(c.label));
     const candidatas = traseras.length > 0 ? traseras : camaras;
@@ -117,10 +114,8 @@ async function obtenerCamaraTrasera() {
     const ordenadas = [...base].sort((a, b) => indiceDe(a) - indiceDe(b));
     const elegida = ordenadas[0];
 
-    alert("DEBUG todas: " + camaras.map(c => c.label).join(" | ") + "\nDEBUG elegida: " + elegida.label); // TEMPORAL
     return elegida.id;
   } catch (e) {
-    alert("DEBUG error enumerando camaras: " + e.message); // TEMPORAL
     // Sin permiso o sin poder enumerar: volvemos al comportamiento por defecto
     return { facingMode: "environment" };
   }
