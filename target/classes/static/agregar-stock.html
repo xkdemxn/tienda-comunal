@@ -54,6 +54,15 @@
         <button class="secundario" onclick="abrirFormularioManual()">Agregar producto sin codigo de barras</button>
       </div>
 
+      <div class="card">
+        <label class="campo">
+          ¿Ya tienes este producto pero el codigo no coincide? (ej: cada unidad trae un codigo distinto)
+          Buscalo y sumale stock directo, sin escanear
+        </label>
+        <input type="text" id="buscarProductoExistente" placeholder="Buscar por nombre..." oninput="buscarProductoExistente()">
+        <div id="resultadosBusquedaExistente"></div>
+      </div>
+
       <div id="mensaje"></div>
 
       <!-- Formulario de producto nuevo: aparece cuando se escanea un codigo que no existe,
@@ -232,6 +241,66 @@ async function registrarEntradaRapida(codigoBarras, cantidad, motivo) {
   } catch (e) {
     mostrarMensajeEn("mensaje", e.message, "error");
   }
+}
+
+// ---------- BUSCAR PRODUCTO EXISTENTE Y SUMAR STOCK (sin escanear) ----------
+// Para productos donde cada unidad trae un codigo de barras distinto (ej: se
+// vio con botellas de agua Tesalia): el escaneo nunca va a reconocer la
+// unidad #2, #3, etc. porque el codigo cambia cada vez. Esta es la salida
+// manual: buscar el producto ya registrado por nombre y sumarle stock directo.
+let temporizadorBusquedaExistente;
+let resultadosBusquedaExistente = [];
+
+function buscarProductoExistente() {
+  clearTimeout(temporizadorBusquedaExistente);
+  const texto = document.getElementById("buscarProductoExistente").value.trim();
+  const div = document.getElementById("resultadosBusquedaExistente");
+
+  if (texto.length < 2) {
+    div.innerHTML = "";
+    return;
+  }
+
+  temporizadorBusquedaExistente = setTimeout(async () => {
+    try {
+      resultadosBusquedaExistente = await apiFetch(`/productos/buscar?nombre=${encodeURIComponent(texto)}`);
+      if (resultadosBusquedaExistente.length === 0) {
+        div.innerHTML = `<p style="color:var(--muted); font-size:13px">Sin resultados</p>`;
+        return;
+      }
+      div.innerHTML = "";
+      resultadosBusquedaExistente.forEach(p => {
+        div.innerHTML += `
+          <div class="item">
+            <div>
+              ${p.nombre}
+              <small>Stock actual: ${p.stockActual}</small>
+            </div>
+            <div style="display:flex; gap:6px; align-items:center">
+              <input type="number" min="1" value="1" id="cantidadExistente-${p.id}" style="width:70px; margin-bottom:0">
+              <button onclick="sumarStockExistente(${p.id})">Sumar</button>
+            </div>
+          </div>`;
+      });
+    } catch (e) {
+      div.innerHTML = `<div class="msg error">${e.message}</div>`;
+    }
+  }, 300);
+}
+
+async function sumarStockExistente(id) {
+  const producto = resultadosBusquedaExistente.find(p => p.id === id);
+  if (!producto) return;
+
+  const cantidad = parseInt(document.getElementById(`cantidadExistente-${id}`).value, 10);
+  if (!cantidad || cantidad < 1) {
+    mostrarMensajeEn("mensaje", "Cantidad invalida", "error");
+    return;
+  }
+
+  await registrarEntradaRapida(producto.codigoBarras, cantidad, "Entrada manual (codigo distinto por unidad)");
+  document.getElementById("buscarProductoExistente").value = "";
+  document.getElementById("resultadosBusquedaExistente").innerHTML = "";
 }
 
 // ---------- FORMULARIO DE PRODUCTO NUEVO ----------
