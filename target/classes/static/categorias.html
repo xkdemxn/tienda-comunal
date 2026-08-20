@@ -79,9 +79,16 @@ function renderCategorias() {
     div.innerHTML += `
       <div class="item">
         <div>${c.nombre}<small>${c.descripcion || ""}</small></div>
-        <button class="secundario" onclick="eliminarCategoria(${c.id})">Eliminar</button>
+        <div style="display:flex; gap:6px">
+          <button onclick="verProductosDeCategoria(${c.id})">Ver productos</button>
+          <button class="secundario" onclick="eliminarCategoria(${c.id})">Eliminar</button>
+        </div>
       </div>`;
   });
+}
+
+function verProductosDeCategoria(id) {
+  window.location.href = `productos.html?categoria=${id}`;
 }
 
 async function crearCategoria() {

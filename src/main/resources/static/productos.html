@@ -318,8 +318,19 @@ async function toggleActivo(id) {
   }
 }
 
-cargarProductos();
-cargarCategoriasParaSelect();
+async function iniciar() {
+  await Promise.all([cargarProductos(), cargarCategoriasParaSelect()]);
+
+  // Si se llego desde "Ver productos" de una categoria (categorias.html),
+  // preseleccionamos ese filtro
+  const idCategoria = new URLSearchParams(window.location.search).get("categoria");
+  if (idCategoria) {
+    document.getElementById("filtroCategoria").value = idCategoria;
+    filtrarProductos();
+  }
+}
+
+iniciar();
 </script>
 
 </body>
