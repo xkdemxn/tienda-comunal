@@ -89,6 +89,12 @@ function mostrarMensajeEn(divId, texto, tipo) {
 // especificamente la ultra angular, telefoto, macro, etc. — nunca la lente
 // principal (que en iPhones de 3 camaras se llama justamente "Back Wide
 // Camera", por eso NO se excluye "wide" a secas, solo "ultra wide").
+//
+// En Android, Chrome suele exponer etiquetas genericas sin pistas del tipo de
+// lente (ej: "camera 0, facing back", "camera 2, facing back"). Ahi se usa la
+// convencion de Android: la camara trasera principal casi siempre tiene el
+// indice numerico mas bajo; las lentes extra (angular, macro, tele) quedan
+// con indices mas altos.
 async function obtenerCamaraTrasera() {
   try {
     const camaras = await Html5Qrcode.getCameras();
@@ -101,8 +107,16 @@ async function obtenerCamaraTrasera() {
     const candidatas = traseras.length > 0 ? traseras : camaras;
 
     const esOtraLente = c => /ultra.?wide|ultra.?angular|gran.?angular|tele(photo)?|macro|dual|triple/i.test(c.label);
-    const normal = candidatas.find(c => !esOtraLente(c));
-    const elegida = normal || candidatas[0];
+    const sinOtraLente = candidatas.filter(c => !esOtraLente(c));
+    const base = sinOtraLente.length > 0 ? sinOtraLente : candidatas;
+
+    const indiceDe = c => {
+      const match = c.label.match(/(\d+)/);
+      return match ? parseInt(match[1], 10) : 0;
+    };
+    const ordenadas = [...base].sort((a, b) => indiceDe(a) - indiceDe(b));
+    const elegida = ordenadas[0];
+
     alert("DEBUG todas: " + camaras.map(c => c.label).join(" | ") + "\nDEBUG elegida: " + elegida.label); // TEMPORAL
     return elegida.id;
   } catch (e) {
