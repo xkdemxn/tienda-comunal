@@ -84,12 +84,6 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Utilidad para llamar API externa de tasa de cambio -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-webflux</artifactId>
-        </dependency>
-
         <!-- Permite a Jackson serializar entidades con relaciones @ManyToOne/@OneToMany
              cargadas de forma perezosa (lazy) sin lanzar error cuando el proxy
              de Hibernate aun no fue inicializado -->

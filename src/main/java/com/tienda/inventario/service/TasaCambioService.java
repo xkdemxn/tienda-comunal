@@ -5,9 +5,10 @@ import com.tienda.inventario.repository.TasaCambioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -21,6 +22,10 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+// @Lazy(false): con spring.main.lazy-initialization=true este bean no se
+// crearia hasta que algo lo pidiera, y su metodo @Scheduled nunca llegaria
+// a registrarse. Se fuerza a que se inicialice igual al arrancar.
+@Lazy(false)
 public class TasaCambioService {
 
     private final TasaCambioRepository tasaCambioRepository;
@@ -31,7 +36,13 @@ public class TasaCambioService {
     @Value("${app.exchangerate.moneda-base}")
     private String monedaBase;
 
-    private final WebClient webClient = WebClient.builder().build();
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    // Limite de la columna tasas_cambio.tasa (precision 12, escala 6): el valor
+    // absoluto debe ser menor a 10^6. Algunas monedas hiperinflacionadas que
+    // devuelve la API superan eso, se descartan en vez de tumbar el guardado
+    // de las demas.
+    private static final BigDecimal LIMITE_TASA = BigDecimal.valueOf(999_999);
 
     /**
      * Se ejecuta cada 6 horas. Ajusta la frecuencia segun lo que necesites;
@@ -41,11 +52,7 @@ public class TasaCambioService {
     public void actualizarTasas() {
         try {
             @SuppressWarnings("unchecked")
-            Map<String, Object> respuesta = webClient.get()
-                    .uri(apiUrl)
-                    .retrieve()
-                    .bodyToMono(Map.class)
-                    .block();
+            Map<String, Object> respuesta = restTemplate.getForObject(apiUrl, Map.class);
 
             if (respuesta == null || !respuesta.containsKey("rates")) {
                 log.warn("Respuesta invalida de la API de tasas de cambio");
@@ -54,13 +61,23 @@ public class TasaCambioService {
 
             @SuppressWarnings("unchecked")
             Map<String, Object> rates = (Map<String, Object>) respuesta.get("rates");
+            int guardadas = 0;
 
-            rates.forEach((moneda, valor) -> {
-                BigDecimal tasa = new BigDecimal(valor.toString());
-                guardarTasa(monedaBase, moneda, tasa);
-            });
+            for (Map.Entry<String, Object> entry : rates.entrySet()) {
+                try {
+                    BigDecimal tasa = new BigDecimal(entry.getValue().toString());
+                    if (tasa.abs().compareTo(LIMITE_TASA) >= 0) {
+                        continue; // moneda con tasa fuera de rango, se omite
+                    }
+                    guardarTasa(monedaBase, entry.getKey(), tasa);
+                    guardadas++;
+                } catch (Exception e) {
+                    // Una moneda con formato invalido no debe tumbar el resto del lote
+                    log.warn("No se pudo guardar la tasa de {}: {}", entry.getKey(), e.getMessage());
+                }
+            }
 
-            log.info("Tasas de cambio actualizadas correctamente ({} monedas)", rates.size());
+            log.info("Tasas de cambio actualizadas correctamente ({} monedas)", guardadas);
         } catch (Exception e) {
             log.error("Error al actualizar tasas de cambio: {}", e.getMessage());
             // No relanzamos la excepcion: si falla, el sistema sigue usando
