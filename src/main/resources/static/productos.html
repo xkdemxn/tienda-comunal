@@ -38,6 +38,10 @@
 
       <div class="card">
         <input type="text" id="buscarProducto" placeholder="Buscar por nombre..." oninput="filtrarProductos()">
+        <select id="filtroCategoria" onchange="filtrarProductos()">
+          <option value="todas">Todas las categorias</option>
+          <option value="sin-categoria">Sin categoria</option>
+        </select>
         <div id="mensajeProductos"></div>
         <div id="listaProductos">Cargando productos...</div>
       </div>
@@ -105,13 +109,15 @@ let productoEditandoId = null;
 async function cargarCategoriasParaSelect() {
   try {
     categorias = await apiFetch("/categorias");
-    const select = document.getElementById("editCategoria");
-    categorias.forEach(c => {
-      const opcion = document.createElement("option");
-      opcion.value = c.id;
-      opcion.innerText = c.nombre;
-      select.appendChild(opcion);
-    });
+    [document.getElementById("editCategoria"), document.getElementById("filtroCategoria")]
+      .forEach(select => {
+        categorias.forEach(c => {
+          const opcion = document.createElement("option");
+          opcion.value = c.id;
+          opcion.innerText = c.nombre;
+          select.appendChild(opcion);
+        });
+      });
   } catch (e) {
     // sin categorias no bloqueamos el flujo
   }
@@ -129,7 +135,20 @@ async function cargarProductos() {
 
 function filtrarProductos() {
   const texto = document.getElementById("buscarProducto").value.toLowerCase();
-  renderProductos(productos.filter(p => p.nombre.toLowerCase().includes(texto)));
+  const filtroCategoria = document.getElementById("filtroCategoria").value;
+
+  const filtrados = productos.filter(p => {
+    const coincideNombre = p.nombre.toLowerCase().includes(texto);
+    let coincideCategoria = true;
+    if (filtroCategoria === "sin-categoria") {
+      coincideCategoria = !p.categoria;
+    } else if (filtroCategoria !== "todas") {
+      coincideCategoria = p.categoria && String(p.categoria.id) === filtroCategoria;
+    }
+    return coincideNombre && coincideCategoria;
+  });
+
+  renderProductos(filtrados);
 }
 
 function renderProductos(lista) {
@@ -145,11 +164,12 @@ function renderProductos(lista) {
       ? ` · caja de ${p.unidadesPorCaja}: ${p.codigoBarrasCaja}`
       : "";
     const inactivo = p.activo ? "" : ` · <span style="color:var(--danger)">inactivo</span>`;
+    const categoriaTexto = p.categoria ? `${p.categoria.nombre} · ` : "";
     div.innerHTML += `
       <div class="item">
         <div>
           ${p.nombre}
-          <small>${p.codigoBarras}${infoCaja}${inactivo}</small>
+          <small>${categoriaTexto}${p.codigoBarras}${infoCaja}${inactivo}</small>
         </div>
         <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end">
           <span class="badge ${bajo ? "bajo" : "ok"}">${p.stockActual} en stock</span>
