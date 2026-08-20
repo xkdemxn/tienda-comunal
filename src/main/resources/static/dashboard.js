@@ -86,7 +86,9 @@ function mostrarMensajeEn(divId, texto, tipo) {
 // facingMode: "environment" solo pide "alguna camara trasera": en iPhones con
 // varias lentes, desde iOS 16.4 hay un bug de WebKit que a veces elige la
 // ultra angular en vez de la normal. Por eso enumeramos las camaras y evitamos
-// las que digan ultra/wide/angular/tele/dual/triple en su nombre.
+// especificamente la ultra angular, telefoto, macro, etc. — nunca la lente
+// principal (que en iPhones de 3 camaras se llama justamente "Back Wide
+// Camera", por eso NO se excluye "wide" a secas, solo "ultra wide").
 async function obtenerCamaraTrasera() {
   try {
     const camaras = await Html5Qrcode.getCameras();
@@ -95,7 +97,8 @@ async function obtenerCamaraTrasera() {
     const traseras = camaras.filter(c => /back|trasera|rear|environment/i.test(c.label));
     const candidatas = traseras.length > 0 ? traseras : camaras;
 
-    const normal = candidatas.find(c => !/ultra|wide|angular|tele|dual|triple/i.test(c.label));
+    const esOtraLente = c => /ultra.?wide|ultra.?angular|gran.?angular|tele(photo)?|macro|dual|triple/i.test(c.label);
+    const normal = candidatas.find(c => !esOtraLente(c));
     return (normal || candidatas[0]).id;
   } catch (e) {
     // Sin permiso o sin poder enumerar: volvemos al comportamiento por defecto
