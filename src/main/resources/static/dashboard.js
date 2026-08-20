@@ -81,3 +81,24 @@ function mostrarMensajeEn(divId, texto, tipo) {
   div.innerHTML = `<div class="msg ${tipo}">${texto}</div>`;
   setTimeout(() => { div.innerHTML = ""; }, 2500);
 }
+
+// ---------- CAMARA: elegir la lente trasera "normal" (1x) ----------
+// facingMode: "environment" solo pide "alguna camara trasera": en iPhones con
+// varias lentes, desde iOS 16.4 hay un bug de WebKit que a veces elige la
+// ultra angular en vez de la normal. Por eso enumeramos las camaras y evitamos
+// las que digan ultra/wide/angular/tele/dual/triple en su nombre.
+async function obtenerCamaraTrasera() {
+  try {
+    const camaras = await Html5Qrcode.getCameras();
+    if (!camaras || camaras.length === 0) return { facingMode: "environment" };
+
+    const traseras = camaras.filter(c => /back|trasera|rear|environment/i.test(c.label));
+    const candidatas = traseras.length > 0 ? traseras : camaras;
+
+    const normal = candidatas.find(c => !/ultra|wide|angular|tele|dual|triple/i.test(c.label));
+    return (normal || candidatas[0]).id;
+  } catch (e) {
+    // Sin permiso o sin poder enumerar: volvemos al comportamiento por defecto
+    return { facingMode: "environment" };
+  }
+}

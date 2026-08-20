@@ -130,13 +130,14 @@ async function cargarCategorias() {
 cargarCategorias();
 
 // ---------- CAMARA ----------
-function iniciarCamara() {
+async function iniciarCamara() {
   if (escaneando) return;
   html5QrCode = new Html5Qrcode("reader");
   const config = { fps: 10, qrbox: { width: 250, height: 120 } };
+  const camara = await obtenerCamaraTrasera();
 
   html5QrCode.start(
-    { facingMode: "environment" },
+    camara,
     config,
     onCodigoDetectado,
     () => {}
