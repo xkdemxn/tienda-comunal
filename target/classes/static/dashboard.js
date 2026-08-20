@@ -92,18 +92,21 @@ function mostrarMensajeEn(divId, texto, tipo) {
 async function obtenerCamaraTrasera() {
   try {
     const camaras = await Html5Qrcode.getCameras();
-    console.log("[camara] detectadas:", camaras.map(c => c.label)); // TEMPORAL: quitar despues de diagnosticar
-    if (!camaras || camaras.length === 0) return { facingMode: "environment" };
+    if (!camaras || camaras.length === 0) {
+      alert("DEBUG camaras: ninguna detectada"); // TEMPORAL: quitar despues de diagnosticar
+      return { facingMode: "environment" };
+    }
 
     const traseras = camaras.filter(c => /back|trasera|rear|environment/i.test(c.label));
     const candidatas = traseras.length > 0 ? traseras : camaras;
 
     const esOtraLente = c => /ultra.?wide|ultra.?angular|gran.?angular|tele(photo)?|macro|dual|triple/i.test(c.label);
     const normal = candidatas.find(c => !esOtraLente(c));
-    console.log("[camara] elegida:", (normal || candidatas[0]).label); // TEMPORAL
-    return (normal || candidatas[0]).id;
+    const elegida = normal || candidatas[0];
+    alert("DEBUG todas: " + camaras.map(c => c.label).join(" | ") + "\nDEBUG elegida: " + elegida.label); // TEMPORAL
+    return elegida.id;
   } catch (e) {
-    console.log("[camara] error enumerando, uso facingMode por defecto:", e.message); // TEMPORAL
+    alert("DEBUG error enumerando camaras: " + e.message); // TEMPORAL
     // Sin permiso o sin poder enumerar: volvemos al comportamiento por defecto
     return { facingMode: "environment" };
   }
