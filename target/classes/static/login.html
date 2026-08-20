@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iniciar sesion</title>
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+<div class="login-wrap">
+  <div class="login-box">
+    <h1>📦 Tienda</h1>
+    <div class="card" id="loginCard">
+      <input type="email" id="email" placeholder="Email">
+      <input type="password" id="password" placeholder="Contrasena">
+      <button onclick="login()">Iniciar sesion</button>
+      <div id="loginMsg"></div>
+    </div>
+  </div>
+</div>
+
+<script src="dashboard.js"></script>
+<script>
+// Si ya hay sesion, no tiene sentido mostrar el login de nuevo
+if (getToken()) {
+  window.location.href = "dashboard.html";
+}
+
+async function login() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  const msgDiv = document.getElementById("loginMsg");
+
+  try {
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    if (!res.ok) throw new Error((await res.json()).mensaje || "Error al iniciar sesion");
+
+    const data = await res.json();
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("nombre", data.nombre || "");
+    localStorage.setItem("roles", JSON.stringify(data.roles || []));
+    window.location.href = "dashboard.html";
+  } catch (e) {
+    msgDiv.innerHTML = `<div class="msg error">${e.message}</div>`;
+  }
+}
+</script>
+
+</body>
+</html>

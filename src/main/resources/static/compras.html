@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compras</title>
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+<div class="app">
+  <div id="fondoSidebarMovil" class="fondo-sidebar-movil"></div>
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-header">🏪 Tienda</div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" data-pagina="inicio">Inicio</a>
+      <a href="venta.html" data-pagina="venta">Vender</a>
+      <a href="productos.html" data-pagina="productos" data-solo-admin="1">Productos</a>
+      <a href="categorias.html" data-pagina="categorias" data-solo-admin="1">Categorias</a>
+      <a href="agregar-stock.html" data-pagina="agregar-stock" data-solo-admin="1">Agregar stock</a>
+      <a href="proveedores.html" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
+      <a href="compras.html" data-pagina="compras" data-solo-admin="1">Compras</a>
+      <a href="estadisticas.html" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="nombre" id="sidebarNombre"></div>
+      <div class="rol" id="sidebarRol"></div>
+      <button onclick="logout()">Cerrar sesion</button>
+    </div>
+  </aside>
+
+  <div class="contenido">
+    <div class="topbar">
+      <button id="btnHamburguesa" class="btn-hamburguesa">☰</button>
+      <h1>Compras</h1>
+    </div>
+    <div class="pagina">
+
+      <div class="card">
+        <h2>Registrar compra a proveedor</h2>
+        <label class="campo">Proveedor</label>
+        <select id="proveedorId">
+          <option value="">Selecciona un proveedor</option>
+        </select>
+
+        <label class="campo">Buscar producto para agregar</label>
+        <input type="text" id="buscarProductoCompra" placeholder="Buscar por nombre..." oninput="buscarProductoCompra()">
+        <div id="resultadosBusquedaCompra"></div>
+      </div>
+
+      <div class="card">
+        <strong>Items de la compra</strong>
+        <div id="itemsCompra"><p style="color:var(--muted)">Sin items todavia</p></div>
+        <div class="item" style="border-bottom:none; font-weight:700">
+          <div>Total</div>
+          <div id="totalCompra">$0.00</div>
+        </div>
+        <div id="mensajeCompra"></div>
+        <button onclick="confirmarCompra()">Registrar compra</button>
+      </div>
+
+      <div class="card">
+        <h2>Historial de compras</h2>
+        <div id="historialCompras">Cargando...</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="dashboard.js"></script>
+<script>
+initSidebar("compras");
+
+let carritoCompra = []; // { codigoBarras, nombre, cantidad, costoUnitario }
+let temporizadorBusquedaCompra;
+let resultadosBusqueda = [];
+
+async function cargarProveedores() {
+  try {
+    const proveedores = await apiFetch("/proveedores");
+    const select = document.getElementById("proveedorId");
+    proveedores.forEach(p => {
+      const opcion = document.createElement("option");
+      opcion.value = p.id;
+      opcion.innerText = p.nombre;
+      select.appendChild(opcion);
+    });
+  } catch (e) {
+    mostrarMensajeEn("mensajeCompra", "No se pudieron cargar los proveedores", "error");
+  }
+}
+
+function buscarProductoCompra() {
+  clearTimeout(temporizadorBusquedaCompra);
+  const texto = document.getElementById("buscarProductoCompra").value.trim();
+  const div = document.getElementById("resultadosBusquedaCompra");
+
+  if (texto.length < 2) {
+    div.innerHTML = "";
+    return;
+  }
+
+  temporizadorBusquedaCompra = setTimeout(async () => {
+    try {
+      resultadosBusqueda = await apiFetch(`/productos/buscar?nombre=${encodeURIComponent(texto)}`);
+      if (resultadosBusqueda.length === 0) {
+        div.innerHTML = `<p style="color:var(--muted); font-size:13px">Sin resultados</p>`;
+        return;
+      }
+      div.innerHTML = "";
+      resultadosBusqueda.forEach(p => {
+        div.innerHTML += `
+          <div class="item">
+            <div>${p.nombre}<small>Stock actual: ${p.stockActual}</small></div>
+            <button onclick="agregarItemCompra(${p.id})">Agregar</button>
+          </div>`;
+      });
+    } catch (e) {
+      div.innerHTML = `<div class="msg error">${e.message}</div>`;
+    }
+  }, 300);
+}
+
+function agregarItemCompra(id) {
+  const p = resultadosBusqueda.find(x => x.id === id);
+  if (!p) return;
+
+  const existente = carritoCompra.find(i => i.codigoBarras === p.codigoBarras);
+  if (existente) {
+    existente.cantidad += 1;
+  } else {
+    carritoCompra.push({
+      codigoBarras: p.codigoBarras,
+      nombre: p.nombre,
+      cantidad: 1,
+      costoUnitario: p.precioCompra || 0
+    });
+  }
+  document.getElementById("buscarProductoCompra").value = "";
+  document.getElementById("resultadosBusquedaCompra").innerHTML = "";
+  renderCarritoCompra();
+}
+
+function actualizarItemCompra(idx, campo, valor) {
+  const numero = parseFloat(valor);
+  carritoCompra[idx][campo] = isNaN(numero) ? 0 : numero;
+  renderCarritoCompra();
+}
+
+function quitarItemCompra(idx) {
+  carritoCompra.splice(idx, 1);
+  renderCarritoCompra();
+}
+
+function renderCarritoCompra() {
+  const div = document.getElementById("itemsCompra");
+  if (carritoCompra.length === 0) {
+    div.innerHTML = `<p style="color:var(--muted)">Sin items todavia</p>`;
+    document.getElementById("totalCompra").innerText = "$0.00";
+    return;
+  }
+
+  let total = 0;
+  div.innerHTML = "";
+  carritoCompra.forEach((item, idx) => {
+    const subtotal = item.cantidad * item.costoUnitario;
+    total += subtotal;
+    div.innerHTML += `
+      <div class="item">
+        <div style="flex:1">
+          ${item.nombre}
+          <div style="display:flex; gap:6px; margin-top:6px">
+            <input type="number" min="1" value="${item.cantidad}" style="margin-bottom:0"
+                   onchange="actualizarItemCompra(${idx}, 'cantidad', this.value)">
+            <input type="number" min="0" step="0.01" value="${item.costoUnitario}" style="margin-bottom:0"
+                   onchange="actualizarItemCompra(${idx}, 'costoUnitario', this.value)">
+          </div>
+        </div>
+        <div style="text-align:right">
+          $${subtotal.toFixed(2)}
+          <button class="secundario" style="width:auto; padding:4px 8px; margin-top:6px"
+                  onclick="quitarItemCompra(${idx})">✕</button>
+        </div>
+      </div>`;
+  });
+  document.getElementById("totalCompra").innerText = `$${total.toFixed(2)}`;
+}
+
+async function confirmarCompra() {
+  const proveedorId = document.getElementById("proveedorId").value;
+
+  if (!proveedorId) {
+    mostrarMensajeEn("mensajeCompra", "Selecciona un proveedor", "error");
+    return;
+  }
+  if (carritoCompra.length === 0) {
+    mostrarMensajeEn("mensajeCompra", "Agrega al menos un producto", "error");
+    return;
+  }
+
+  const body = {
+    proveedorId: parseInt(proveedorId, 10),
+    items: carritoCompra.map(i => ({
+      codigoBarras: i.codigoBarras,
+      cantidad: i.cantidad,
+      costoUnitario: i.costoUnitario
+    }))
+  };
+
+  try {
+    await apiFetch("/compras", { method: "POST", body: JSON.stringify(body) });
+    mostrarMensajeEn("mensajeCompra", "Compra registrada, stock actualizado", "ok");
+    carritoCompra = [];
+    renderCarritoCompra();
+    await cargarHistorialCompras();
+  } catch (e) {
+    mostrarMensajeEn("mensajeCompra", e.message, "error");
+  }
+}
+
+async function cargarHistorialCompras() {
+  const div = document.getElementById("historialCompras");
+  try {
+    const compras = await apiFetch("/compras");
+    if (compras.length === 0) {
+      div.innerHTML = `<p style="color:var(--muted)">Sin compras registradas todavia</p>`;
+      return;
+    }
+    div.innerHTML = "";
+    compras.forEach(c => {
+      const items = (c.detalles || [])
+        .map(d => `${d.producto ? d.producto.nombre : "?"} x${d.cantidad}`)
+        .join(", ");
+      const fecha = c.fecha ? new Date(c.fecha).toLocaleString() : "";
+      div.innerHTML += `
+        <div class="item">
+          <div>
+            ${c.proveedor ? c.proveedor.nombre : "Proveedor eliminado"}
+            <small>${fecha}${items ? " · " + items : ""}</small>
+          </div>
+          <strong>$${Number(c.total).toFixed(2)}</strong>
+        </div>`;
+    });
+  } catch (e) {
+    div.innerHTML = `<div class="msg error">${e.message}</div>`;
+  }
+}
+
+cargarProveedores();
+cargarHistorialCompras();
+</script>
+
+</body>
+</html>

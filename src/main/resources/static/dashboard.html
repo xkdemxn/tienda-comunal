@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inicio</title>
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+<div class="app">
+  <div id="fondoSidebarMovil" class="fondo-sidebar-movil"></div>
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-header">🏪 Tienda</div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" data-pagina="inicio">Inicio</a>
+      <a href="venta.html" data-pagina="venta">Vender</a>
+      <a href="productos.html" data-pagina="productos" data-solo-admin="1">Productos</a>
+      <a href="categorias.html" data-pagina="categorias" data-solo-admin="1">Categorias</a>
+      <a href="agregar-stock.html" data-pagina="agregar-stock" data-solo-admin="1">Agregar stock</a>
+      <a href="proveedores.html" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
+      <a href="compras.html" data-pagina="compras" data-solo-admin="1">Compras</a>
+      <a href="estadisticas.html" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="nombre" id="sidebarNombre"></div>
+      <div class="rol" id="sidebarRol"></div>
+      <button onclick="logout()">Cerrar sesion</button>
+    </div>
+  </aside>
+
+  <div class="contenido">
+    <div class="topbar">
+      <button id="btnHamburguesa" class="btn-hamburguesa">☰</button>
+      <h1>Inicio</h1>
+    </div>
+    <div class="pagina">
+
+      <div id="mensajeInicio"></div>
+
+      <div class="stat-grid" id="statGrid">
+        <div class="stat-card">
+          <div class="etiqueta">Cargando...</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Accesos directos</h2>
+        <div class="tile-grid">
+          <a class="tile" href="venta.html">🛒 Vender<small>Escanear y cobrar</small></a>
+          <a class="tile" href="productos.html" data-solo-admin="1">📦 Productos<small>Ver, editar, stock</small></a>
+          <a class="tile" href="agregar-stock.html" data-solo-admin="1">➕ Agregar stock<small>Escanear entradas</small></a>
+          <a class="tile" href="compras.html" data-solo-admin="1">🧾 Compras<small>Registrar a proveedor</small></a>
+          <a class="tile" href="proveedores.html" data-solo-admin="1">🚚 Proveedores<small>Gestionar</small></a>
+          <a class="tile" href="categorias.html" data-solo-admin="1">📁 Categorias<small>Gestionar</small></a>
+          <a class="tile" href="estadisticas.html" data-solo-admin="1">📊 Estadisticas<small>Reportes de venta</small></a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="dashboard.js"></script>
+<script>
+initSidebar("inicio");
+
+document.querySelectorAll(".tile[data-solo-admin]").forEach(a => {
+  if (!esAdmin()) a.classList.add("oculto");
+});
+
+function fechaISO(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+async function cargarInicio() {
+  const grid = document.getElementById("statGrid");
+  const tarjetas = [];
+
+  try {
+    const productos = await apiFetch("/productos");
+    const activos = productos.filter(p => p.activo).length;
+    tarjetas.push({ etiqueta: "Productos activos", valor: activos });
+  } catch (e) {
+    // si falla, simplemente no se muestra esa tarjeta
+  }
+
+  try {
+    const stockBajo = await apiFetch("/productos/stock-bajo");
+    tarjetas.push({ etiqueta: "Con stock bajo", valor: stockBajo.length });
+  } catch (e) {}
+
+  if (esAdmin()) {
+    try {
+      const hoy = fechaISO(new Date());
+      const reporte = await apiFetch(`/reportes/ventas?desde=${hoy}T00:00:00&hasta=${hoy}T23:59:59`);
+      tarjetas.push({ etiqueta: "Ventas de hoy", valor: `$${Number(reporte.totalVendido).toFixed(2)}` });
+      tarjetas.push({ etiqueta: "Cantidad de ventas hoy", valor: reporte.cantidadVentas });
+    } catch (e) {}
+  }
+
+  if (tarjetas.length === 0) {
+    mostrarMensajeEn("mensajeInicio", "No se pudieron cargar las estadisticas", "error");
+    grid.innerHTML = "";
+    return;
+  }
+
+  grid.innerHTML = tarjetas.map(t => `
+    <div class="stat-card">
+      <div class="etiqueta">${t.etiqueta}</div>
+      <div class="valor">${t.valor}</div>
+    </div>`).join("");
+}
+
+cargarInicio();
+</script>
+
+</body>
+</html>

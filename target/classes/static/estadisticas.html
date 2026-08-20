@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estadisticas</title>
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+<div class="app">
+  <div id="fondoSidebarMovil" class="fondo-sidebar-movil"></div>
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-header">🏪 Tienda</div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" data-pagina="inicio">Inicio</a>
+      <a href="venta.html" data-pagina="venta">Vender</a>
+      <a href="productos.html" data-pagina="productos" data-solo-admin="1">Productos</a>
+      <a href="categorias.html" data-pagina="categorias" data-solo-admin="1">Categorias</a>
+      <a href="agregar-stock.html" data-pagina="agregar-stock" data-solo-admin="1">Agregar stock</a>
+      <a href="proveedores.html" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
+      <a href="compras.html" data-pagina="compras" data-solo-admin="1">Compras</a>
+      <a href="estadisticas.html" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="nombre" id="sidebarNombre"></div>
+      <div class="rol" id="sidebarRol"></div>
+      <button onclick="logout()">Cerrar sesion</button>
+    </div>
+  </aside>
+
+  <div class="contenido">
+    <div class="topbar">
+      <button id="btnHamburguesa" class="btn-hamburguesa">☰</button>
+      <h1>Estadisticas</h1>
+    </div>
+    <div class="pagina">
+
+      <div class="card">
+        <label class="campo">Desde</label>
+        <input type="date" id="statsDesde">
+        <label class="campo">Hasta</label>
+        <input type="date" id="statsHasta">
+        <button onclick="cargarEstadisticas()">Consultar</button>
+      </div>
+
+      <div id="statsResultado"></div>
+
+    </div>
+  </div>
+</div>
+
+<script src="dashboard.js"></script>
+<script>
+initSidebar("estadisticas");
+
+function fechaHoyISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function prepararFechasStats() {
+  const hasta = document.getElementById("statsHasta");
+  const desde = document.getElementById("statsDesde");
+  if (!hasta.value) hasta.value = fechaHoyISO();
+  if (!desde.value) {
+    const hace30 = new Date();
+    hace30.setDate(hace30.getDate() - 30);
+    desde.value = hace30.toISOString().slice(0, 10);
+  }
+}
+
+async function cargarEstadisticas() {
+  prepararFechasStats();
+  const desde = `${document.getElementById("statsDesde").value}T00:00:00`;
+  const hasta = `${document.getElementById("statsHasta").value}T23:59:59`;
+  const div = document.getElementById("statsResultado");
+  div.innerHTML = `<p style="color:var(--muted)">Cargando...</p>`;
+
+  try {
+    const r = await apiFetch(`/reportes/ventas?desde=${desde}&hasta=${hasta}`);
+
+    let html = `
+      <div class="card">
+        <div class="item"><div>Total vendido</div><strong>$${Number(r.totalVendido).toFixed(2)}</strong></div>
+        <div class="item"><div>Cantidad de ventas</div><strong>${r.cantidadVentas}</strong></div>
+      </div>
+      <div class="card">
+        <h2>Mas vendidos</h2>`;
+
+    const masVendidos = Object.entries(r.productosMasVendidos || {});
+    if (masVendidos.length === 0) {
+      html += `<p style="color:var(--muted)">Sin ventas en este rango</p>`;
+    } else {
+      masVendidos.forEach(([nombre, cantidad]) => {
+        html += `<div class="item"><div>${nombre}</div><strong>${cantidad}</strong></div>`;
+      });
+    }
+    html += `</div><div class="card"><h2>Stock bajo</h2>`;
+
+    if (!r.productosStockBajo || r.productosStockBajo.length === 0) {
+      html += `<p style="color:var(--muted)">Ningun producto con stock bajo</p>`;
+    } else {
+      r.productosStockBajo.forEach(p => {
+        html += `
+          <div class="item">
+            <div>${p.nombre}<small>${p.codigoBarras}</small></div>
+            <span class="badge bajo">${p.stockActual}/${p.stockMinimo}</span>
+          </div>`;
+      });
+    }
+    html += `</div>`;
+
+    div.innerHTML = html;
+  } catch (e) {
+    div.innerHTML = `<div class="msg error">${e.message}</div>`;
+  }
+}
+
+cargarEstadisticas();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proveedores</title>
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+<div class="app">
+  <div id="fondoSidebarMovil" class="fondo-sidebar-movil"></div>
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-header">🏪 Tienda</div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" data-pagina="inicio">Inicio</a>
+      <a href="venta.html" data-pagina="venta">Vender</a>
+      <a href="productos.html" data-pagina="productos" data-solo-admin="1">Productos</a>
+      <a href="categorias.html" data-pagina="categorias" data-solo-admin="1">Categorias</a>
+      <a href="agregar-stock.html" data-pagina="agregar-stock" data-solo-admin="1">Agregar stock</a>
+      <a href="proveedores.html" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
+      <a href="compras.html" data-pagina="compras" data-solo-admin="1">Compras</a>
+      <a href="estadisticas.html" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="nombre" id="sidebarNombre"></div>
+      <div class="rol" id="sidebarRol"></div>
+      <button onclick="logout()">Cerrar sesion</button>
+    </div>
+  </aside>
+
+  <div class="contenido">
+    <div class="topbar">
+      <button id="btnHamburguesa" class="btn-hamburguesa">☰</button>
+      <h1>Proveedores</h1>
+    </div>
+    <div class="pagina">
+
+      <div class="card">
+        <h2>Nuevo proveedor</h2>
+        <input type="text" id="nuevoNombre" placeholder="Nombre">
+        <input type="text" id="nuevoTelefono" placeholder="Telefono (opcional)">
+        <input type="email" id="nuevoEmail" placeholder="Email (opcional)">
+        <input type="text" id="nuevaDireccion" placeholder="Direccion (opcional)">
+        <button onclick="crearProveedor()">Agregar proveedor</button>
+      </div>
+
+      <div class="card">
+        <div id="mensajeProveedores"></div>
+        <div id="listaProveedores">Cargando proveedores...</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="dashboard.js"></script>
+<script>
+initSidebar("proveedores");
+
+let proveedores = [];
+
+async function cargarProveedores() {
+  const div = document.getElementById("listaProveedores");
+  try {
+    proveedores = await apiFetch("/proveedores");
+    renderProveedores();
+  } catch (e) {
+    div.innerHTML = `<div class="msg error">${e.message}</div>`;
+  }
+}
+
+function renderProveedores() {
+  const div = document.getElementById("listaProveedores");
+  if (proveedores.length === 0) {
+    div.innerHTML = `<p style="color:var(--muted)">Sin proveedores todavia</p>`;
+    return;
+  }
+  div.innerHTML = "";
+  proveedores.forEach(p => {
+    const contacto = [p.telefono, p.email, p.direccion].filter(Boolean).join(" · ");
+    div.innerHTML += `
+      <div class="item">
+        <div>${p.nombre}<small>${contacto || "Sin datos de contacto"}</small></div>
+        <button class="secundario" onclick="eliminarProveedor(${p.id})">Eliminar</button>
+      </div>`;
+  });
+}
+
+async function crearProveedor() {
+  const nombre = document.getElementById("nuevoNombre").value.trim();
+  const telefono = document.getElementById("nuevoTelefono").value.trim();
+  const email = document.getElementById("nuevoEmail").value.trim();
+  const direccion = document.getElementById("nuevaDireccion").value.trim();
+
+  if (!nombre) {
+    mostrarMensajeEn("mensajeProveedores", "Falta el nombre del proveedor", "error");
+    return;
+  }
+
+  try {
+    await apiFetch("/proveedores", {
+      method: "POST",
+      body: JSON.stringify({
+        nombre,
+        telefono: telefono || null,
+        email: email || null,
+        direccion: direccion || null
+      })
+    });
+    ["nuevoNombre", "nuevoTelefono", "nuevoEmail", "nuevaDireccion"].forEach(id => {
+      document.getElementById(id).value = "";
+    });
+    mostrarMensajeEn("mensajeProveedores", "Proveedor creado", "ok");
+    await cargarProveedores();
+  } catch (e) {
+    mostrarMensajeEn("mensajeProveedores", e.message, "error");
+  }
+}
+
+async function eliminarProveedor(id) {
+  if (!confirm("¿Eliminar este proveedor? Si tiene compras registradas, no se va a poder eliminar.")) return;
+
+  try {
+    await apiFetch(`/proveedores/${id}`, { method: "DELETE" });
+    mostrarMensajeEn("mensajeProveedores", "Proveedor eliminado", "ok");
+    await cargarProveedores();
+  } catch (e) {
+    mostrarMensajeEn("mensajeProveedores", e.message, "error");
+  }
+}
+
+cargarProveedores();
+</script>
+
+</body>
+</html>

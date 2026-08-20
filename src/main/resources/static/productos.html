@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Productos</title>
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+<div class="app">
+  <div id="fondoSidebarMovil" class="fondo-sidebar-movil"></div>
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-header">🏪 Tienda</div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" data-pagina="inicio">Inicio</a>
+      <a href="venta.html" data-pagina="venta">Vender</a>
+      <a href="productos.html" data-pagina="productos" data-solo-admin="1">Productos</a>
+      <a href="categorias.html" data-pagina="categorias" data-solo-admin="1">Categorias</a>
+      <a href="agregar-stock.html" data-pagina="agregar-stock" data-solo-admin="1">Agregar stock</a>
+      <a href="proveedores.html" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
+      <a href="compras.html" data-pagina="compras" data-solo-admin="1">Compras</a>
+      <a href="estadisticas.html" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="nombre" id="sidebarNombre"></div>
+      <div class="rol" id="sidebarRol"></div>
+      <button onclick="logout()">Cerrar sesion</button>
+    </div>
+  </aside>
+
+  <div class="contenido">
+    <div class="topbar">
+      <button id="btnHamburguesa" class="btn-hamburguesa">☰</button>
+      <h1>Productos</h1>
+    </div>
+    <div class="pagina">
+
+      <div class="card">
+        <input type="text" id="buscarProducto" placeholder="Buscar por nombre..." oninput="filtrarProductos()">
+        <div id="mensajeProductos"></div>
+        <div id="listaProductos">Cargando productos...</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal para ver/imprimir el codigo de barras -->
+<div id="modalFondo" class="modal-fondo oculto" onclick="cerrarModalSiFondo(event)">
+  <div class="modal">
+    <img id="modalImagen" alt="Codigo de barras">
+    <button onclick="imprimirCodigo()">Imprimir</button>
+    <button class="secundario" onclick="cerrarModal()">Cerrar</button>
+  </div>
+</div>
+
+<!-- Modal para editar un producto existente -->
+<div id="modalEditarFondo" class="modal-fondo oculto" onclick="cerrarModalEditarSiFondo(event)">
+  <div class="modal" style="text-align:left; max-height:85vh; overflow-y:auto">
+    <h2>Editar producto</h2>
+
+    <label class="campo">Codigo de barras (no editable)</label>
+    <input type="text" id="editCodigoBarras" readonly>
+
+    <label class="campo">Nombre</label>
+    <input type="text" id="editNombre">
+
+    <label class="campo">Categoria</label>
+    <select id="editCategoria">
+      <option value="">Sin categoria</option>
+    </select>
+
+    <label class="campo">Descripcion (opcional)</label>
+    <input type="text" id="editDescripcion">
+
+    <label class="campo">Precio de venta</label>
+    <input type="number" id="editPrecioVenta" step="0.01" min="0">
+
+    <label class="campo">Precio de compra (opcional)</label>
+    <input type="number" id="editPrecioCompra" step="0.01" min="0">
+
+    <label class="campo">Stock minimo</label>
+    <input type="number" id="editStockMinimo" min="0">
+
+    <label class="campo">Codigo de barras de la caja (opcional)</label>
+    <input type="text" id="editCodigoCaja">
+
+    <label class="campo">Unidades por caja</label>
+    <input type="number" id="editUnidadesPorCaja" min="1">
+
+    <button onclick="guardarEdicionProducto()">Guardar cambios</button>
+    <button class="secundario" onclick="cerrarModalEditar()">Cancelar</button>
+  </div>
+</div>
+
+<script src="dashboard.js"></script>
+<script>
+initSidebar("productos");
+
+let productos = [];
+let categorias = [];
+let productoEditandoId = null;
+
+async function cargarCategoriasParaSelect() {
+  try {
+    categorias = await apiFetch("/categorias");
+    const select = document.getElementById("editCategoria");
+    categorias.forEach(c => {
+      const opcion = document.createElement("option");
+      opcion.value = c.id;
+      opcion.innerText = c.nombre;
+      select.appendChild(opcion);
+    });
+  } catch (e) {
+    // sin categorias no bloqueamos el flujo
+  }
+}
+
+async function cargarProductos() {
+  const div = document.getElementById("listaProductos");
+  try {
+    productos = await apiFetch("/productos");
+    renderProductos(productos);
+  } catch (e) {
+    div.innerHTML = `<div class="msg error">${e.message}</div>`;
+  }
+}
+
+function filtrarProductos() {
+  const texto = document.getElementById("buscarProducto").value.toLowerCase();
+  renderProductos(productos.filter(p => p.nombre.toLowerCase().includes(texto)));
+}
+
+function renderProductos(lista) {
+  const div = document.getElementById("listaProductos");
+  if (lista.length === 0) {
+    div.innerHTML = `<p style="color:var(--muted)">Sin productos</p>`;
+    return;
+  }
+  div.innerHTML = "";
+  lista.forEach(p => {
+    const bajo = p.stockActual <= p.stockMinimo;
+    const infoCaja = p.codigoBarrasCaja
+      ? ` · caja de ${p.unidadesPorCaja}: ${p.codigoBarrasCaja}`
+      : "";
+    const inactivo = p.activo ? "" : ` · <span style="color:var(--danger)">inactivo</span>`;
+    div.innerHTML += `
+      <div class="item">
+        <div>
+          ${p.nombre}
+          <small>${p.codigoBarras}${infoCaja}${inactivo}</small>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end">
+          <span class="badge ${bajo ? "bajo" : "ok"}">${p.stockActual} en stock</span>
+          <button onclick="verCodigoBarras(${p.id})">Ver</button>
+          <button class="secundario" onclick="abrirEditar(${p.id})">Editar</button>
+          <button class="secundario" onclick="toggleActivo(${p.id})">${p.activo ? "Desactivar" : "Activar"}</button>
+        </div>
+      </div>`;
+  });
+}
+
+async function verCodigoBarras(id) {
+  try {
+    const res = await fetch(`${API_BASE}/productos/${id}/codigo-barras`, {
+      headers: { "Authorization": `Bearer ${getToken()}` }
+    });
+    if (!res.ok) throw new Error("No se pudo generar el codigo de barras");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    document.getElementById("modalImagen").src = url;
+    document.getElementById("modalFondo").classList.remove("oculto");
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+function cerrarModal() {
+  document.getElementById("modalFondo").classList.add("oculto");
+}
+
+function cerrarModalSiFondo(event) {
+  if (event.target.id === "modalFondo") cerrarModal();
+}
+
+function imprimirCodigo() {
+  const src = document.getElementById("modalImagen").src;
+  const ventana = window.open("", "_blank");
+  ventana.document.write(`<img src="${src}" style="width:100%" onload="window.print()">`);
+}
+
+// ---------- EDITAR / ACTIVAR-DESACTIVAR ----------
+function abrirEditar(id) {
+  const p = productos.find(x => x.id === id);
+  if (!p) return;
+  productoEditandoId = id;
+  document.getElementById("editCodigoBarras").value = p.codigoBarras;
+  document.getElementById("editNombre").value = p.nombre;
+  document.getElementById("editCategoria").value = p.categoria ? p.categoria.id : "";
+  document.getElementById("editDescripcion").value = p.descripcion || "";
+  document.getElementById("editPrecioVenta").value = p.precioVenta;
+  document.getElementById("editPrecioCompra").value = p.precioCompra || "";
+  document.getElementById("editStockMinimo").value = p.stockMinimo;
+  document.getElementById("editCodigoCaja").value = p.codigoBarrasCaja || "";
+  document.getElementById("editUnidadesPorCaja").value = p.unidadesPorCaja || "";
+  document.getElementById("modalEditarFondo").classList.remove("oculto");
+}
+
+function cerrarModalEditar() {
+  document.getElementById("modalEditarFondo").classList.add("oculto");
+  productoEditandoId = null;
+}
+
+function cerrarModalEditarSiFondo(event) {
+  if (event.target.id === "modalEditarFondo") cerrarModalEditar();
+}
+
+async function guardarEdicionProducto() {
+  const p = productos.find(x => x.id === productoEditandoId);
+  if (!p) return;
+
+  const nombre = document.getElementById("editNombre").value.trim();
+  const precioVenta = parseFloat(document.getElementById("editPrecioVenta").value);
+  const precioCompraTexto = document.getElementById("editPrecioCompra").value;
+  const stockMinimo = parseInt(document.getElementById("editStockMinimo").value, 10);
+  const categoriaId = document.getElementById("editCategoria").value;
+  const codigoCaja = document.getElementById("editCodigoCaja").value.trim();
+  const unidadesPorCajaTexto = document.getElementById("editUnidadesPorCaja").value;
+
+  if (!nombre) {
+    mostrarMensajeEn("mensajeProductos", "Falta el nombre", "error");
+    return;
+  }
+  if (!precioVenta || precioVenta <= 0) {
+    mostrarMensajeEn("mensajeProductos", "Precio de venta invalido", "error");
+    return;
+  }
+  if (codigoCaja && (!unidadesPorCajaTexto || parseInt(unidadesPorCajaTexto, 10) < 1)) {
+    mostrarMensajeEn("mensajeProductos", "Indica cuantas unidades trae la caja", "error");
+    return;
+  }
+
+  const body = {
+    nombre,
+    descripcion: document.getElementById("editDescripcion").value.trim() || null,
+    precioVenta,
+    precioCompra: precioCompraTexto ? parseFloat(precioCompraTexto) : null,
+    stockMinimo: stockMinimo || 5,
+    categoria: categoriaId ? { id: parseInt(categoriaId, 10) } : null,
+    proveedor: p.proveedor || null,
+    codigoBarrasCaja: codigoCaja || null,
+    unidadesPorCaja: unidadesPorCajaTexto ? parseInt(unidadesPorCajaTexto, 10) : null,
+    activo: p.activo
+  };
+
+  await guardarProducto(productoEditandoId, body, "Producto actualizado");
+  cerrarModalEditar();
+}
+
+async function guardarProducto(id, body, mensajeExito) {
+  try {
+    await apiFetch(`/productos/${id}`, { method: "PUT", body: JSON.stringify(body) });
+    mostrarMensajeEn("mensajeProductos", mensajeExito || "Guardado", "ok");
+    await cargarProductos();
+  } catch (e) {
+    mostrarMensajeEn("mensajeProductos", e.message, "error");
+  }
+}
+
+async function toggleActivo(id) {
+  const p = productos.find(x => x.id === id);
+  if (!p) return;
+
+  if (p.activo) {
+    if (!confirm(`¿Desactivar "${p.nombre}"? No se podra vender ni sumarle stock hasta que lo reactives.`)) return;
+    try {
+      await apiFetch(`/productos/${id}`, { method: "DELETE" });
+      mostrarMensajeEn("mensajeProductos", `"${p.nombre}" desactivado`, "ok");
+      await cargarProductos();
+    } catch (e) {
+      mostrarMensajeEn("mensajeProductos", e.message, "error");
+    }
+  } else {
+    const body = {
+      nombre: p.nombre,
+      descripcion: p.descripcion || null,
+      precioVenta: p.precioVenta,
+      precioCompra: p.precioCompra || null,
+      stockMinimo: p.stockMinimo,
+      categoria: p.categoria || null,
+      proveedor: p.proveedor || null,
+      codigoBarrasCaja: p.codigoBarrasCaja || null,
+      unidadesPorCaja: p.unidadesPorCaja || null,
+      activo: true
+    };
+    await guardarProducto(id, body, `"${p.nombre}" reactivado`);
+  }
+}
+
+cargarProductos();
+cargarCategoriasParaSelect();
+</script>
+
+</body>
+</html>

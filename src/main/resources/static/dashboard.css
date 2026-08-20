@@ -1,0 +1,275 @@
+:root {
+  --bg: #0f172a;
+  --card: #1e293b;
+  --sidebar: #111827;
+  --accent: #22c55e;
+  --accent-dark: #16a34a;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --danger: #ef4444;
+  --border: #334155;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ---------- LAYOUT (sidebar + topbar) ---------- */
+.app {
+  display: flex;
+  min-height: 100vh;
+}
+.sidebar {
+  width: 230px;
+  background: var(--sidebar);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  transform: translateX(0);
+  transition: transform 0.2s ease;
+  z-index: 30;
+}
+.sidebar-header {
+  padding: 20px 16px;
+  font-size: 17px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 8px;
+}
+.sidebar-nav a {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+.sidebar-nav a:hover { background: rgba(255, 255, 255, 0.06); }
+.sidebar-nav a.activo { background: var(--accent); color: #0f172a; font-weight: 600; }
+.sidebar-footer {
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+}
+.sidebar-footer .nombre { font-weight: 600; }
+.sidebar-footer .rol { color: var(--muted); font-size: 12px; margin-bottom: 10px; }
+.sidebar-footer button {
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  margin-bottom: 0;
+}
+
+.contenido {
+  flex: 1;
+  margin-left: 230px;
+  min-width: 0;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 20;
+}
+.topbar h1 { font-size: 18px; margin: 0; }
+.btn-hamburguesa {
+  display: none;
+  width: auto;
+  padding: 8px 10px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  margin-bottom: 0;
+}
+
+.pagina {
+  padding: 20px;
+  max-width: 1100px;
+}
+
+.fondo-sidebar-movil {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 25;
+}
+
+@media (max-width: 860px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.abierta { transform: translateX(0); }
+  .contenido { margin-left: 0; }
+  .btn-hamburguesa { display: inline-block; }
+  .fondo-sidebar-movil.abierta { display: block; }
+}
+
+/* ---------- STAT CARDS / ACCESOS DIRECTOS (Inicio) ---------- */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 18px;
+}
+.stat-card .valor { font-size: 26px; font-weight: 700; margin: 6px 0 2px; }
+.stat-card .etiqueta { font-size: 13px; color: var(--muted); }
+
+.tile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+.tile {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 18px;
+  text-decoration: none;
+  color: var(--text);
+  display: block;
+  font-weight: 600;
+}
+.tile:hover { background: #24324a; }
+.tile small { display: block; color: var(--muted); font-weight: 400; margin-top: 4px; }
+
+/* ---------- Componentes reutilizados del prototipo original ---------- */
+.card { background: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+h2 { font-size: 15px; margin: 0 0 12px; }
+#reader { width: 100%; border-radius: 10px; overflow: hidden; }
+.controles-camara { display: flex; gap: 8px; }
+.controles-camara button { margin-bottom: 8px; }
+input, select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #0f172a;
+  color: var(--text);
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+input[readonly] { color: var(--muted); }
+label.campo {
+  font-size: 12px;
+  color: var(--muted);
+  display: block;
+  margin: -4px 0 4px;
+}
+button {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: #0f172a;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+button:active { background: var(--accent-dark); }
+button.secundario {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+button.secundario.activo {
+  background: var(--accent);
+  color: #0f172a;
+  border-color: var(--accent);
+}
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  gap: 10px;
+}
+.item:last-child { border-bottom: none; }
+.item small { color: var(--muted); display: block; }
+.item button {
+  width: auto;
+  padding: 8px 12px;
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+.badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.badge.ok { background: #14532d; color: #bbf7d0; }
+.badge.bajo { background: #450a0a; color: #fecaca; }
+.msg { padding: 10px; border-radius: 8px; font-size: 14px; margin-bottom: 10px; }
+.msg.ok { background: #14532d; color: #bbf7d0; }
+.msg.error { background: #450a0a; color: #fecaca; }
+.oculto { display: none; }
+.modal-fondo {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 50;
+}
+.modal {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 16px;
+  max-width: 340px;
+  width: 100%;
+  text-align: center;
+}
+.modal img {
+  width: 100%;
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px;
+  margin-bottom: 12px;
+}
+.modal-fondo.oculto { display: none; }
+
+/* ---------- Pantalla de login (sin sidebar) ---------- */
+.login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.login-box { width: 100%; max-width: 360px; }
+.login-box h1 { text-align: center; margin-bottom: 20px; }

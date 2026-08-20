@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Categorias</title>
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+<div class="app">
+  <div id="fondoSidebarMovil" class="fondo-sidebar-movil"></div>
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-header">🏪 Tienda</div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" data-pagina="inicio">Inicio</a>
+      <a href="venta.html" data-pagina="venta">Vender</a>
+      <a href="productos.html" data-pagina="productos" data-solo-admin="1">Productos</a>
+      <a href="categorias.html" data-pagina="categorias" data-solo-admin="1">Categorias</a>
+      <a href="agregar-stock.html" data-pagina="agregar-stock" data-solo-admin="1">Agregar stock</a>
+      <a href="proveedores.html" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
+      <a href="compras.html" data-pagina="compras" data-solo-admin="1">Compras</a>
+      <a href="estadisticas.html" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="nombre" id="sidebarNombre"></div>
+      <div class="rol" id="sidebarRol"></div>
+      <button onclick="logout()">Cerrar sesion</button>
+    </div>
+  </aside>
+
+  <div class="contenido">
+    <div class="topbar">
+      <button id="btnHamburguesa" class="btn-hamburguesa">☰</button>
+      <h1>Categorias</h1>
+    </div>
+    <div class="pagina">
+
+      <div class="card">
+        <h2>Nueva categoria</h2>
+        <input type="text" id="nuevaCategoriaNombre" placeholder="Ej: Lacteos">
+        <input type="text" id="nuevaCategoriaDescripcion" placeholder="Descripcion (opcional)">
+        <button onclick="crearCategoria()">Agregar categoria</button>
+      </div>
+
+      <div class="card">
+        <div id="mensajeCategorias"></div>
+        <div id="listaCategorias">Cargando categorias...</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="dashboard.js"></script>
+<script>
+initSidebar("categorias");
+
+let categorias = [];
+
+async function cargarCategorias() {
+  const div = document.getElementById("listaCategorias");
+  try {
+    categorias = await apiFetch("/categorias");
+    renderCategorias();
+  } catch (e) {
+    div.innerHTML = `<div class="msg error">${e.message}</div>`;
+  }
+}
+
+function renderCategorias() {
+  const div = document.getElementById("listaCategorias");
+  if (categorias.length === 0) {
+    div.innerHTML = `<p style="color:var(--muted)">Sin categorias todavia</p>`;
+    return;
+  }
+  div.innerHTML = "";
+  categorias.forEach(c => {
+    div.innerHTML += `
+      <div class="item">
+        <div>${c.nombre}<small>${c.descripcion || ""}</small></div>
+        <button class="secundario" onclick="eliminarCategoria(${c.id})">Eliminar</button>
+      </div>`;
+  });
+}
+
+async function crearCategoria() {
+  const nombre = document.getElementById("nuevaCategoriaNombre").value.trim();
+  const descripcion = document.getElementById("nuevaCategoriaDescripcion").value.trim();
+
+  if (!nombre) {
+    mostrarMensajeEn("mensajeCategorias", "Falta el nombre de la categoria", "error");
+    return;
+  }
+
+  try {
+    await apiFetch("/categorias", {
+      method: "POST",
+      body: JSON.stringify({ nombre, descripcion: descripcion || null })
+    });
+    document.getElementById("nuevaCategoriaNombre").value = "";
+    document.getElementById("nuevaCategoriaDescripcion").value = "";
+    mostrarMensajeEn("mensajeCategorias", "Categoria creada", "ok");
+    await cargarCategorias();
+  } catch (e) {
+    mostrarMensajeEn("mensajeCategorias", e.message, "error");
+  }
+}
+
+async function eliminarCategoria(id) {
+  if (!confirm("¿Eliminar esta categoria? Si algun producto la esta usando, no se va a poder eliminar hasta que le cambies la categoria.")) return;
+
+  try {
+    await apiFetch(`/categorias/${id}`, { method: "DELETE" });
+    mostrarMensajeEn("mensajeCategorias", "Categoria eliminada", "ok");
+    await cargarCategorias();
+  } catch (e) {
+    mostrarMensajeEn("mensajeCategorias", e.message, "error");
+  }
+}
+
+cargarCategorias();
+</script>
+
+</body>
+</html>

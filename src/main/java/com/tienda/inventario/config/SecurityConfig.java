@@ -58,7 +58,10 @@ public class SecurityConfig {
                         // login/registro publicos
                         .requestMatchers("/api/auth/**").permitAll()
                         // frontend estatico (el login ocurre dentro de la pagina via JS)
-                        .requestMatchers("/", "/scanner.html", "/inventario.html", "/*.js", "/*.css", "/favicon.ico").permitAll()
+                        .requestMatchers("/", "/login.html", "/dashboard.html", "/productos.html",
+                                "/categorias.html", "/agregar-stock.html", "/estadisticas.html",
+                                "/proveedores.html", "/compras.html", "/venta.html",
+                                "/*.js", "/*.css", "/favicon.ico").permitAll()
                         // ver productos (util para catalogo publico si se necesita)
                         .requestMatchers("GET", "/api/productos/**").hasAnyRole("ADMIN", "VENDEDOR")
                         // registrar ventas: admin y vendedor

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vender</title>
+<link rel="stylesheet" href="dashboard.css">
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+  .total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 18px;
+    font-weight: 700;
+    margin-top: 12px;
+  }
+  .total small {
+    display: block;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--muted);
+  }
+  .resultados-busqueda .item button {
+    width: auto;
+    padding: 8px 12px;
+    margin-bottom: 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div id="fondoSidebarMovil" class="fondo-sidebar-movil"></div>
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-header">🏪 Tienda</div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" data-pagina="inicio">Inicio</a>
+      <a href="venta.html" data-pagina="venta">Vender</a>
+      <a href="productos.html" data-pagina="productos" data-solo-admin="1">Productos</a>
+      <a href="categorias.html" data-pagina="categorias" data-solo-admin="1">Categorias</a>
+      <a href="agregar-stock.html" data-pagina="agregar-stock" data-solo-admin="1">Agregar stock</a>
+      <a href="proveedores.html" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
+      <a href="compras.html" data-pagina="compras" data-solo-admin="1">Compras</a>
+      <a href="estadisticas.html" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="nombre" id="sidebarNombre"></div>
+      <div class="rol" id="sidebarRol"></div>
+      <button onclick="logout()">Cerrar sesion</button>
+    </div>
+  </aside>
+
+  <div class="contenido">
+    <div class="topbar">
+      <button id="btnHamburguesa" class="btn-hamburguesa">☰</button>
+      <h1>Vender</h1>
+    </div>
+    <div class="pagina">
+
+      <div class="card">
+        <div id="reader"></div>
+        <div class="controles-camara">
+          <button class="secundario" onclick="reiniciarCamara()">Reiniciar</button>
+          <button class="secundario" id="btnFlash" onclick="toggleFlash()">🔦 Flash</button>
+          <button class="secundario" onclick="enfocarCamara()">🎯 Enfocar</button>
+        </div>
+      </div>
+
+      <div id="mensaje"></div>
+
+      <div class="card">
+        <label class="campo">Producto sin codigo de barras (ej: pan)</label>
+        <input type="text" id="buscarProductoVenta" placeholder="Buscar por nombre..." oninput="buscarProductoParaVenta()">
+        <div id="resultadosBusquedaVenta" class="resultados-busqueda"></div>
+      </div>
+
+      <div class="card">
+        <strong>Carrito</strong>
+        <div id="carrito"></div>
+        <div class="total">
+          <span>Total <small id="unidadesCarrito">0 productos</small></span>
+          <span id="totalCarrito">$0.00</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <button onclick="confirmarVenta()">Confirmar venta</button>
+        <button class="secundario" onclick="vaciarCarrito()">Vaciar carrito</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="dashboard.js"></script>
+<script>
+initSidebar("venta");
+
+let carrito = []; // { codigoBarras, nombre, precio, cantidad }
+let html5QrCode;
+let escaneando = false;
+let flashActivo = false;
+let ultimoCodigo = "";
+let ultimoTiempo = 0;
+let temporizadorBusqueda;
+
+// ---------- CAMARA / ESCANEO ----------
+function iniciarCamara() {
+  if (escaneando) return;
+  html5QrCode = new Html5Qrcode("reader");
+  const config = { fps: 10, qrbox: { width: 250, height: 120 } };
+
+  html5QrCode.start(
+    { facingMode: "environment" },
+    config,
+    onCodigoDetectado,
+    () => {}
+  ).then(() => { escaneando = true; });
+}
+
+function reiniciarCamara() {
+  flashActivo = false;
+  document.getElementById("btnFlash").classList.remove("activo");
+  if (html5QrCode && escaneando) {
+    html5QrCode.stop().then(() => {
+      escaneando = false;
+      iniciarCamara();
+    });
+  } else {
+    iniciarCamara();
+  }
+}
+
+async function toggleFlash() {
+  if (!html5QrCode || !escaneando) return;
+  const encender = !flashActivo;
+  try {
+    await html5QrCode.applyVideoConstraints({
+      torch: encender,
+      advanced: [{ torch: encender }]
+    });
+    const settings = html5QrCode.getRunningTrackSettings();
+    if (settings.torch !== encender) throw new Error("No soportado");
+    flashActivo = encender;
+    document.getElementById("btnFlash").classList.toggle("activo", flashActivo);
+  } catch (e) {
+    mostrarMensajeEn("mensaje", "Tu camara no permite controlar el flash desde el navegador", "error");
+  }
+}
+
+async function enfocarCamara() {
+  if (!html5QrCode || !escaneando) return;
+  try {
+    await html5QrCode.applyVideoConstraints({ advanced: [{ focusMode: "continuous" }] });
+    mostrarMensajeEn("mensaje", "Enfoque ajustado", "ok");
+  } catch (e) {
+    mostrarMensajeEn("mensaje", "Tu camara no permite ajustar el enfoque manualmente", "error");
+  }
+}
+
+async function onCodigoDetectado(codigo) {
+  const ahora = Date.now();
+  if (codigo === ultimoCodigo && ahora - ultimoTiempo < 2000) return;
+  ultimoCodigo = codigo;
+  ultimoTiempo = ahora;
+
+  try {
+    const producto = await apiFetch(`/escaneo/${codigo}`);
+
+    if (!producto.stockSuficiente) {
+      mostrarMensajeEn("mensaje", `"${producto.nombre}" no tiene stock disponible`, "error");
+      return;
+    }
+
+    agregarAlCarrito(producto);
+    mostrarMensajeEn("mensaje", `Agregado: ${producto.nombre}`, "ok");
+  } catch (e) {
+    mostrarMensajeEn("mensaje", e.message, "error");
+  }
+}
+
+// ---------- CARRITO ----------
+function agregarAlCarrito(producto) {
+  const existente = carrito.find(i => i.codigoBarras === producto.codigoBarras);
+  if (existente) {
+    existente.cantidad += 1;
+  } else {
+    carrito.push({
+      codigoBarras: producto.codigoBarras,
+      nombre: producto.nombre,
+      precio: producto.precioVenta,
+      cantidad: 1
+    });
+  }
+  renderCarrito();
+}
+
+function renderCarrito() {
+  const div = document.getElementById("carrito");
+  div.innerHTML = "";
+  let total = 0;
+  let unidades = 0;
+
+  carrito.forEach((item, idx) => {
+    const subtotal = item.precio * item.cantidad;
+    total += subtotal;
+    unidades += item.cantidad;
+    div.innerHTML += `
+      <div class="item">
+        <div>
+          ${item.nombre}
+          <small>${item.cantidad} x $${item.precio.toFixed(2)}</small>
+        </div>
+        <div>
+          $${subtotal.toFixed(2)}
+          <button class="secundario" style="width:auto; padding:4px 8px; margin-left:8px"
+                  onclick="quitarDelCarrito(${idx})">✕</button>
+        </div>
+      </div>`;
+  });
+
+  document.getElementById("totalCarrito").innerText = `$${total.toFixed(2)}`;
+  document.getElementById("unidadesCarrito").innerText =
+    `${unidades} producto${unidades === 1 ? "" : "s"}`;
+}
+
+function quitarDelCarrito(idx) {
+  carrito.splice(idx, 1);
+  renderCarrito();
+}
+
+function vaciarCarrito() {
+  carrito = [];
+  renderCarrito();
+}
+
+// ---------- BUSQUEDA MANUAL (productos sin codigo de barras, ej: pan) ----------
+function buscarProductoParaVenta() {
+  clearTimeout(temporizadorBusqueda);
+  const texto = document.getElementById("buscarProductoVenta").value.trim();
+  const div = document.getElementById("resultadosBusquedaVenta");
+
+  if (texto.length < 2) {
+    div.innerHTML = "";
+    return;
+  }
+
+  temporizadorBusqueda = setTimeout(async () => {
+    try {
+      const productos = await apiFetch(`/productos/buscar?nombre=${encodeURIComponent(texto)}`);
+      if (productos.length === 0) {
+        div.innerHTML = `<p style="color:var(--muted); font-size:13px; margin:8px 0 0">Sin resultados</p>`;
+        return;
+      }
+
+      div.innerHTML = "";
+      productos.forEach(p => {
+        div.innerHTML += `
+          <div class="item">
+            <div>
+              ${p.nombre}
+              <small>Stock: ${p.stockActual} · $${Number(p.precioVenta).toFixed(2)}</small>
+            </div>
+            <button onclick="agregarProductoBuscado(${p.id})">Agregar</button>
+          </div>`;
+      });
+      window.__resultadosBusqueda = productos;
+    } catch (e) {
+      div.innerHTML = `<div class="msg error">${e.message}</div>`;
+    }
+  }, 300);
+}
+
+function agregarProductoBuscado(id) {
+  const producto = (window.__resultadosBusqueda || []).find(p => p.id === id);
+  if (!producto) return;
+
+  agregarAlCarrito({
+    codigoBarras: producto.codigoBarras,
+    nombre: producto.nombre,
+    precioVenta: producto.precioVenta
+  });
+  mostrarMensajeEn("mensaje", `Agregado: ${producto.nombre}`, "ok");
+  document.getElementById("buscarProductoVenta").value = "";
+  document.getElementById("resultadosBusquedaVenta").innerHTML = "";
+}
+
+// ---------- CONFIRMAR VENTA ----------
+async function confirmarVenta() {
+  if (carrito.length === 0) {
+    mostrarMensajeEn("mensaje", "El carrito esta vacio", "error");
+    return;
+  }
+
+  const body = {
+    items: carrito.map(i => ({ codigoBarras: i.codigoBarras, cantidad: i.cantidad }))
+  };
+
+  try {
+    const venta = await apiFetch("/ventas", { method: "POST", body: JSON.stringify(body) });
+    mostrarMensajeEn("mensaje", `Venta registrada: $${venta.totalMonedaLocal}`, "ok");
+    vaciarCarrito();
+  } catch (e) {
+    mostrarMensajeEn("mensaje", e.message, "error");
+  }
+}
+
+iniciarCamara();
+</script>
+
+</body>
+</html>
