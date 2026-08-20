@@ -85,16 +85,22 @@
   }
   .tabs {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     margin-bottom: 16px;
   }
   .tabs button {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
     margin-bottom: 0;
     background: transparent;
     border: 1px solid #334155;
     color: var(--muted);
-    font-size: 13px;
-    padding: 10px 8px;
+    font-size: 12px;
+    padding: 10px 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .tabs button.activa {
     background: var(--accent);
@@ -189,6 +195,8 @@
   <div id="tabCodigos">
     <div class="card">
       <input type="text" id="buscarProducto" placeholder="Buscar por nombre..." oninput="filtrarProductos()">
+      <button class="secundario" onclick="abrirModalCategorias()">📁 Gestionar categorias</button>
+      <div id="mensajeProductos"></div>
       <div id="listaProductos">Cargando productos...</div>
     </div>
   </div>
@@ -278,6 +286,59 @@
   </div>
 </div>
 
+<!-- Modal para editar un producto existente -->
+<div id="modalEditarFondo" class="modal-fondo oculto" onclick="cerrarModalEditarSiFondo(event)">
+  <div class="modal" style="text-align:left; max-height:85vh; overflow-y:auto">
+    <h2>Editar producto</h2>
+
+    <label class="campo">Codigo de barras (no editable)</label>
+    <input type="text" id="editCodigoBarras" readonly>
+
+    <label class="campo">Nombre</label>
+    <input type="text" id="editNombre">
+
+    <label class="campo">Categoria</label>
+    <select id="editCategoria">
+      <option value="">Sin categoria</option>
+    </select>
+
+    <label class="campo">Descripcion (opcional)</label>
+    <input type="text" id="editDescripcion">
+
+    <label class="campo">Precio de venta</label>
+    <input type="number" id="editPrecioVenta" step="0.01" min="0">
+
+    <label class="campo">Precio de compra (opcional)</label>
+    <input type="number" id="editPrecioCompra" step="0.01" min="0">
+
+    <label class="campo">Stock minimo</label>
+    <input type="number" id="editStockMinimo" min="0">
+
+    <label class="campo">Codigo de barras de la caja (opcional)</label>
+    <input type="text" id="editCodigoCaja">
+
+    <label class="campo">Unidades por caja</label>
+    <input type="number" id="editUnidadesPorCaja" min="1">
+
+    <button onclick="guardarEdicionProducto()">Guardar cambios</button>
+    <button class="secundario" onclick="cerrarModalEditar()">Cancelar</button>
+  </div>
+</div>
+
+<!-- Modal para gestionar categorias -->
+<div id="modalCategoriasFondo" class="modal-fondo oculto" onclick="cerrarModalCategoriasSiFondo(event)">
+  <div class="modal" style="text-align:left; max-height:85vh; overflow-y:auto">
+    <h2>Categorias</h2>
+    <div id="listaCategoriasModal"></div>
+
+    <label class="campo" style="margin-top:12px">Nueva categoria</label>
+    <input type="text" id="nuevaCategoriaNombre" placeholder="Ej: Lacteos">
+    <input type="text" id="nuevaCategoriaDescripcion" placeholder="Descripcion (opcional)">
+    <button onclick="crearCategoria()">Agregar categoria</button>
+    <button class="secundario" onclick="cerrarModalCategorias()">Cerrar</button>
+  </div>
+</div>
+
 <script>
 const API_BASE = window.location.origin + "/api";
 let token = localStorage.getItem("token") || "";
@@ -345,18 +406,102 @@ async function cargarCategorias() {
     });
     if (!res.ok) return;
     categorias = await res.json();
-
-    [document.getElementById("categoriaSesion"), document.getElementById("nuevoCategoria")]
-      .forEach(select => {
-        categorias.forEach(c => {
-          const opcion = document.createElement("option");
-          opcion.value = c.id;
-          opcion.innerText = c.nombre;
-          select.appendChild(opcion);
-        });
-      });
+    actualizarSelectsCategoria();
   } catch (e) {
     // Sin categorias no bloqueamos el flujo, simplemente queda "Sin categoria"
+  }
+}
+
+function actualizarSelectsCategoria() {
+  [document.getElementById("categoriaSesion"),
+   document.getElementById("nuevoCategoria"),
+   document.getElementById("editCategoria")]
+    .forEach(select => {
+      const valorPrevio = select.value;
+      select.querySelectorAll("option[data-categoria]").forEach(opt => opt.remove());
+      categorias.forEach(c => {
+        const opcion = document.createElement("option");
+        opcion.value = c.id;
+        opcion.innerText = c.nombre;
+        opcion.dataset.categoria = "1";
+        select.appendChild(opcion);
+      });
+      select.value = valorPrevio; // si la categoria ya no existe, vuelve a "Sin categoria"
+    });
+}
+
+function abrirModalCategorias() {
+  renderListaCategoriasModal();
+  document.getElementById("modalCategoriasFondo").classList.remove("oculto");
+}
+
+function cerrarModalCategorias() {
+  document.getElementById("modalCategoriasFondo").classList.add("oculto");
+}
+
+function cerrarModalCategoriasSiFondo(event) {
+  if (event.target.id === "modalCategoriasFondo") cerrarModalCategorias();
+}
+
+function renderListaCategoriasModal() {
+  const div = document.getElementById("listaCategoriasModal");
+  if (categorias.length === 0) {
+    div.innerHTML = `<p style="color:var(--muted)">Sin categorias todavia</p>`;
+    return;
+  }
+  div.innerHTML = "";
+  categorias.forEach(c => {
+    div.innerHTML += `
+      <div class="item">
+        <div>${c.nombre}<small>${c.descripcion || ""}</small></div>
+        <button class="secundario" onclick="eliminarCategoria(${c.id})">Eliminar</button>
+      </div>`;
+  });
+}
+
+async function crearCategoria() {
+  const nombre = document.getElementById("nuevaCategoriaNombre").value.trim();
+  const descripcion = document.getElementById("nuevaCategoriaDescripcion").value.trim();
+
+  if (!nombre) {
+    alert("Falta el nombre de la categoria");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/categorias`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ nombre, descripcion: descripcion || null })
+    });
+    if (!res.ok) throw new Error((await res.json()).mensaje || "Error al crear la categoria");
+
+    document.getElementById("nuevaCategoriaNombre").value = "";
+    document.getElementById("nuevaCategoriaDescripcion").value = "";
+    await cargarCategorias();
+    renderListaCategoriasModal();
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+async function eliminarCategoria(id) {
+  if (!confirm("¿Eliminar esta categoria? Si algun producto la esta usando, no se va a poder eliminar hasta que le cambies la categoria.")) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/categorias/${id}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error((await res.json()).mensaje || "No se pudo eliminar la categoria");
+
+    await cargarCategorias();
+    renderListaCategoriasModal();
+  } catch (e) {
+    alert(e.message);
   }
 }
 
@@ -392,15 +537,18 @@ function renderProductos(lista) {
     const infoCaja = p.codigoBarrasCaja
       ? ` · caja de ${p.unidadesPorCaja}: ${p.codigoBarrasCaja}`
       : "";
+    const inactivo = p.activo ? "" : ` · <span style="color:var(--danger)">inactivo</span>`;
     div.innerHTML += `
       <div class="item">
         <div>
           ${p.nombre}
-          <small>${p.codigoBarras}${infoCaja}</small>
+          <small>${p.codigoBarras}${infoCaja}${inactivo}</small>
         </div>
-        <div style="display:flex; align-items:center; gap:8px">
+        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end">
           <span class="badge ${bajo ? "bajo" : "ok"}">${p.stockActual} en stock</span>
           <button onclick="verCodigoBarras(${p.id})">Ver</button>
+          <button class="secundario" onclick="abrirEditar(${p.id})">Editar</button>
+          <button class="secundario" onclick="toggleActivo(${p.id})">${p.activo ? "Desactivar" : "Activar"}</button>
         </div>
       </div>`;
   });
@@ -724,6 +872,135 @@ async function cargarEstadisticas() {
     div.innerHTML = html;
   } catch (e) {
     div.innerHTML = `<div class="msg error">${e.message}</div>`;
+  }
+}
+
+// ---------- EDITAR / ACTIVAR-DESACTIVAR PRODUCTO ----------
+let productoEditandoId = null;
+
+function mostrarMensajeProductos(texto, tipo) {
+  const div = document.getElementById("mensajeProductos");
+  div.innerHTML = `<div class="msg ${tipo}">${texto}</div>`;
+  setTimeout(() => { div.innerHTML = ""; }, 2500);
+}
+
+function abrirEditar(id) {
+  const p = productos.find(x => x.id === id);
+  if (!p) return;
+  productoEditandoId = id;
+  document.getElementById("editCodigoBarras").value = p.codigoBarras;
+  document.getElementById("editNombre").value = p.nombre;
+  document.getElementById("editCategoria").value = p.categoria ? p.categoria.id : "";
+  document.getElementById("editDescripcion").value = p.descripcion || "";
+  document.getElementById("editPrecioVenta").value = p.precioVenta;
+  document.getElementById("editPrecioCompra").value = p.precioCompra || "";
+  document.getElementById("editStockMinimo").value = p.stockMinimo;
+  document.getElementById("editCodigoCaja").value = p.codigoBarrasCaja || "";
+  document.getElementById("editUnidadesPorCaja").value = p.unidadesPorCaja || "";
+  document.getElementById("modalEditarFondo").classList.remove("oculto");
+}
+
+function cerrarModalEditar() {
+  document.getElementById("modalEditarFondo").classList.add("oculto");
+  productoEditandoId = null;
+}
+
+function cerrarModalEditarSiFondo(event) {
+  if (event.target.id === "modalEditarFondo") cerrarModalEditar();
+}
+
+async function guardarEdicionProducto() {
+  const p = productos.find(x => x.id === productoEditandoId);
+  if (!p) return;
+
+  const nombre = document.getElementById("editNombre").value.trim();
+  const precioVenta = parseFloat(document.getElementById("editPrecioVenta").value);
+  const precioCompraTexto = document.getElementById("editPrecioCompra").value;
+  const stockMinimo = parseInt(document.getElementById("editStockMinimo").value, 10);
+  const categoriaId = document.getElementById("editCategoria").value;
+  const codigoCaja = document.getElementById("editCodigoCaja").value.trim();
+  const unidadesPorCajaTexto = document.getElementById("editUnidadesPorCaja").value;
+
+  if (!nombre) {
+    mostrarMensajeProductos("Falta el nombre", "error");
+    return;
+  }
+  if (!precioVenta || precioVenta <= 0) {
+    mostrarMensajeProductos("Precio de venta invalido", "error");
+    return;
+  }
+  if (codigoCaja && (!unidadesPorCajaTexto || parseInt(unidadesPorCajaTexto, 10) < 1)) {
+    mostrarMensajeProductos("Indica cuantas unidades trae la caja", "error");
+    return;
+  }
+
+  const body = {
+    nombre,
+    descripcion: document.getElementById("editDescripcion").value.trim() || null,
+    precioVenta,
+    precioCompra: precioCompraTexto ? parseFloat(precioCompraTexto) : null,
+    stockMinimo: stockMinimo || 5,
+    categoria: categoriaId ? { id: parseInt(categoriaId, 10) } : null,
+    proveedor: p.proveedor || null, // sin UI todavia, se conserva el valor actual
+    codigoBarrasCaja: codigoCaja || null,
+    unidadesPorCaja: unidadesPorCajaTexto ? parseInt(unidadesPorCajaTexto, 10) : null,
+    activo: p.activo
+  };
+
+  await guardarProducto(productoEditandoId, body, "Producto actualizado");
+  cerrarModalEditar();
+}
+
+async function guardarProducto(id, body, mensajeExito) {
+  try {
+    const res = await fetch(`${API_BASE}/productos/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error((await res.json()).mensaje || "Error al guardar el producto");
+
+    mostrarMensajeProductos(mensajeExito || "Guardado", "ok");
+    await cargarProductos();
+  } catch (e) {
+    mostrarMensajeProductos(e.message, "error");
+  }
+}
+
+async function toggleActivo(id) {
+  const p = productos.find(x => x.id === id);
+  if (!p) return;
+
+  if (p.activo) {
+    if (!confirm(`¿Desactivar "${p.nombre}"? No se podra vender ni sumarle stock hasta que lo reactives.`)) return;
+    try {
+      const res = await fetch(`${API_BASE}/productos/${id}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error((await res.json()).mensaje || "Error al desactivar el producto");
+      mostrarMensajeProductos(`"${p.nombre}" desactivado`, "ok");
+      await cargarProductos();
+    } catch (e) {
+      mostrarMensajeProductos(e.message, "error");
+    }
+  } else {
+    const body = {
+      nombre: p.nombre,
+      descripcion: p.descripcion || null,
+      precioVenta: p.precioVenta,
+      precioCompra: p.precioCompra || null,
+      stockMinimo: p.stockMinimo,
+      categoria: p.categoria || null,
+      proveedor: p.proveedor || null,
+      codigoBarrasCaja: p.codigoBarrasCaja || null,
+      unidadesPorCaja: p.unidadesPorCaja || null,
+      activo: true
+    };
+    await guardarProducto(id, body, `"${p.nombre}" reactivado`);
   }
 }
 </script>

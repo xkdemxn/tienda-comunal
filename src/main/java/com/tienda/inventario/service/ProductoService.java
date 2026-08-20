@@ -67,6 +67,11 @@ public class ProductoService {
         producto.setProveedor(datos.getProveedor());
         producto.setCodigoBarrasCaja(datos.getCodigoBarrasCaja());
         producto.setUnidadesPorCaja(datos.getUnidadesPorCaja());
+        if (datos.getActivo() != null) {
+            // Permite reactivar un producto desactivado enviando activo:true;
+            // si el cliente no manda este campo, no se toca (evita desactivar por accidente)
+            producto.setActivo(datos.getActivo());
+        }
         // El stock NO se edita aqui directamente: siempre debe pasar por
         // InventarioService (venta, compra, ajuste) para quedar en el kardex.
         return productoRepository.save(producto);

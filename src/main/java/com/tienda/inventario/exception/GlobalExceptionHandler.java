@@ -1,5 +1,6 @@
 package com.tienda.inventario.exception;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -44,6 +45,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleMensajeNoLegible(HttpMessageNotReadableException ex) {
         // Body faltante o JSON mal formado: culpa del cliente, no del servidor
         return construirRespuesta(HttpStatus.BAD_REQUEST, "El body de la peticion falta o no es un JSON valido");
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleIntegridad(DataIntegrityViolationException ex) {
+        // Ej: borrar una categoria que todavia tiene productos asignados
+        return construirRespuesta(HttpStatus.CONFLICT,
+                "No se puede completar la operacion: hay datos relacionados que lo impiden");
     }
 
     @ExceptionHandler(Exception.class)
