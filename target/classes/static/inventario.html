@@ -172,7 +172,10 @@
 </head>
 <body>
 
-<h1>📦 Inventario</h1>
+<div style="display:flex; justify-content:space-between; align-items:center">
+  <h1>📦 Inventario</h1>
+  <button id="btnLogout" class="secundario oculto" style="width:auto; padding:8px 12px" onclick="logout()">Cerrar sesion</button>
+</div>
 
 <!-- Login -->
 <div class="card" id="loginCard">
@@ -378,8 +381,14 @@ if (token) {
 function mostrarPanel() {
   document.getElementById("loginCard").classList.add("oculto");
   document.getElementById("panel").classList.remove("oculto");
+  document.getElementById("btnLogout").classList.remove("oculto");
   cargarProductos();
   cargarCategorias();
+}
+
+function logout() {
+  localStorage.removeItem("token");
+  location.reload();
 }
 
 // ---------- TABS ----------

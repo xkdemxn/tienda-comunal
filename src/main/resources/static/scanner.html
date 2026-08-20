@@ -116,7 +116,10 @@
 </head>
 <body>
 
-<h1>📦 Escaner de inventario</h1>
+<div style="display:flex; justify-content:space-between; align-items:center">
+  <h1>📦 Escaner de inventario</h1>
+  <button id="btnLogout" class="secundario oculto" style="width:auto; padding:8px 12px" onclick="logout()">Cerrar sesion</button>
+</div>
 
 <!-- Login -->
 <div class="card" id="loginCard">
@@ -188,16 +191,23 @@ async function login() {
     localStorage.setItem("token", token);
     document.getElementById("loginCard").classList.add("oculto");
     document.getElementById("panel").classList.remove("oculto");
+    document.getElementById("btnLogout").classList.remove("oculto");
     iniciarCamara();
   } catch (e) {
     msgDiv.innerHTML = `<div class="msg error">${e.message}</div>`;
   }
 }
 
+function logout() {
+  localStorage.removeItem("token");
+  location.reload();
+}
+
 // Si ya habia un token guardado, saltamos el login
 if (token) {
   document.getElementById("loginCard").classList.add("oculto");
   document.getElementById("panel").classList.remove("oculto");
+  document.getElementById("btnLogout").classList.remove("oculto");
   window.addEventListener("load", iniciarCamara);
 }
 
