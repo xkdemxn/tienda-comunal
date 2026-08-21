@@ -214,6 +214,8 @@ button.grupo-toggle.abierto .grupo-flecha { transform: rotate(180deg); }
   font-size: 11px;
   text-transform: uppercase;
 }
+.tabla-reporte thead th.col-precio { color: #2563eb; }
+.tabla-reporte thead th.col-ganancia { color: var(--accent-dark); }
 .tabla-reporte tbody tr:last-child td { border-bottom: none; }
 .tabla-reporte tfoot td {
   font-weight: 700;

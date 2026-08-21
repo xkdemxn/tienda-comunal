@@ -1,6 +1,8 @@
 package com.tienda.inventario.config;
 
 import com.tienda.inventario.security.JwtAuthFilter;
+import com.tienda.inventario.security.SuscripcionFilter;
+import com.tienda.inventario.service.ConfiguracionSistemaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,6 +31,7 @@ public class SecurityConfig {
 
     private final UserDetailsService usuarioDetailsService;
     private final JwtAuthFilter jwtAuthFilter;
+    private final ConfiguracionSistemaService configuracionSistemaService;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -57,6 +60,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // login/registro publicos
                         .requestMatchers("/api/auth/**").permitAll()
+                        // estado/gestion de suscripcion: protegido por clave maestra propia,
+                        // no por rol, para que sea independiente del login del tiendero
+                        .requestMatchers("/api/sistema/**").permitAll()
                         // frontend estatico (el login ocurre dentro de la pagina via JS)
                         .requestMatchers("/", "/login.html", "/dashboard.html", "/productos.html",
                                 "/categorias.html", "/agregar-stock.html", "/estadisticas.html",
@@ -76,6 +82,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
+                .addFilterBefore(new SuscripcionFilter(configuracionSistemaService), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
