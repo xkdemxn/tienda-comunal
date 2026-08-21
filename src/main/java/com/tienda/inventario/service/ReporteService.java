@@ -1,10 +1,15 @@
 package com.tienda.inventario.service;
 
+import com.tienda.inventario.dto.FiscalizacionItemDto;
+import com.tienda.inventario.dto.FiscalizacionResponse;
 import com.tienda.inventario.dto.ProductoStockBajoDto;
 import com.tienda.inventario.dto.ReporteVentasResponse;
 import com.tienda.inventario.entity.DetalleVenta;
+import com.tienda.inventario.entity.MovimientoInventario;
 import com.tienda.inventario.entity.Producto;
 import com.tienda.inventario.entity.Venta;
+import com.tienda.inventario.enums.TipoMovimiento;
+import com.tienda.inventario.repository.MovimientoInventarioRepository;
 import com.tienda.inventario.repository.ProductoRepository;
 import com.tienda.inventario.repository.VentaRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +29,7 @@ public class ReporteService {
 
     private final VentaRepository ventaRepository;
     private final ProductoRepository productoRepository;
+    private final MovimientoInventarioRepository movimientoInventarioRepository;
 
     /**
      * Reporte de ventas en un rango de fechas: total vendido, cantidad de ventas,
@@ -54,5 +61,89 @@ public class ReporteService {
                 .toList();
 
         return new ReporteVentasResponse(totalVendido, ventas.size(), productosMasVendidos, stockBajo);
+    }
+
+    private static final String SIN_CATEGORIA = "SIN CATEGORIA";
+
+    /**
+     * Informe de Fiscalizacion Mensual: reconstruye, para cada producto activo,
+     * el stock que tenia justo antes de "desde" y justo en "hasta" a partir del
+     * kardex (MovimientoInventario), sin necesidad de guardar snapshots
+     * historicos de stock. Formulas y agrupacion por categoria replican el
+     * reporte original en Excel de la tienda.
+     */
+    public FiscalizacionResponse generarReporteFiscalizacion(LocalDateTime desde, LocalDateTime hasta) {
+        List<Producto> productosActivos = productoRepository.findByActivoTrue();
+
+        // Un solo query trae todo lo necesario: movimientos desde "desde" hasta ahora
+        // ya cubre tambien la ventana desde "hasta" hasta ahora (es un subconjunto).
+        Map<Long, List<MovimientoInventario>> movimientosPorProducto = movimientoInventarioRepository
+                .findByFechaGreaterThanEqual(desde).stream()
+                .collect(Collectors.groupingBy(m -> m.getProducto().getId()));
+
+        List<FiscalizacionItemDto> items = new ArrayList<>();
+        Map<String, List<FiscalizacionItemDto>> porCategoria = new LinkedHashMap<>();
+
+        for (Producto producto : productosActivos) {
+            List<MovimientoInventario> movimientos = movimientosPorProducto
+                    .getOrDefault(producto.getId(), List.of());
+
+            List<MovimientoInventario> movimientosDesdeHasta = movimientos.stream()
+                    .filter(m -> !m.getFecha().isBefore(hasta))
+                    .toList();
+
+            int saldoAnterior = producto.getStockActual() - sumaSigno(movimientos);
+            int existenciaActual = producto.getStockActual() - sumaSigno(movimientosDesdeHasta);
+
+            int entradaDelMes = movimientos.stream()
+                    .filter(m -> !m.getFecha().isBefore(desde) && !m.getFecha().isAfter(hasta))
+                    .filter(m -> esEntrada(m.getTipo()))
+                    .mapToInt(MovimientoInventario::getCantidad)
+                    .sum();
+
+            int total = saldoAnterior + entradaDelMes;
+            int cantidadVendida = total - existenciaActual; // puede dar negativo: sobrante/discrepancia de inventario
+
+            BigDecimal precioVenta = producto.getPrecioVenta();
+            BigDecimal precioCompra = producto.getPrecioCompra() != null ? producto.getPrecioCompra() : BigDecimal.ZERO;
+
+            BigDecimal valorExistencia = precioVenta.multiply(BigDecimal.valueOf(existenciaActual));
+            BigDecimal salidaConGanancia = precioVenta.multiply(BigDecimal.valueOf(cantidadVendida));
+            BigDecimal salidaPrecioMercado = precioCompra.multiply(BigDecimal.valueOf(cantidadVendida));
+            BigDecimal productoNetoExistentes = precioCompra.multiply(BigDecimal.valueOf(saldoAnterior));
+            BigDecimal sumaGanancia = salidaConGanancia.subtract(salidaPrecioMercado);
+
+            FiscalizacionItemDto item = new FiscalizacionItemDto(
+                    producto.getNombre(), producto.getCodigoBarras(),
+                    saldoAnterior, entradaDelMes, total, existenciaActual, valorExistencia,
+                    cantidadVendida, salidaConGanancia, salidaPrecioMercado,
+                    productoNetoExistentes, sumaGanancia
+            );
+
+            items.add(item);
+            String categoria = producto.getCategoria() != null ? producto.getCategoria().getNombre() : SIN_CATEGORIA;
+            porCategoria.computeIfAbsent(categoria, k -> new ArrayList<>()).add(item);
+        }
+
+        BigDecimal totalGeneralGanancia = items.stream()
+                .map(FiscalizacionItemDto::getSumaGanancia)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return new FiscalizacionResponse(porCategoria, totalGeneralGanancia);
+    }
+
+    private boolean esEntrada(TipoMovimiento tipo) {
+        return tipo == TipoMovimiento.COMPRA || tipo == TipoMovimiento.DEVOLUCION
+                || tipo == TipoMovimiento.AJUSTE_POSITIVO;
+    }
+
+    // Suma "cantidad" de cada movimiento con signo: positivo para
+    // COMPRA/DEVOLUCION/AJUSTE_POSITIVO, negativo para VENTA/AJUSTE_NEGATIVO.
+    private int sumaSigno(List<MovimientoInventario> movimientos) {
+        int suma = 0;
+        for (MovimientoInventario m : movimientos) {
+            suma += (esEntrada(m.getTipo()) ? 1 : -1) * m.getCantidad();
+        }
+        return suma;
     }
 }

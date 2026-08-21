@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fiscalizacion</title>
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+<div class="app">
+  <div id="fondoSidebarMovil" class="fondo-sidebar-movil"></div>
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-header">🏪 Tienda</div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" data-pagina="inicio">Inicio</a>
+      <a href="venta.html" data-pagina="venta">Vender</a>
+      <a href="productos.html" data-pagina="productos" data-solo-admin="1">Productos</a>
+      <a href="categorias.html" data-pagina="categorias" data-solo-admin="1">Categorias</a>
+      <a href="agregar-stock.html" data-pagina="agregar-stock" data-solo-admin="1">Agregar stock</a>
+      <a href="proveedores.html" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
+      <a href="compras.html" data-pagina="compras" data-solo-admin="1">Compras</a>
+      <a href="estadisticas.html" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
+      <a href="fiscalizacion.html" data-pagina="fiscalizacion" data-solo-admin="1">Fiscalizacion</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="nombre" id="sidebarNombre"></div>
+      <div class="rol" id="sidebarRol"></div>
+      <button onclick="logout()">Cerrar sesion</button>
+    </div>
+  </aside>
+
+  <div class="contenido">
+    <div class="topbar">
+      <button id="btnHamburguesa" class="btn-hamburguesa">☰</button>
+      <h1>Informe de Fiscalizacion Mensual</h1>
+    </div>
+    <div class="pagina">
+
+      <div class="card">
+        <label class="campo">Desde</label>
+        <input type="date" id="fiscalDesde">
+        <label class="campo">Hasta</label>
+        <input type="date" id="fiscalHasta">
+        <button onclick="cargarFiscalizacion()">Generar informe</button>
+      </div>
+
+      <div id="fiscalResultado"></div>
+
+    </div>
+  </div>
+</div>
+
+<script src="dashboard.js"></script>
+<script>
+initSidebar("fiscalizacion");
+
+function primerDiaMesISO() {
+  const d = new Date();
+  d.setDate(1);
+  return d.toISOString().slice(0, 10);
+}
+
+function hoyISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function prepararFechas() {
+  const desde = document.getElementById("fiscalDesde");
+  const hasta = document.getElementById("fiscalHasta");
+  if (!desde.value) desde.value = primerDiaMesISO();
+  if (!hasta.value) hasta.value = hoyISO();
+}
+
+function formatoNumero(valor) {
+  return Number(valor).toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+async function cargarFiscalizacion() {
+  prepararFechas();
+  const desde = `${document.getElementById("fiscalDesde").value}T00:00:00`;
+  const hasta = `${document.getElementById("fiscalHasta").value}T23:59:59`;
+  const div = document.getElementById("fiscalResultado");
+  div.innerHTML = `<p style="color:var(--muted)">Generando informe...</p>`;
+
+  try {
+    const r = await apiFetch(`/reportes/fiscalizacion?desde=${desde}&hasta=${hasta}`);
+    const categorias = Object.keys(r.porCategoria || {});
+
+    if (categorias.length === 0) {
+      div.innerHTML = `<p style="color:var(--muted)">Sin productos activos para mostrar</p>`;
+      return;
+    }
+
+    let html = `
+      <div class="card">
+        <div class="item">
+          <div><strong>Ganancia total del periodo</strong></div>
+          <strong>$${formatoNumero(r.totalGeneralGanancia)}</strong>
+        </div>
+      </div>`;
+
+    categorias.forEach(categoria => {
+      const items = r.porCategoria[categoria];
+      html += `
+        <div class="card">
+          <h2>${categoria}</h2>
+          <div class="tabla-scroll">
+            <table class="tabla-reporte">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>Codigo</th>
+                  <th>Saldo anterior</th>
+                  <th>Entrada del mes</th>
+                  <th>Total</th>
+                  <th>Existencia actual</th>
+                  <th>Valor existencia</th>
+                  <th>Cant. vendida</th>
+                  <th>Salida c/ganancia</th>
+                  <th>Salida p/mercado</th>
+                  <th>Prod. neto existente</th>
+                  <th>Ganancia</th>
+                </tr>
+              </thead>
+              <tbody>`;
+
+      let subtotalGanancia = 0;
+      items.forEach(it => {
+        subtotalGanancia += it.sumaGanancia;
+        html += `
+          <tr>
+            <td>${it.nombre}</td>
+            <td>${it.codigoBarras}</td>
+            <td>${it.saldoAnterior}</td>
+            <td>${it.entradaDelMes}</td>
+            <td>${it.total}</td>
+            <td>${it.existenciaActual}</td>
+            <td>$${formatoNumero(it.valorExistencia)}</td>
+            <td>${it.cantidadVendida}</td>
+            <td>$${formatoNumero(it.salidaConGanancia)}</td>
+            <td>$${formatoNumero(it.salidaPrecioMercado)}</td>
+            <td>$${formatoNumero(it.productoNetoExistentes)}</td>
+            <td>$${formatoNumero(it.sumaGanancia)}</td>
+          </tr>`;
+      });
+
+      html += `
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="11">Subtotal ganancia — ${categoria}</td>
+                  <td>$${formatoNumero(subtotalGanancia)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>`;
+    });
+
+    div.innerHTML = html;
+  } catch (e) {
+    div.innerHTML = `<div class="msg error">${e.message}</div>`;
+  }
+}
+
+cargarFiscalizacion();
+</script>
+
+</body>
+</html>

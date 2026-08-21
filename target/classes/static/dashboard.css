@@ -162,6 +162,36 @@ body {
 .tile:hover { background: #eef2f7; }
 .tile small { display: block; color: var(--muted); font-weight: 400; margin-top: 4px; }
 
+/* ---------- Tablas de reportes (ej: Fiscalizacion) ---------- */
+.tabla-scroll { overflow-x: auto; }
+.tabla-reporte {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.tabla-reporte th, .tabla-reporte td {
+  padding: 8px 10px;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.tabla-reporte th:first-child, .tabla-reporte td:first-child,
+.tabla-reporte th:nth-child(2), .tabla-reporte td:nth-child(2) {
+  text-align: left;
+}
+.tabla-reporte thead th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+.tabla-reporte tbody tr:last-child td { border-bottom: none; }
+.tabla-reporte tfoot td {
+  font-weight: 700;
+  border-top: 2px solid var(--border);
+  border-bottom: none;
+}
+
 /* ---------- Componentes reutilizados del prototipo original ---------- */
 .card {
   background: var(--card);

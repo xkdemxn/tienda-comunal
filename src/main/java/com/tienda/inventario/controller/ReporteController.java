@@ -1,5 +1,6 @@
 package com.tienda.inventario.controller;
 
+import com.tienda.inventario.dto.FiscalizacionResponse;
 import com.tienda.inventario.dto.ReporteVentasResponse;
 import com.tienda.inventario.service.ReporteService;
 import lombok.RequiredArgsConstructor;
@@ -24,5 +25,12 @@ public class ReporteController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime desde,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime hasta) {
         return ResponseEntity.ok(reporteService.generarReporte(desde, hasta));
+    }
+
+    @GetMapping("/fiscalizacion")
+    public ResponseEntity<FiscalizacionResponse> reporteFiscalizacion(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime desde,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime hasta) {
+        return ResponseEntity.ok(reporteService.generarReporteFiscalizacion(desde, hasta));
     }
 }

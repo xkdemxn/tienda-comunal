@@ -13,6 +13,7 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     Optional<Producto> findByCodigoBarrasCaja(String codigoBarrasCaja);
     boolean existsByCodigoBarrasCaja(String codigoBarrasCaja);
     List<Producto> findByNombreContainingIgnoreCaseAndActivoTrue(String nombre);
+    List<Producto> findByActivoTrue();
 
     @Query("SELECT p FROM Producto p WHERE p.activo = true AND p.stockActual <= p.stockMinimo")
     List<Producto> findProductosConStockBajo();

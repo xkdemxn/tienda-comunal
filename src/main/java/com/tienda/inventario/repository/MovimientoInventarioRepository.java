@@ -9,4 +9,5 @@ import java.util.List;
 public interface MovimientoInventarioRepository extends JpaRepository<MovimientoInventario, Long> {
     List<MovimientoInventario> findByProductoIdOrderByFechaDesc(Long productoId);
     List<MovimientoInventario> findByFechaBetween(LocalDateTime desde, LocalDateTime hasta);
+    List<MovimientoInventario> findByFechaGreaterThanEqual(LocalDateTime desde);
 }
