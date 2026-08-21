@@ -5,13 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inicio</title>
 <link rel="stylesheet" href="dashboard.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 <body>
 
 <div class="app">
   <div id="fondoSidebarMovil" class="fondo-sidebar-movil"></div>
   <aside id="sidebar" class="sidebar">
-    <div class="sidebar-header">🏪 Tienda</div>
+    <div class="sidebar-header"><i class="bi bi-shop"></i> Tienda</div>
     <nav class="sidebar-nav">
       <a href="dashboard" data-pagina="inicio">Inicio</a>
       <a href="venta" data-pagina="venta">Vender</a>
@@ -51,13 +52,13 @@
 
   <div class="contenido">
     <div class="topbar">
-      <button id="btnHamburguesa" class="btn-hamburguesa">☰</button>
+      <button id="btnHamburguesa" class="btn-hamburguesa"><i class="bi bi-list"></i></button>
       <h1>Inicio</h1>
     </div>
     <div class="pagina">
 
       <div id="bannerSuscripcion" class="banner-suscripcion oculto">
-        <span class="icono">⚠️</span>
+        <span class="icono"><i class="bi bi-exclamation-triangle-fill"></i></span>
         <span id="bannerSuscripcionTexto"></span>
       </div>
 
@@ -72,13 +73,14 @@
       <div class="card" id="cardAccesosDirectos">
         <h2>Accesos directos</h2>
         <div class="tile-grid">
-          <a class="tile" href="venta">🛒 Vender<small>Escanear y cobrar</small></a>
-          <a class="tile" href="productos" data-solo-admin="1">📦 Productos<small>Ver, editar, stock</small></a>
-          <a class="tile" href="agregar-stock" data-solo-admin="1">➕ Agregar stock<small>Escanear entradas</small></a>
-          <a class="tile" href="compras" data-solo-admin="1">🧾 Compras<small>Registrar a proveedor</small></a>
-          <a class="tile" href="proveedores" data-solo-admin="1">🚚 Proveedores<small>Gestionar</small></a>
-          <a class="tile" href="categorias" data-solo-admin="1">📁 Categorias<small>Gestionar</small></a>
-          <a class="tile" href="estadisticas" data-solo-admin="1">📊 Estadisticas<small>Reportes de venta</small></a>
+          <a class="tile" href="venta"><i class="bi bi-cart3"></i> Vender<small>Escanear y cobrar</small></a>
+          <a class="tile" href="productos" data-solo-admin="1"><i class="bi bi-box-seam"></i> Productos<small>Ver, editar, stock</small></a>
+          <a class="tile" href="agregar-stock" data-solo-admin="1"><i class="bi bi-plus-circle"></i> Agregar stock<small>Escanear entradas</small></a>
+          <a class="tile" href="compras" data-solo-admin="1"><i class="bi bi-receipt"></i> Compras<small>Registrar a proveedor</small></a>
+          <a class="tile" href="proveedores" data-solo-admin="1"><i class="bi bi-truck"></i> Proveedores<small>Gestionar</small></a>
+          <a class="tile" href="categorias" data-solo-admin="1"><i class="bi bi-folder2"></i> Categorias<small>Gestionar</small></a>
+          <a class="tile" href="estadisticas" data-solo-admin="1"><i class="bi bi-bar-chart-line"></i> Estadisticas<small>Reportes de venta</small></a>
+          <a class="tile" href="fiscalizacion" data-solo-admin="1"><i class="bi bi-clipboard-data"></i> Fiscalizacion<small>Informe mensual</small></a>
         </div>
       </div>
 
