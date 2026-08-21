@@ -1,3 +1,15 @@
+// Aviso tipo "Self-XSS" (el mismo que usan Facebook/Google en su consola):
+// no oculta el codigo -esto no existe en el navegador-, pero desalienta que
+// alguien pegue ahi un script que le paso un tercero.
+console.log(
+  "%c¡Alto!",
+  "color:#dc2626; font-size:60px; font-weight:bold; text-shadow: 2px 2px #7f1d1d;"
+);
+console.log(
+  "%cEsta es una funcion del navegador pensada para desarrolladores. Si alguien te dijo que copies y pegues algo aca para 'activar' o 'arreglar' algo del sistema, es un engaño: le estarias dando acceso a tu cuenta y a los datos de la tienda.",
+  "font-size:15px; color:#0f172a;"
+);
+
 const API_BASE = window.location.origin + "/api";
 
 function getToken() {
