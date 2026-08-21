@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fiscalizacion</title>
 <link rel="stylesheet" href="dashboard.css">
+<script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -43,6 +44,7 @@
         <label class="campo">Hasta</label>
         <input type="date" id="fiscalHasta">
         <button onclick="cargarFiscalizacion()">Generar informe</button>
+        <button class="secundario" onclick="descargarExcel()">📥 Descargar Excel</button>
       </div>
 
       <div id="fiscalResultado"></div>
@@ -54,6 +56,15 @@
 <script src="dashboard.js"></script>
 <script>
 initSidebar("fiscalizacion");
+
+let ultimoReporte = null;
+let ultimasFechas = { desde: "", hasta: "" };
+
+const ENCABEZADOS_FISCALIZACION = [
+  "Producto", "Codigo", "Saldo anterior", "Entrada del mes", "Total",
+  "Existencia actual", "Valor existencia", "Cant. vendida", "Salida c/ganancia",
+  "Salida p/mercado", "Prod. neto existente", "Ganancia"
+];
 
 function primerDiaMesISO() {
   const d = new Date();
@@ -86,6 +97,12 @@ async function cargarFiscalizacion() {
   try {
     const r = await apiFetch(`/reportes/fiscalizacion?desde=${desde}&hasta=${hasta}`);
     const categorias = Object.keys(r.porCategoria || {});
+
+    ultimoReporte = r;
+    ultimasFechas = {
+      desde: document.getElementById("fiscalDesde").value,
+      hasta: document.getElementById("fiscalHasta").value
+    };
 
     if (categorias.length === 0) {
       div.innerHTML = `<p style="color:var(--muted)">Sin productos activos para mostrar</p>`;
@@ -162,6 +179,53 @@ async function cargarFiscalizacion() {
   } catch (e) {
     div.innerHTML = `<div class="msg error">${e.message}</div>`;
   }
+}
+
+// ---------- DESCARGAR EXCEL ----------
+function nombreHojaValido(nombre) {
+  // Excel: maximo 31 caracteres y sin : \ / ? * [ ]
+  return nombre.replace(/[:\\/?*\[\]]/g, "").substring(0, 31) || "Categoria";
+}
+
+function descargarExcel() {
+  if (!ultimoReporte || Object.keys(ultimoReporte.porCategoria || {}).length === 0) {
+    alert("Primero genera el informe (no hay datos para descargar)");
+    return;
+  }
+
+  const wb = XLSX.utils.book_new();
+
+  const filasResumen = [
+    ["Informe de Fiscalizacion Mensual"],
+    ["Desde", ultimasFechas.desde],
+    ["Hasta", ultimasFechas.hasta],
+    [],
+    ["Ganancia total del periodo", ultimoReporte.totalGeneralGanancia]
+  ];
+  const hojaResumen = XLSX.utils.aoa_to_sheet(filasResumen);
+  XLSX.utils.book_append_sheet(wb, hojaResumen, "Resumen");
+
+  Object.entries(ultimoReporte.porCategoria).forEach(([categoria, items]) => {
+    const filas = [ENCABEZADOS_FISCALIZACION];
+    let subtotalGanancia = 0;
+
+    items.forEach(it => {
+      subtotalGanancia += it.sumaGanancia;
+      filas.push([
+        it.nombre, it.codigoBarras, it.saldoAnterior, it.entradaDelMes, it.total,
+        it.existenciaActual, it.valorExistencia, it.cantidadVendida,
+        it.salidaConGanancia, it.salidaPrecioMercado, it.productoNetoExistentes, it.sumaGanancia
+      ]);
+    });
+
+    filas.push([]);
+    filas.push(["", "", "", "", "", "", "", "", "", "", "Subtotal ganancia", subtotalGanancia]);
+
+    const hoja = XLSX.utils.aoa_to_sheet(filas);
+    XLSX.utils.book_append_sheet(wb, hoja, nombreHojaValido(categoria));
+  });
+
+  XLSX.writeFile(wb, `fiscalizacion_${ultimasFechas.desde}_a_${ultimasFechas.hasta}.xlsx`);
 }
 
 cargarFiscalizacion();
