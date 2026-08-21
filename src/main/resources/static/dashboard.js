@@ -56,8 +56,21 @@ function initSidebar(paginaActiva) {
   if (rolEl) rolEl.innerText = roles.map(r => r.replace("ROLE_", "")).join(", ");
 
   document.querySelectorAll(".sidebar-nav a").forEach(a => {
-    if (a.dataset.pagina === paginaActiva) a.classList.add("activo");
+    if (a.dataset.pagina === paginaActiva) {
+      a.classList.add("activo");
+      // si el link activo esta dentro de un grupo desplegable, lo abrimos
+      const grupo = a.closest(".grupo-links");
+      if (grupo) {
+        grupo.classList.remove("oculto");
+        const toggle = document.querySelector(`.grupo-toggle[data-grupo="${grupo.dataset.grupo}"]`);
+        if (toggle) toggle.classList.add("abierto");
+      }
+    }
     if (a.dataset.soloAdmin === "1" && !esAdmin()) a.classList.add("oculto");
+  });
+
+  document.querySelectorAll(".grupo-toggle").forEach(btn => {
+    if (btn.dataset.soloAdmin === "1" && !esAdmin()) btn.classList.add("oculto");
   });
 
   const btnHamburguesa = document.getElementById("btnHamburguesa");
@@ -73,6 +86,14 @@ function initSidebar(paginaActiva) {
       fondoMovil.classList.remove("abierta");
     });
   }
+}
+
+function toggleGrupo(nombre) {
+  const grupo = document.getElementById(`grupo-${nombre}`);
+  const toggle = document.querySelector(`.grupo-toggle[data-grupo="${nombre}"]`);
+  if (!grupo) return;
+  grupo.classList.toggle("oculto");
+  if (toggle) toggle.classList.toggle("abierto");
 }
 
 function mostrarMensajeEn(divId, texto, tipo) {

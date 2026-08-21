@@ -16,14 +16,32 @@
     <nav class="sidebar-nav">
       <a href="dashboard.html" data-pagina="inicio">Inicio</a>
       <a href="venta.html" data-pagina="venta">Vender</a>
-      <a href="productos.html" data-pagina="productos" data-solo-admin="1">Productos</a>
-      <a href="categorias.html" data-pagina="categorias" data-solo-admin="1">Categorias</a>
       <a href="agregar-stock.html" data-pagina="agregar-stock" data-solo-admin="1">Agregar stock</a>
-      <a href="proveedores.html" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
-      <a href="compras.html" data-pagina="compras" data-solo-admin="1">Compras</a>
-      <a href="historial-ventas.html" data-pagina="historial-ventas" data-solo-admin="1">Historial de ventas</a>
-      <a href="estadisticas.html" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
-      <a href="fiscalizacion.html" data-pagina="fiscalizacion" data-solo-admin="1">Fiscalizacion</a>
+
+      <button class="grupo-toggle" data-grupo="catalogo" data-solo-admin="1" onclick="toggleGrupo('catalogo')">
+        <span>Catalogo</span><span class="grupo-flecha">▾</span>
+      </button>
+      <div class="grupo-links oculto" id="grupo-catalogo" data-grupo="catalogo">
+        <a href="categorias.html" data-pagina="categorias" data-solo-admin="1">Categorias</a>
+        <a href="productos.html" data-pagina="productos" data-solo-admin="1">Productos</a>
+      </div>
+
+      <button class="grupo-toggle" data-grupo="abastecimiento" data-solo-admin="1" onclick="toggleGrupo('abastecimiento')">
+        <span>Abastecimiento</span><span class="grupo-flecha">▾</span>
+      </button>
+      <div class="grupo-links oculto" id="grupo-abastecimiento" data-grupo="abastecimiento">
+        <a href="proveedores.html" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
+        <a href="compras.html" data-pagina="compras" data-solo-admin="1">Compras</a>
+      </div>
+
+      <button class="grupo-toggle" data-grupo="reportes" data-solo-admin="1" onclick="toggleGrupo('reportes')">
+        <span>Reportes</span><span class="grupo-flecha">▾</span>
+      </button>
+      <div class="grupo-links oculto" id="grupo-reportes" data-grupo="reportes">
+        <a href="historial-ventas.html" data-pagina="historial-ventas" data-solo-admin="1">Historial de ventas</a>
+        <a href="estadisticas.html" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
+        <a href="fiscalizacion.html" data-pagina="fiscalizacion" data-solo-admin="1">Fiscalizacion</a>
+      </div>
     </nav>
     <div class="sidebar-footer">
       <div class="nombre" id="sidebarNombre"></div>
@@ -66,6 +84,17 @@
       </div>
 
       <div id="mensaje"></div>
+
+      <!-- Aparece al escanear un producto que ya existe: confirma cuanto sumar (por defecto 1) -->
+      <div class="card oculto" id="cardConfirmarCantidad">
+        <h2>Sumar stock</h2>
+        <p id="confirmarCantidadInfo" style="margin:0 0 10px; color:var(--muted)"></p>
+        <label class="campo">Cantidad a sumar</label>
+        <input type="number" id="confirmarCantidadInput" min="1" value="1"
+               onkeydown="if(event.key==='Enter') confirmarSumaCantidad()">
+        <button onclick="confirmarSumaCantidad()">Sumar stock</button>
+        <button class="secundario" onclick="cancelarSumaCantidad()">Cancelar</button>
+      </div>
 
       <!-- Formulario de producto nuevo: aparece cuando se escanea un codigo que no existe,
            o al usar el boton de "sin codigo de barras" -->
@@ -211,7 +240,7 @@ async function onCodigoDetectado(codigo) {
 
     if (resUnidad.ok) {
       const producto = await resUnidad.json();
-      await registrarEntradaRapida(producto.codigoBarras, 1, "Entrada por escaneo");
+      abrirConfirmarCantidad(producto);
       return;
     }
 
@@ -243,6 +272,38 @@ async function registrarEntradaRapida(codigoBarras, cantidad, motivo) {
   } catch (e) {
     mostrarMensajeEn("mensaje", e.message, "error");
   }
+}
+
+// ---------- CONFIRMAR CANTIDAD AL ESCANEAR UN PRODUCTO YA EXISTENTE ----------
+let productoParaConfirmar = null;
+
+function abrirConfirmarCantidad(producto) {
+  productoParaConfirmar = producto;
+  document.getElementById("confirmarCantidadInfo").innerText =
+    `${producto.nombre} — stock actual: ${producto.stockActual}`;
+  const input = document.getElementById("confirmarCantidadInput");
+  input.value = "1";
+  document.getElementById("cardConfirmarCantidad").classList.remove("oculto");
+  input.focus();
+  input.select();
+}
+
+function cancelarSumaCantidad() {
+  document.getElementById("cardConfirmarCantidad").classList.add("oculto");
+  productoParaConfirmar = null;
+}
+
+async function confirmarSumaCantidad() {
+  if (!productoParaConfirmar) return;
+
+  const cantidad = parseInt(document.getElementById("confirmarCantidadInput").value, 10);
+  if (!cantidad || cantidad < 1) {
+    mostrarMensajeEn("mensaje", "Cantidad invalida", "error");
+    return;
+  }
+
+  await registrarEntradaRapida(productoParaConfirmar.codigoBarras, cantidad, "Entrada por escaneo");
+  cancelarSumaCantidad();
 }
 
 // ---------- BUSCAR PRODUCTO EXISTENTE Y SUMAR STOCK (sin escanear) ----------

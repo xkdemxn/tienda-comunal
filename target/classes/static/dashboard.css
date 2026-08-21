@@ -58,6 +58,35 @@ body {
 }
 .sidebar-nav a:hover { background: rgba(15, 23, 42, 0.06); }
 .sidebar-nav a.activo { background: var(--accent); color: #ffffff; font-weight: 600; }
+
+/* ---------- Grupos desplegables del sidebar ---------- */
+button.grupo-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 400;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  margin-bottom: 2px;
+}
+button.grupo-toggle:hover { background: rgba(15, 23, 42, 0.06); }
+.grupo-flecha { font-size: 11px; transition: transform 0.15s ease; }
+button.grupo-toggle.abierto .grupo-flecha { transform: rotate(180deg); }
+.grupo-links {
+  display: flex;
+  flex-direction: column;
+}
+.grupo-links.oculto { display: none; }
+.grupo-links a { padding-left: 26px; font-size: 13px; }
+
 .sidebar-footer {
   padding: 14px 16px;
   border-top: 1px solid var(--border);
