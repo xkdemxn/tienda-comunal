@@ -181,49 +181,41 @@ async function cargarFiscalizacion() {
   }
 }
 
-// ---------- DESCARGAR EXCEL ----------
-function nombreHojaValido(nombre) {
-  // Excel: maximo 31 caracteres y sin : \ / ? * [ ]
-  return nombre.replace(/[:\\/?*\[\]]/g, "").substring(0, 31) || "Categoria";
-}
-
+// ---------- DESCARGAR EXCEL (una sola hoja, todos los productos, con columna Categoria) ----------
 function descargarExcel() {
   if (!ultimoReporte || Object.keys(ultimoReporte.porCategoria || {}).length === 0) {
     alert("Primero genera el informe (no hay datos para descargar)");
     return;
   }
 
-  const wb = XLSX.utils.book_new();
-
-  const filasResumen = [
+  const filas = [
     ["Informe de Fiscalizacion Mensual"],
-    ["Desde", ultimasFechas.desde],
-    ["Hasta", ultimasFechas.hasta],
+    ["Desde", ultimasFechas.desde, "Hasta", ultimasFechas.hasta],
     [],
-    ["Ganancia total del periodo", ultimoReporte.totalGeneralGanancia]
+    ["Categoria", ...ENCABEZADOS_FISCALIZACION]
   ];
-  const hojaResumen = XLSX.utils.aoa_to_sheet(filasResumen);
-  XLSX.utils.book_append_sheet(wb, hojaResumen, "Resumen");
 
   Object.entries(ultimoReporte.porCategoria).forEach(([categoria, items]) => {
-    const filas = [ENCABEZADOS_FISCALIZACION];
     let subtotalGanancia = 0;
 
     items.forEach(it => {
       subtotalGanancia += it.sumaGanancia;
       filas.push([
-        it.nombre, it.codigoBarras, it.saldoAnterior, it.entradaDelMes, it.total,
+        categoria, it.nombre, it.codigoBarras, it.saldoAnterior, it.entradaDelMes, it.total,
         it.existenciaActual, it.valorExistencia, it.cantidadVendida,
         it.salidaConGanancia, it.salidaPrecioMercado, it.productoNetoExistentes, it.sumaGanancia
       ]);
     });
 
-    filas.push([]);
-    filas.push(["", "", "", "", "", "", "", "", "", "", "Subtotal ganancia", subtotalGanancia]);
-
-    const hoja = XLSX.utils.aoa_to_sheet(filas);
-    XLSX.utils.book_append_sheet(wb, hoja, nombreHojaValido(categoria));
+    filas.push(["", `Subtotal ganancia — ${categoria}`, "", "", "", "", "", "", "", "", "", "", subtotalGanancia]);
   });
+
+  filas.push([]);
+  filas.push(["", "GANANCIA TOTAL DEL PERIODO", "", "", "", "", "", "", "", "", "", "", ultimoReporte.totalGeneralGanancia]);
+
+  const hoja = XLSX.utils.aoa_to_sheet(filas);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, hoja, "Fiscalizacion");
 
   XLSX.writeFile(wb, `fiscalizacion_${ultimasFechas.desde}_a_${ultimasFechas.hasta}.xlsx`);
 }
