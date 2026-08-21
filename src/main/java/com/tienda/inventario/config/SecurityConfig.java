@@ -63,11 +63,16 @@ public class SecurityConfig {
                         // estado/gestion de suscripcion: protegido por clave maestra propia,
                         // no por rol, para que sea independiente del login del tiendero
                         .requestMatchers("/api/sistema/**").permitAll()
-                        // frontend estatico (el login ocurre dentro de la pagina via JS)
+                        // frontend estatico (el login ocurre dentro de la pagina via JS).
+                        // Se permiten las rutas limpias (sin .html, ver PaginasController) y
+                        // tambien los .html originales por compatibilidad con links viejos.
                         .requestMatchers("/", "/login.html", "/dashboard.html", "/productos.html",
                                 "/categorias.html", "/agregar-stock.html", "/estadisticas.html",
                                 "/proveedores.html", "/compras.html", "/venta.html", "/fiscalizacion.html",
                                 "/historial-ventas.html",
+                                "/login", "/dashboard", "/productos", "/categorias", "/agregar-stock",
+                                "/estadisticas", "/proveedores", "/compras", "/venta", "/fiscalizacion",
+                                "/historial-ventas",
                                 "/*.js", "/*.css", "/favicon.ico").permitAll()
                         // ver productos (util para catalogo publico si se necesita)
                         .requestMatchers("GET", "/api/productos/**").hasAnyRole("ADMIN", "VENDEDOR")

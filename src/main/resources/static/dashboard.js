@@ -6,7 +6,7 @@ function getToken() {
 
 function requireAuth() {
   if (!getToken()) {
-    window.location.href = "login.html";
+    window.location.href = "login";
   }
 }
 
@@ -14,7 +14,7 @@ function logout() {
   localStorage.removeItem("token");
   localStorage.removeItem("nombre");
   localStorage.removeItem("roles");
-  window.location.href = "login.html";
+  window.location.href = "login";
 }
 
 function esAdmin() {

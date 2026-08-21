@@ -13,33 +13,33 @@
   <aside id="sidebar" class="sidebar">
     <div class="sidebar-header">🏪 Tienda</div>
     <nav class="sidebar-nav">
-      <a href="dashboard.html" data-pagina="inicio">Inicio</a>
-      <a href="venta.html" data-pagina="venta">Vender</a>
-      <a href="agregar-stock.html" data-pagina="agregar-stock" data-solo-admin="1">Agregar stock</a>
+      <a href="dashboard" data-pagina="inicio">Inicio</a>
+      <a href="venta" data-pagina="venta">Vender</a>
+      <a href="agregar-stock" data-pagina="agregar-stock" data-solo-admin="1">Agregar stock</a>
 
       <button class="grupo-toggle" data-grupo="catalogo" data-solo-admin="1" onclick="toggleGrupo('catalogo')">
         <span>Catalogo</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-catalogo" data-grupo="catalogo">
-        <a href="categorias.html" data-pagina="categorias" data-solo-admin="1">Categorias</a>
-        <a href="productos.html" data-pagina="productos" data-solo-admin="1">Productos</a>
+        <a href="categorias" data-pagina="categorias" data-solo-admin="1">Categorias</a>
+        <a href="productos" data-pagina="productos" data-solo-admin="1">Productos</a>
       </div>
 
       <button class="grupo-toggle" data-grupo="abastecimiento" data-solo-admin="1" onclick="toggleGrupo('abastecimiento')">
         <span>Abastecimiento</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-abastecimiento" data-grupo="abastecimiento">
-        <a href="proveedores.html" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
-        <a href="compras.html" data-pagina="compras" data-solo-admin="1">Compras</a>
+        <a href="proveedores" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
+        <a href="compras" data-pagina="compras" data-solo-admin="1">Compras</a>
       </div>
 
       <button class="grupo-toggle" data-grupo="reportes" data-solo-admin="1" onclick="toggleGrupo('reportes')">
         <span>Reportes</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-reportes" data-grupo="reportes">
-        <a href="historial-ventas.html" data-pagina="historial-ventas" data-solo-admin="1">Historial de ventas</a>
-        <a href="estadisticas.html" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
-        <a href="fiscalizacion.html" data-pagina="fiscalizacion" data-solo-admin="1">Fiscalizacion</a>
+        <a href="historial-ventas" data-pagina="historial-ventas" data-solo-admin="1">Historial de ventas</a>
+        <a href="estadisticas" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
+        <a href="fiscalizacion" data-pagina="fiscalizacion" data-solo-admin="1">Fiscalizacion</a>
       </div>
     </nav>
     <div class="sidebar-footer">
@@ -56,6 +56,11 @@
     </div>
     <div class="pagina">
 
+      <div id="bannerSuscripcion" class="banner-suscripcion oculto">
+        <span class="icono">⚠️</span>
+        <span id="bannerSuscripcionTexto"></span>
+      </div>
+
       <div id="mensajeInicio"></div>
 
       <div class="stat-grid" id="statGrid">
@@ -64,16 +69,16 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="cardAccesosDirectos">
         <h2>Accesos directos</h2>
         <div class="tile-grid">
-          <a class="tile" href="venta.html">🛒 Vender<small>Escanear y cobrar</small></a>
-          <a class="tile" href="productos.html" data-solo-admin="1">📦 Productos<small>Ver, editar, stock</small></a>
-          <a class="tile" href="agregar-stock.html" data-solo-admin="1">➕ Agregar stock<small>Escanear entradas</small></a>
-          <a class="tile" href="compras.html" data-solo-admin="1">🧾 Compras<small>Registrar a proveedor</small></a>
-          <a class="tile" href="proveedores.html" data-solo-admin="1">🚚 Proveedores<small>Gestionar</small></a>
-          <a class="tile" href="categorias.html" data-solo-admin="1">📁 Categorias<small>Gestionar</small></a>
-          <a class="tile" href="estadisticas.html" data-solo-admin="1">📊 Estadisticas<small>Reportes de venta</small></a>
+          <a class="tile" href="venta">🛒 Vender<small>Escanear y cobrar</small></a>
+          <a class="tile" href="productos" data-solo-admin="1">📦 Productos<small>Ver, editar, stock</small></a>
+          <a class="tile" href="agregar-stock" data-solo-admin="1">➕ Agregar stock<small>Escanear entradas</small></a>
+          <a class="tile" href="compras" data-solo-admin="1">🧾 Compras<small>Registrar a proveedor</small></a>
+          <a class="tile" href="proveedores" data-solo-admin="1">🚚 Proveedores<small>Gestionar</small></a>
+          <a class="tile" href="categorias" data-solo-admin="1">📁 Categorias<small>Gestionar</small></a>
+          <a class="tile" href="estadisticas" data-solo-admin="1">📊 Estadisticas<small>Reportes de venta</small></a>
         </div>
       </div>
 
@@ -93,7 +98,28 @@ function fechaISO(date) {
   return date.toISOString().slice(0, 10);
 }
 
+async function suscripcionActiva() {
+  try {
+    const estado = await apiFetch("/sistema/estado");
+    if (!estado.activa) {
+      document.getElementById("bannerSuscripcionTexto").innerText = estado.mensaje;
+      document.getElementById("bannerSuscripcion").classList.remove("oculto");
+      return false;
+    }
+    return true;
+  } catch (e) {
+    // si el chequeo mismo falla (ej. sin internet), no bloqueamos el resto de la pagina
+    return true;
+  }
+}
+
 async function cargarInicio() {
+  if (!(await suscripcionActiva())) {
+    document.getElementById("statGrid").innerHTML = "";
+    document.getElementById("cardAccesosDirectos").classList.add("oculto");
+    return;
+  }
+
   const grid = document.getElementById("statGrid");
   const tarjetas = [];
 

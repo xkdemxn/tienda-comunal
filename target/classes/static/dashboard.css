@@ -306,6 +306,22 @@ button.secundario.activo {
 .msg.ok { background: #dcfce7; color: #166534; }
 .msg.error { background: #fee2e2; color: #991b1b; }
 .oculto { display: none; }
+
+/* ---------- Aviso destacado de suscripcion suspendida (Inicio) ---------- */
+.banner-suscripcion {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  background: #fef2f2;
+  border: 2px solid #dc2626;
+  color: #7f1d1d;
+  font-weight: 600;
+  font-size: 15px;
+}
+.banner-suscripcion .icono { font-size: 28px; line-height: 1; }
 .modal-fondo {
   position: fixed;
   inset: 0;

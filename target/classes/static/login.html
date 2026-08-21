@@ -24,7 +24,7 @@
 <script>
 // Si ya hay sesion, no tiene sentido mostrar el login de nuevo
 if (getToken()) {
-  window.location.href = "dashboard.html";
+  window.location.href = "dashboard";
 }
 
 async function login() {
@@ -44,7 +44,7 @@ async function login() {
     localStorage.setItem("token", data.token);
     localStorage.setItem("nombre", data.nombre || "");
     localStorage.setItem("roles", JSON.stringify(data.roles || []));
-    window.location.href = "dashboard.html";
+    window.location.href = "dashboard";
   } catch (e) {
     msgDiv.innerHTML = `<div class="msg error">${e.message}</div>`;
   }
