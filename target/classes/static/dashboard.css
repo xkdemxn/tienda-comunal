@@ -2,8 +2,8 @@
   --bg: #f1f5f9;
   --card: #ffffff;
   --sidebar: #ffffff;
-  --accent: #16a34a;
-  --accent-dark: #15803d;
+  --accent: #0d7730;
+  --accent-dark: #116b32;
   --text: #0f172a;
   --muted: #64748b;
   --danger: #dc2626;
@@ -419,9 +419,17 @@ button.secundario.activo {
   blur: 0.5px;
 }
 .login-footer {
+  display: flex;
+  flex-direction: column;
   text-align: center;
   color: rgba(255, 255, 255, .85);
   font-size: 12px;
   padding: 16px;
   text-shadow: 0 1px 4px rgba(0, 0, 0, .4);
+}
+
+.login-footer a {
+  color: rgba(244, 138, 0, 0.85);
+  text-decoration: none;
+
 }
