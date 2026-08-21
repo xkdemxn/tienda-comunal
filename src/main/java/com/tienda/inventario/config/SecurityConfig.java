@@ -73,7 +73,7 @@ public class SecurityConfig {
                                 "/login", "/dashboard", "/productos", "/categorias", "/agregar-stock",
                                 "/estadisticas", "/proveedores", "/compras", "/venta", "/fiscalizacion",
                                 "/historial-ventas",
-                                "/*.js", "/*.css", "/favicon.ico").permitAll()
+                                "/*.js", "/*.css", "/favicon.ico", "/img/**").permitAll()
                         // ver productos (util para catalogo publico si se necesita)
                         .requestMatchers("GET", "/api/productos/**").hasAnyRole("ADMIN", "VENDEDOR")
                         // registrar ventas: admin y vendedor
