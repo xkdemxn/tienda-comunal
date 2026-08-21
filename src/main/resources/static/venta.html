@@ -41,6 +41,7 @@
       <a href="agregar-stock.html" data-pagina="agregar-stock" data-solo-admin="1">Agregar stock</a>
       <a href="proveedores.html" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
       <a href="compras.html" data-pagina="compras" data-solo-admin="1">Compras</a>
+      <a href="historial-ventas.html" data-pagina="historial-ventas" data-solo-admin="1">Historial de ventas</a>
       <a href="estadisticas.html" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
       <a href="fiscalizacion.html" data-pagina="fiscalizacion" data-solo-admin="1">Fiscalizacion</a>
     </nav>
@@ -211,11 +212,13 @@ function renderCarrito() {
       <div class="item">
         <div>
           ${item.nombre}
-          <small>${item.cantidad} x $${item.precio.toFixed(2)}</small>
+          <small>$${item.precio.toFixed(2)} c/u</small>
         </div>
-        <div>
-          $${subtotal.toFixed(2)}
-          <button class="secundario" style="width:auto; padding:4px 8px; margin-left:8px"
+        <div style="display:flex; align-items:center; gap:8px">
+          <input type="number" min="1" value="${item.cantidad}" style="width:60px; margin-bottom:0"
+                 onchange="actualizarCantidadCarrito(${idx}, this.value)">
+          <span>$${subtotal.toFixed(2)}</span>
+          <button class="secundario" style="width:auto; padding:4px 8px"
                   onclick="quitarDelCarrito(${idx})">✕</button>
         </div>
       </div>`;
@@ -224,6 +227,16 @@ function renderCarrito() {
   document.getElementById("totalCarrito").innerText = `$${total.toFixed(2)}`;
   document.getElementById("unidadesCarrito").innerText =
     `${unidades} producto${unidades === 1 ? "" : "s"}`;
+}
+
+function actualizarCantidadCarrito(idx, valor) {
+  const cantidad = parseInt(valor, 10);
+  if (!cantidad || cantidad < 1) {
+    renderCarrito(); // revierte el input a su valor anterior
+    return;
+  }
+  carrito[idx].cantidad = cantidad;
+  renderCarrito();
 }
 
 function quitarDelCarrito(idx) {

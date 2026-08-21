@@ -61,6 +61,7 @@ public class SecurityConfig {
                         .requestMatchers("/", "/login.html", "/dashboard.html", "/productos.html",
                                 "/categorias.html", "/agregar-stock.html", "/estadisticas.html",
                                 "/proveedores.html", "/compras.html", "/venta.html", "/fiscalizacion.html",
+                                "/historial-ventas.html",
                                 "/*.js", "/*.css", "/favicon.ico").permitAll()
                         // ver productos (util para catalogo publico si se necesita)
                         .requestMatchers("GET", "/api/productos/**").hasAnyRole("ADMIN", "VENDEDOR")

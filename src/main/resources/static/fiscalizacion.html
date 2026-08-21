@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fiscalizacion</title>
 <link rel="stylesheet" href="dashboard.css">
-<script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/xlsx-js-style/dist/xlsx.bundle.js"></script>
 </head>
 <body>
 
@@ -21,6 +21,7 @@
       <a href="agregar-stock.html" data-pagina="agregar-stock" data-solo-admin="1">Agregar stock</a>
       <a href="proveedores.html" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
       <a href="compras.html" data-pagina="compras" data-solo-admin="1">Compras</a>
+      <a href="historial-ventas.html" data-pagina="historial-ventas" data-solo-admin="1">Historial de ventas</a>
       <a href="estadisticas.html" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
       <a href="fiscalizacion.html" data-pagina="fiscalizacion" data-solo-admin="1">Fiscalizacion</a>
     </nav>
@@ -182,6 +183,16 @@ async function cargarFiscalizacion() {
 }
 
 // ---------- DESCARGAR EXCEL (una sola hoja, todos los productos, con columna Categoria) ----------
+const NUM_COLUMNAS_EXCEL = ENCABEZADOS_FISCALIZACION.length + 1; // + Categoria
+
+function aplicarEstiloFila(hoja, filaIndex, estilo) {
+  for (let c = 0; c < NUM_COLUMNAS_EXCEL; c++) {
+    const addr = XLSX.utils.encode_cell({ r: filaIndex, c });
+    if (!hoja[addr]) hoja[addr] = { t: "s", v: "" };
+    hoja[addr].s = estilo;
+  }
+}
+
 function descargarExcel() {
   if (!ultimoReporte || Object.keys(ultimoReporte.porCategoria || {}).length === 0) {
     alert("Primero genera el informe (no hay datos para descargar)");
@@ -195,6 +206,7 @@ function descargarExcel() {
     ["Categoria", ...ENCABEZADOS_FISCALIZACION]
   ];
 
+  const filasSubtotal = [];
   Object.entries(ultimoReporte.porCategoria).forEach(([categoria, items]) => {
     let subtotalGanancia = 0;
 
@@ -208,12 +220,22 @@ function descargarExcel() {
     });
 
     filas.push(["", `Subtotal ganancia — ${categoria}`, "", "", "", "", "", "", "", "", "", "", subtotalGanancia]);
+    filasSubtotal.push(filas.length - 1);
   });
 
   filas.push([]);
   filas.push(["", "GANANCIA TOTAL DEL PERIODO", "", "", "", "", "", "", "", "", "", "", ultimoReporte.totalGeneralGanancia]);
+  const filaTotalGeneral = filas.length - 1;
 
   const hoja = XLSX.utils.aoa_to_sheet(filas);
+
+  aplicarEstiloFila(hoja, 0, { font: { bold: true, sz: 14 } }); // titulo
+  aplicarEstiloFila(hoja, 3, { font: { bold: true }, fill: { fgColor: { rgb: "DCE6F1" } } }); // encabezados
+  filasSubtotal.forEach(fila =>
+    aplicarEstiloFila(hoja, fila, { font: { bold: true }, fill: { fgColor: { rgb: "FFF2CC" } } })
+  );
+  aplicarEstiloFila(hoja, filaTotalGeneral, { font: { bold: true }, fill: { fgColor: { rgb: "D9EAD3" } } });
+
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, hoja, "Fiscalizacion");
 

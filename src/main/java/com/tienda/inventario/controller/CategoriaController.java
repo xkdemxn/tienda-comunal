@@ -26,6 +26,15 @@ public class CategoriaController {
         return ResponseEntity.ok(categoriaRepository.save(categoria));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<Categoria> actualizar(@PathVariable Long id, @Valid @RequestBody Categoria datos) {
+        Categoria categoria = categoriaRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Categoria no encontrada con id: " + id));
+        categoria.setNombre(datos.getNombre());
+        categoria.setDescripcion(datos.getDescripcion());
+        return ResponseEntity.ok(categoriaRepository.save(categoria));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         categoriaRepository.deleteById(id);

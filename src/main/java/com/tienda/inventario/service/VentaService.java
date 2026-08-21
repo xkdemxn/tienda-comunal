@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -71,6 +72,16 @@ public class VentaService {
 
         Venta guardada = ventaRepository.save(venta);
         return mapearResponse(guardada);
+    }
+
+    /**
+     * Historial de ventas individuales en un rango de fechas (mas recientes primero),
+     * para mostrar hora, total y detalle de cada venta puntual.
+     */
+    public List<VentaResponse> listarVentas(LocalDateTime desde, LocalDateTime hasta) {
+        return ventaRepository.findByFechaBetweenOrderByFechaDesc(desde, hasta).stream()
+                .map(this::mapearResponse)
+                .toList();
     }
 
     private VentaResponse mapearResponse(Venta venta) {

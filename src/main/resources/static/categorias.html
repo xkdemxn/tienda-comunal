@@ -20,6 +20,7 @@
       <a href="agregar-stock.html" data-pagina="agregar-stock" data-solo-admin="1">Agregar stock</a>
       <a href="proveedores.html" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
       <a href="compras.html" data-pagina="compras" data-solo-admin="1">Compras</a>
+      <a href="historial-ventas.html" data-pagina="historial-ventas" data-solo-admin="1">Historial de ventas</a>
       <a href="estadisticas.html" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
       <a href="fiscalizacion.html" data-pagina="fiscalizacion" data-solo-admin="1">Fiscalizacion</a>
     </nav>
@@ -53,6 +54,19 @@
   </div>
 </div>
 
+<!-- Modal para editar el nombre/descripcion de una categoria -->
+<div id="modalEditarCategoriaFondo" class="modal-fondo oculto" onclick="cerrarModalEditarCategoriaSiFondo(event)">
+  <div class="modal" style="text-align:left">
+    <h2>Editar categoria</h2>
+    <label class="campo">Nombre</label>
+    <input type="text" id="editCategoriaNombre">
+    <label class="campo">Descripcion (opcional)</label>
+    <input type="text" id="editCategoriaDescripcion">
+    <button onclick="guardarEdicionCategoria()">Guardar cambios</button>
+    <button class="secundario" onclick="cerrarModalEditarCategoria()">Cancelar</button>
+  </div>
+</div>
+
 <script src="dashboard.js"></script>
 <script>
 initSidebar("categorias");
@@ -80,8 +94,9 @@ function renderCategorias() {
     div.innerHTML += `
       <div class="item">
         <div>${c.nombre}<small>${c.descripcion || ""}</small></div>
-        <div style="display:flex; gap:6px">
+        <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end">
           <button onclick="verProductosDeCategoria(${c.id})">Ver productos</button>
+          <button class="secundario" onclick="abrirEditarCategoria(${c.id})">Editar</button>
           <button class="secundario" onclick="eliminarCategoria(${c.id})">Eliminar</button>
         </div>
       </div>`;
@@ -90,6 +105,49 @@ function renderCategorias() {
 
 function verProductosDeCategoria(id) {
   window.location.href = `productos.html?categoria=${id}`;
+}
+
+// ---------- EDITAR CATEGORIA ----------
+let categoriaEditandoId = null;
+
+function abrirEditarCategoria(id) {
+  const c = categorias.find(x => x.id === id);
+  if (!c) return;
+  categoriaEditandoId = id;
+  document.getElementById("editCategoriaNombre").value = c.nombre;
+  document.getElementById("editCategoriaDescripcion").value = c.descripcion || "";
+  document.getElementById("modalEditarCategoriaFondo").classList.remove("oculto");
+}
+
+function cerrarModalEditarCategoria() {
+  document.getElementById("modalEditarCategoriaFondo").classList.add("oculto");
+  categoriaEditandoId = null;
+}
+
+function cerrarModalEditarCategoriaSiFondo(event) {
+  if (event.target.id === "modalEditarCategoriaFondo") cerrarModalEditarCategoria();
+}
+
+async function guardarEdicionCategoria() {
+  const nombre = document.getElementById("editCategoriaNombre").value.trim();
+  const descripcion = document.getElementById("editCategoriaDescripcion").value.trim();
+
+  if (!nombre) {
+    mostrarMensajeEn("mensajeCategorias", "Falta el nombre de la categoria", "error");
+    return;
+  }
+
+  try {
+    await apiFetch(`/categorias/${categoriaEditandoId}`, {
+      method: "PUT",
+      body: JSON.stringify({ nombre, descripcion: descripcion || null })
+    });
+    mostrarMensajeEn("mensajeCategorias", "Categoria actualizada", "ok");
+    cerrarModalEditarCategoria();
+    await cargarCategorias();
+  } catch (e) {
+    mostrarMensajeEn("mensajeCategorias", e.message, "error");
+  }
 }
 
 async function crearCategoria() {

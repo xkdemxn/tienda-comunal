@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Historial de ventas</title>
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+<div class="app">
+  <div id="fondoSidebarMovil" class="fondo-sidebar-movil"></div>
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-header">🏪 Tienda</div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" data-pagina="inicio">Inicio</a>
+      <a href="venta.html" data-pagina="venta">Vender</a>
+      <a href="productos.html" data-pagina="productos" data-solo-admin="1">Productos</a>
+      <a href="categorias.html" data-pagina="categorias" data-solo-admin="1">Categorias</a>
+      <a href="agregar-stock.html" data-pagina="agregar-stock" data-solo-admin="1">Agregar stock</a>
+      <a href="proveedores.html" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
+      <a href="compras.html" data-pagina="compras" data-solo-admin="1">Compras</a>
+      <a href="historial-ventas.html" data-pagina="historial-ventas" data-solo-admin="1">Historial de ventas</a>
+      <a href="estadisticas.html" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
+      <a href="fiscalizacion.html" data-pagina="fiscalizacion" data-solo-admin="1">Fiscalizacion</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="nombre" id="sidebarNombre"></div>
+      <div class="rol" id="sidebarRol"></div>
+      <button onclick="logout()">Cerrar sesion</button>
+    </div>
+  </aside>
+
+  <div class="contenido">
+    <div class="topbar">
+      <button id="btnHamburguesa" class="btn-hamburguesa">☰</button>
+      <h1>Historial de ventas</h1>
+    </div>
+    <div class="pagina">
+
+      <div class="card">
+        <label class="campo">Desde</label>
+        <input type="date" id="histDesde">
+        <label class="campo">Hasta</label>
+        <input type="date" id="histHasta">
+        <button onclick="cargarHistorial()">Consultar</button>
+      </div>
+
+      <div id="histResultado"></div>
+
+    </div>
+  </div>
+</div>
+
+<script src="dashboard.js"></script>
+<script>
+initSidebar("historial-ventas");
+
+function hoyISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function prepararFechasHistorial() {
+  const desde = document.getElementById("histDesde");
+  const hasta = document.getElementById("histHasta");
+  if (!hasta.value) hasta.value = hoyISO();
+  if (!desde.value) desde.value = hoyISO();
+}
+
+function formatoFechaLarga(fechaIso) {
+  return new Date(fechaIso).toLocaleDateString("es", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric"
+  });
+}
+
+function formatoHora(fechaIso) {
+  return new Date(fechaIso).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" });
+}
+
+async function cargarHistorial() {
+  prepararFechasHistorial();
+  const desde = `${document.getElementById("histDesde").value}T00:00:00`;
+  const hasta = `${document.getElementById("histHasta").value}T23:59:59`;
+  const div = document.getElementById("histResultado");
+  div.innerHTML = `<p style="color:var(--muted)">Cargando...</p>`;
+
+  try {
+    const ventas = await apiFetch(`/ventas?desde=${desde}&hasta=${hasta}`);
+
+    if (ventas.length === 0) {
+      div.innerHTML = `<p style="color:var(--muted)">Sin ventas en este rango</p>`;
+      return;
+    }
+
+    // Agrupar por dia (la API ya devuelve mas recientes primero)
+    const porDia = new Map();
+    ventas.forEach(v => {
+      const dia = v.fecha.slice(0, 10);
+      if (!porDia.has(dia)) porDia.set(dia, []);
+      porDia.get(dia).push(v);
+    });
+
+    let html = "";
+    porDia.forEach((ventasDelDia, dia) => {
+      const totalDia = ventasDelDia.reduce((acc, v) => acc + Number(v.totalMonedaLocal), 0);
+      html += `
+        <div class="card">
+          <div class="item" style="border-bottom:none">
+            <div><strong>${formatoFechaLarga(dia + "T00:00:00")}</strong>
+              <small>${ventasDelDia.length} venta${ventasDelDia.length === 1 ? "" : "s"}</small>
+            </div>
+            <strong>$${totalDia.toFixed(2)}</strong>
+          </div>`;
+
+      ventasDelDia.forEach(v => {
+        const items = v.detalles.map(d => `${d.producto} x${d.cantidad}`).join(", ");
+        html += `
+          <div class="item">
+            <div>
+              ${formatoHora(v.fecha)}
+              <small>${items}</small>
+            </div>
+            <strong>$${Number(v.totalMonedaLocal).toFixed(2)}</strong>
+          </div>`;
+      });
+
+      html += `</div>`;
+    });
+
+    div.innerHTML = html;
+  } catch (e) {
+    div.innerHTML = `<div class="msg error">${e.message}</div>`;
+  }
+}
+
+cargarHistorial();
+</script>
+
+</body>
+</html>

@@ -20,6 +20,7 @@
       <a href="agregar-stock.html" data-pagina="agregar-stock" data-solo-admin="1">Agregar stock</a>
       <a href="proveedores.html" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
       <a href="compras.html" data-pagina="compras" data-solo-admin="1">Compras</a>
+      <a href="historial-ventas.html" data-pagina="historial-ventas" data-solo-admin="1">Historial de ventas</a>
       <a href="estadisticas.html" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
       <a href="fiscalizacion.html" data-pagina="fiscalizacion" data-solo-admin="1">Fiscalizacion</a>
     </nav>
@@ -143,8 +144,8 @@ function filtrarProductos() {
     let coincideCategoria = true;
     if (filtroCategoria === "sin-categoria") {
       coincideCategoria = !p.categoria;
-    } else if (filtroCategoria !== "todas") {
-      coincideCategoria = p.categoria && String(p.categoria.id) === filtroCategoria;
+    } else if (filtroCategoria !== "todas" && filtroCategoria !== "") {
+      coincideCategoria = !!p.categoria && Number(p.categoria.id) === Number(filtroCategoria);
     }
     return coincideNombre && coincideCategoria;
   });
