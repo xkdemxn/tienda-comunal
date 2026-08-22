@@ -60,6 +60,12 @@ public class Producto {
     @Column(nullable = false)
     private Boolean activo = true;
 
+    // Ej: carne, que se cobra segun lo que pese en la balanza, no por unidad
+    // entera. precioVenta se interpreta como "precio por libra" en ese caso.
+    // No se lleva stock exacto para estos productos (ver VentaService).
+    @Column(nullable = false)
+    private Boolean vendidoPorPeso = false;
+
     // Version para bloqueo optimista: evita que dos ventas simultaneas
     // dejen el stock inconsistente cuando se escanea el mismo producto
     // casi al mismo tiempo desde dos dispositivos distintos.

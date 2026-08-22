@@ -68,7 +68,11 @@
         <button class="secundario" onclick="descargarExcel()"><i class="bi bi-download"></i> Descargar Excel</button>
       </div>
 
-      <div id="fiscalResultado"></div>
+      <div id="fiscalResultado">
+
+        <h1>DATOS DE FISCALIZACION</h1>
+        
+      </div>
 
     </div>
   </div>
@@ -159,10 +163,11 @@ async function cargarFiscalizacion() {
     const totales = calcularTotalesGenerales(r.porCategoria);
 
     let html = `
+      <div class="seccion-titulo">Resumen general</div>
       <div class="card">
         <div class="item">
           <div>Total de productos existentes</div>
-          <strong>$${formatoNumero(totales.existentesValor)} · ${totales.existentesUnidades} unidades</strong>
+          <strong style="color:#ff7300">$${formatoNumero(totales.existentesValor)} · ${totales.existentesUnidades} unidades</strong>
         </div>
         <div class="item">
           <div>Total de productos vendidos</div>
@@ -184,13 +189,14 @@ async function cargarFiscalizacion() {
 
     html += renderGastosYCierre(r, gastos);
 
+    html += `<div class="seccion-titulo">Informe por categorias</div>`;
     categorias.forEach(categoria => {
       const items = r.porCategoria[categoria];
       const unidadesCategoria = sumaCampo(items, "existenciaActual");
       const valorSiVendidoCategoria = sumaCampo(items, "valorExistencia");
       html += `
         <div class="card">
-          <h2>${categoria}</h2>
+          <h2>Categoria: ${categoria}</h2>
           <p style="color:var(--muted); font-size:13px; margin:-4px 0 12px">
             ${unidadesCategoria} unidades en existencia ·
             valor si se vendiera todo: $${formatoNumero(valorSiVendidoCategoria)}
@@ -272,8 +278,8 @@ function renderGastosYCierre(r, gastos) {
   }
 
   return `
+    <div class="seccion-titulo">Gastos del periodo</div>
     <div class="card">
-      <h2>Gastos del periodo</h2>
       <input type="text" id="gastoDescripcion" placeholder="Ej: Pago a trabajador">
       <input type="number" min="0.01" step="0.01" id="gastoMonto" placeholder="Monto">
       <button onclick="agregarGasto()">Agregar gasto</button>
@@ -285,8 +291,8 @@ function renderGastosYCierre(r, gastos) {
       </div>
     </div>
 
+    <div class="seccion-titulo">Cierre de caja</div>
     <div class="card">
-      <h2>Cierre de caja</h2>
       <div class="item">
         <div>Ganancia del periodo</div>
         <strong>$${formatoNumero(r.totalGeneralGanancia)}</strong>
@@ -296,7 +302,7 @@ function renderGastosYCierre(r, gastos) {
         <strong>-$${formatoNumero(r.totalGastos)}</strong>
       </div>
       <div class="item">
-        <div><strong>q (ganancia − gastos)</strong></div>
+        <div>q (ganancia − gastos)</div>
         <strong>$${formatoNumero(r.q)}</strong>
       </div>
       <div class="item">

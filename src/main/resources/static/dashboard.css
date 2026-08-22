@@ -249,15 +249,31 @@ button.grupo-toggle.abierto .grupo-flecha { transform: rotate(180deg); }
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
-.chip.col-azul { background: #eff6ff; color: var(--text); }
-.chip.col-verde { background: #f0fdf4; color: var(--text); }
-.chip.col-tomate { background: #fff4f0; color: var(--text); }
+.chip.col-azul { background: #1d709d; color: var(--text); }
+.chip.col-verde { background: #307823; color: var(--text); }
+.chip.col-tomate { background: #871203; color: var(--text); }
 .tabla-reporte tbody tr:last-child td { border-bottom: none; }
 .tabla-reporte tfoot td {
   font-weight: 700;
   border-top: 2px solid var(--border);
   border-bottom: none;
 }
+
+.chip.col-verde, .chip.col-tomate , .chip.col-azul{
+  color:white;
+}
+/* ---------- Titulo de seccion (fuera de las cards, ej: Fiscalizacion) ---------- */
+.seccion-titulo {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+  margin: 24px 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.seccion-titulo:first-child { margin-top: 0; }
 
 /* ---------- Componentes reutilizados del prototipo original ---------- */
 .card {

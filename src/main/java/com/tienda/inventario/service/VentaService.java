@@ -42,20 +42,37 @@ public class VentaService {
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Producto no encontrado para el codigo: " + item.getCodigoBarras()));
 
-            // Esto reduce el stock y deja registro en el kardex; si no hay
-            // suficiente stock o hay conflicto de concurrencia, lanza excepcion
-            // y toda la transaccion de la venta se revierte (no queda a medias).
-            inventarioService.reducirStock(item.getCodigoBarras(), item.getCantidad(),
-                    TipoMovimiento.VENTA, usuario, "Venta");
-
-            BigDecimal subtotal = producto.getPrecioVenta().multiply(BigDecimal.valueOf(item.getCantidad()));
-            totalLocal = totalLocal.add(subtotal);
-
             DetalleVenta detalle = new DetalleVenta();
             detalle.setVenta(venta);
             detalle.setProducto(producto);
-            detalle.setCantidad(item.getCantidad());
             detalle.setPrecioUnitario(producto.getPrecioVenta());
+
+            BigDecimal subtotal;
+            if (Boolean.TRUE.equals(producto.getVendidoPorPeso())) {
+                // Se vende por peso (ej: carne): no se lleva stock exacto, no
+                // pasa por el kardex. precioVenta se interpreta "por libra".
+                if (item.getPeso() == null || item.getPeso().signum() <= 0) {
+                    throw new IllegalArgumentException(
+                            "Falta indicar el peso vendido para '" + producto.getNombre() + "'");
+                }
+                subtotal = producto.getPrecioVenta().multiply(item.getPeso());
+                detalle.setPeso(item.getPeso());
+                detalle.setCantidad(1);
+            } else {
+                if (item.getCantidad() == null || item.getCantidad() < 1) {
+                    throw new IllegalArgumentException(
+                            "Falta indicar la cantidad para '" + producto.getNombre() + "'");
+                }
+                // Esto reduce el stock y deja registro en el kardex; si no hay
+                // suficiente stock o hay conflicto de concurrencia, lanza excepcion
+                // y toda la transaccion de la venta se revierte (no queda a medias).
+                inventarioService.reducirStock(item.getCodigoBarras(), item.getCantidad(),
+                        TipoMovimiento.VENTA, usuario, "Venta");
+                subtotal = producto.getPrecioVenta().multiply(BigDecimal.valueOf(item.getCantidad()));
+                detalle.setCantidad(item.getCantidad());
+            }
+
+            totalLocal = totalLocal.add(subtotal);
             detalle.setSubtotal(subtotal);
             detalles.add(detalle);
         }
@@ -90,7 +107,8 @@ public class VentaService {
                         d.getProducto().getNombre(),
                         d.getCantidad(),
                         d.getPrecioUnitario(),
-                        d.getSubtotal()))
+                        d.getSubtotal(),
+                        d.getPeso()))
                 .toList();
 
         return new VentaResponse(

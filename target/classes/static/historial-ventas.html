@@ -142,7 +142,9 @@ async function cargarHistorial() {
           </div>`;
 
       ventasDelDia.forEach(v => {
-        const items = v.detalles.map(d => `${d.producto} x${d.cantidad}`).join(", ");
+        const items = v.detalles.map(d =>
+          d.peso ? `${d.producto} (${d.peso} lb)` : `${d.producto} x${d.cantidad}`
+        ).join(", ");
         html += `
           <div class="item">
             <div>

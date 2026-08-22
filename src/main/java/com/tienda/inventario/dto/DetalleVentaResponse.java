@@ -14,4 +14,5 @@ public class DetalleVentaResponse {
     private Integer cantidad;
     private BigDecimal precioUnitario;
     private BigDecimal subtotal;
+    private BigDecimal peso; // solo si el producto se vende por peso
 }

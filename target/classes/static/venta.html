@@ -203,16 +203,16 @@ async function onCodigoDetectado(codigo) {
 }
 
 
-function agregarAlCarrito(producto) {
+function agregarAlCarrito(producto, cantidadInicial = 1) {
   const existente = carrito.find(i => i.codigoBarras === producto.codigoBarras);
   if (existente) {
-    existente.cantidad += 1;
+    existente.cantidad += cantidadInicial;
   } else {
     carrito.push({
       codigoBarras: producto.codigoBarras,
       nombre: producto.nombre,
       precio: producto.precioVenta,
-      cantidad: 1
+      cantidad: cantidadInicial
     });
   }
   renderCarrito();
@@ -225,6 +225,25 @@ function renderCarrito() {
   let unidades = 0;
 
   carrito.forEach((item, idx) => {
+    if (item.esPeso) {
+      const subtotal = item.precio * item.peso;
+      total += subtotal;
+      unidades += 1;
+      div.innerHTML += `
+        <div class="item">
+          <div>
+            ${item.nombre}
+            <small>${item.peso} lb x $${item.precio.toFixed(2)}/lb</small>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px">
+            <span>$${subtotal.toFixed(2)}</span>
+            <button class="secundario" style="width:auto; padding:4px 8px"
+                    onclick="quitarDelCarrito(${idx})"><i class="bi bi-x-lg"></i></button>
+          </div>
+        </div>`;
+      return;
+    }
+
     const subtotal = item.precio * item.cantidad;
     total += subtotal;
     unidades += item.cantidad;
@@ -290,13 +309,24 @@ function buscarProductoParaVenta() {
 
       div.innerHTML = "";
       productos.forEach(p => {
+        const infoStock = p.vendidoPorPeso
+          ? `$${Number(p.precioVenta).toFixed(2)} / libra`
+          : `Stock: ${p.stockActual} · $${Number(p.precioVenta).toFixed(2)} c/u`;
+        const acciones = p.vendidoPorPeso
+          ? `<button onclick="agregarPorPeso(${p.id})">Pesar</button>`
+          : `
+            <div style="display:flex; gap:6px">
+              <button class="secundario" style="width:auto; padding:8px 10px"
+                      onclick="agregarPorMonto(${p.id})" title="Vender por monto en dolares">$</button>
+              <button onclick="agregarProductoBuscado(${p.id})">Agregar</button>
+            </div>`;
         div.innerHTML += `
           <div class="item">
             <div>
               ${p.nombre}
-              <small>Stock: ${p.stockActual} · $${Number(p.precioVenta).toFixed(2)}</small>
+              <small>${infoStock}</small>
             </div>
-            <button onclick="agregarProductoBuscado(${p.id})">Agregar</button>
+            ${acciones}
           </div>`;
       });
       window.__resultadosBusqueda = productos;
@@ -304,6 +334,70 @@ function buscarProductoParaVenta() {
       div.innerHTML = `<div class="msg error">${e.message}</div>`;
     }
   }, 300);
+}
+
+// Vender "$1 de pan": pide un monto, calcula cuantas unidades ENTERAS entran
+// (redondeando hacia abajo) y las agrega. El sobrante (ej: $1 -> 6 panes de
+// $0.15 = $0.90, sobran $0.10) no se registra como vuelto, es una diferencia
+// de caja informal que el tendero decide como manejar.
+function agregarPorMonto(id) {
+  const producto = (window.__resultadosBusqueda || []).find(p => p.id === id);
+  if (!producto) return;
+
+  const montoTexto = prompt(`¿Cuantos dolares de "${producto.nombre}" ($${Number(producto.precioVenta).toFixed(2)} c/u)?`);
+  if (!montoTexto) return;
+
+  const monto = parseFloat(montoTexto);
+  if (!monto || monto <= 0) {
+    mostrarMensajeEn("mensaje", "Ingresa un monto valido", "error");
+    return;
+  }
+
+  const cantidad = Math.floor(monto / producto.precioVenta);
+  if (cantidad < 1) {
+    mostrarMensajeEn("mensaje",
+      `$${monto.toFixed(2)} no alcanza para ni una unidad de "${producto.nombre}"`, "error");
+    return;
+  }
+
+  agregarAlCarrito({
+    codigoBarras: producto.codigoBarras,
+    nombre: producto.nombre,
+    precioVenta: producto.precioVenta
+  }, cantidad);
+
+  mostrarMensajeEn("mensaje", `Agregado: ${cantidad} x ${producto.nombre} (por $${monto.toFixed(2)})`, "ok");
+  document.getElementById("buscarProductoVenta").value = "";
+  document.getElementById("resultadosBusquedaVenta").innerHTML = "";
+}
+
+// Productos vendidos por peso (ej: carne): cada pesada es una linea nueva
+// del carrito, no se suma a una existente como con las unidades enteras.
+function agregarPorPeso(id) {
+  const producto = (window.__resultadosBusqueda || []).find(p => p.id === id);
+  if (!producto) return;
+
+  const pesoTexto = prompt(`¿Cuantas libras de "${producto.nombre}" ($${Number(producto.precioVenta).toFixed(2)}/lb)?`);
+  if (!pesoTexto) return;
+
+  const peso = parseFloat(pesoTexto);
+  if (!peso || peso <= 0) {
+    mostrarMensajeEn("mensaje", "Ingresa un peso valido", "error");
+    return;
+  }
+
+  carrito.push({
+    codigoBarras: producto.codigoBarras,
+    nombre: producto.nombre,
+    precio: producto.precioVenta,
+    peso,
+    esPeso: true
+  });
+  renderCarrito();
+
+  mostrarMensajeEn("mensaje", `Agregado: ${peso} lb de ${producto.nombre}`, "ok");
+  document.getElementById("buscarProductoVenta").value = "";
+  document.getElementById("resultadosBusquedaVenta").innerHTML = "";
 }
 
 function agregarProductoBuscado(id) {
@@ -328,7 +422,9 @@ async function confirmarVenta() {
   }
 
   const body = {
-    items: carrito.map(i => ({ codigoBarras: i.codigoBarras, cantidad: i.cantidad }))
+    items: carrito.map(i => i.esPeso
+      ? { codigoBarras: i.codigoBarras, peso: i.peso }
+      : { codigoBarras: i.codigoBarras, cantidad: i.cantidad })
   };
 
   try {

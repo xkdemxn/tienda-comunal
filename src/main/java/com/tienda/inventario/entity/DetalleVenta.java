@@ -36,4 +36,9 @@ public class DetalleVenta {
 
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal subtotal;
+
+    // Solo se usa para productos vendidos por peso (ej: carne). cantidad
+    // queda en 1 (placeholder) en esos casos; el peso real va aca.
+    @Column(precision = 10, scale = 3)
+    private BigDecimal peso;
 }

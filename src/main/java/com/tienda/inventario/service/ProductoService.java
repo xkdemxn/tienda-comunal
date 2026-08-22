@@ -67,6 +67,7 @@ public class ProductoService {
         producto.setProveedor(datos.getProveedor());
         producto.setCodigoBarrasCaja(datos.getCodigoBarrasCaja());
         producto.setUnidadesPorCaja(datos.getUnidadesPorCaja());
+        producto.setVendidoPorPeso(Boolean.TRUE.equals(datos.getVendidoPorPeso()));
         if (datos.getActivo() != null) {
             // Permite reactivar un producto desactivado enviando activo:true;
             // si el cliente no manda este campo, no se toca (evita desactivar por accidente)

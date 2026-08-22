@@ -115,6 +115,11 @@
     <label class="campo">Unidades por caja</label>
     <input type="number" id="editUnidadesPorCaja" min="1">
 
+    <label class="campo" style="display:flex; align-items:center; gap:8px; margin-top:8px">
+      <input type="checkbox" id="editVendidoPorPeso" style="width:auto; margin:0">
+      Se vende por peso (ej: carne) — el precio de venta es por libra
+    </label>
+
     <button onclick="guardarEdicionProducto()">Guardar cambios</button>
     <button class="secundario" onclick="cerrarModalEditar()">Cancelar</button>
   </div>
@@ -187,14 +192,18 @@ function renderProductos(lista) {
       : "";
     const inactivo = p.activo ? "" : ` · <span style="color:var(--danger)">inactivo</span>`;
     const categoriaTexto = p.categoria ? `${p.categoria.nombre} · ` : "";
+    const porPeso = p.vendidoPorPeso ? " · <strong>por libra</strong>" : "";
+    const badgeStock = p.vendidoPorPeso
+      ? `<span class="badge ok">$${Number(p.precioVenta).toFixed(2)}/lb</span>`
+      : `<span class="badge ${bajo ? "bajo" : "ok"}">${p.stockActual} en stock</span>`;
     div.innerHTML += `
       <div class="item">
         <div>
           ${p.nombre}
-          <small>${categoriaTexto}${p.codigoBarras}${infoCaja}${inactivo}</small>
+          <small>${categoriaTexto}${p.codigoBarras}${infoCaja}${inactivo}${porPeso}</small>
         </div>
         <div class="item-acciones">
-          <span class="badge ${bajo ? "bajo" : "ok"}">${p.stockActual} en stock</span>
+          ${badgeStock}
           <button onclick="verCodigoBarras(${p.id})">Ver</button>
           <button class="secundario" onclick="abrirEditar(${p.id})">Editar</button>
           <button class="secundario" onclick="toggleActivo(${p.id})">${p.activo ? "Desactivar" : "Activar"}</button>
@@ -246,6 +255,7 @@ function abrirEditar(id) {
   document.getElementById("editStockMinimo").value = p.stockMinimo;
   document.getElementById("editCodigoCaja").value = p.codigoBarrasCaja || "";
   document.getElementById("editUnidadesPorCaja").value = p.unidadesPorCaja || "";
+  document.getElementById("editVendidoPorPeso").checked = !!p.vendidoPorPeso;
   document.getElementById("modalEditarFondo").classList.remove("oculto");
 }
 
@@ -293,6 +303,7 @@ async function guardarEdicionProducto() {
     proveedor: p.proveedor || null,
     codigoBarrasCaja: codigoCaja || null,
     unidadesPorCaja: unidadesPorCajaTexto ? parseInt(unidadesPorCajaTexto, 10) : null,
+    vendidoPorPeso: document.getElementById("editVendidoPorPeso").checked,
     activo: p.activo
   };
 
