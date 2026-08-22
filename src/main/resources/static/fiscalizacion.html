@@ -307,15 +307,45 @@ function descargarExcel() {
 
   const hoja = XLSX.utils.aoa_to_sheet(filas);
 
-  aplicarEstiloFila(hoja, 0, { font: { bold: true, sz: 14 } }); // titulo
+  // Ancho por columna (si no, Excel corta el texto de encabezados largos
+  // como "Salida c/ganancia" o "Prod. neto existente").
+  hoja["!cols"] = [
+    { wch: 22 }, // Categoria
+    { wch: 24 }, // Producto
+    { wch: 16 }, // Codigo
+    { wch: 14 }, // Saldo anterior
+    { wch: 15 }, // Entrada del mes
+    { wch: 9 },  // Total
+    { wch: 16 }, // Existencia actual
+    { wch: 15 }, // Valor existencia
+    { wch: 13 }, // Cant. vendida
+    { wch: 17 }, // Salida c/ganancia
+    { wch: 16 }, // Salida p/mercado
+    { wch: 19 }, // Prod. neto existente
+    { wch: 11 }, // Ganancia
+  ];
+
+  // Paleta minimalista (tonos muy suaves, casi blancos) para que se note el
+  // agrupamiento sin ser un bloque de color fuerte - el vendedor igual
+  // distingue titulo / encabezados / subtotal / total por el tono y el bold.
+  const GRIS_CLARO = "F2F2F7";
+  const VERDE_PALIDO = "F1F8F4";
+  const CREMA_PALIDO = "FFFBF0";
+  const BORDE_SUAVE = { bottom: { style: "thin", color: { rgb: "E5E5EA" } } };
+
+  aplicarEstiloFila(hoja, 0, { font: { bold: true, sz: 14, color: { rgb: "1D1D1F" } } }); // titulo
   filasResumenGeneral.forEach(fila =>
-    aplicarEstiloFila(hoja, fila, { font: { bold: true }, fill: { fgColor: { rgb: "D9EAD3" } } })
+    aplicarEstiloFila(hoja, fila, { font: { bold: true, color: { rgb: "1D1D1F" } }, fill: { fgColor: { rgb: VERDE_PALIDO } } })
   );
-  aplicarEstiloFila(hoja, 9, { font: { bold: true }, fill: { fgColor: { rgb: "DCE6F1" } } }); // encabezados
+  aplicarEstiloFila(hoja, 9, { // encabezados
+    font: { bold: true, color: { rgb: "1D1D1F" }, sz: 11 },
+    fill: { fgColor: { rgb: GRIS_CLARO } },
+    border: BORDE_SUAVE
+  });
   filasSubtotal.forEach(fila =>
-    aplicarEstiloFila(hoja, fila, { font: { bold: true }, fill: { fgColor: { rgb: "FFF2CC" } } })
+    aplicarEstiloFila(hoja, fila, { font: { bold: true, color: { rgb: "1D1D1F" } }, fill: { fgColor: { rgb: CREMA_PALIDO } } })
   );
-  aplicarEstiloFila(hoja, filaTotalGeneral, { font: { bold: true }, fill: { fgColor: { rgb: "D9EAD3" } } });
+  aplicarEstiloFila(hoja, filaTotalGeneral, { font: { bold: true, sz: 12, color: { rgb: "1D1D1F" } }, fill: { fgColor: { rgb: VERDE_PALIDO } } });
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, hoja, "Fiscalizacion");
