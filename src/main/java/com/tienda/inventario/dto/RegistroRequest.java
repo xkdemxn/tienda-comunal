@@ -22,5 +22,7 @@ public class RegistroRequest {
     private String password;
 
     // "ADMIN" o "VENDEDOR". Si viene vacio, se asigna VENDEDOR por defecto.
+    // OJO: en POST /api/auth/registro (publico) este campo se ignora, siempre
+    // se crea VENDEDOR. Solo se respeta en POST /api/usuarios (admin).
     private String rol;
 }

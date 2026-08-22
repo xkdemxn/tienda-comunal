@@ -31,12 +31,24 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
 
+    // Publico (sin login): siempre crea VENDEDOR, sin importar que "rol" mande
+    // quien llama. Crear un ADMIN requiere estar logueado como ADMIN (ver
+    // crearUsuarioComoAdmin) para que nadie se pueda auto-asignar el rol.
     @Transactional
     public AuthResponse registrar(RegistroRequest request) {
-        if (usuarioRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Ya existe un usuario con ese email");
-        }
+        Usuario usuario = crearUsuarioInterno(request, RolNombre.VENDEDOR);
 
+        UsuarioPrincipal principal = new UsuarioPrincipal(usuario);
+        String token = jwtUtil.generarToken(principal);
+
+        return new AuthResponse(token, usuario.getEmail(), usuario.getNombre(),
+                List.of("ROLE_VENDEDOR"));
+    }
+
+    // Solo para uso desde un endpoint ya protegido con hasRole("ADMIN"). Aqui
+    // si se respeta el rol pedido (ADMIN o VENDEDOR).
+    @Transactional
+    public Usuario crearUsuarioComoAdmin(RegistroRequest request) {
         RolNombre rolSolicitado;
         try {
             rolSolicitado = request.getRol() == null || request.getRol().isBlank()
@@ -45,10 +57,17 @@ public class AuthService {
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Rol invalido. Usa ADMIN o VENDEDOR");
         }
+        return crearUsuarioInterno(request, rolSolicitado);
+    }
 
-        Rol rol = rolRepository.findByNombre(rolSolicitado)
+    private Usuario crearUsuarioInterno(RegistroRequest request, RolNombre rolNombre) {
+        if (usuarioRepository.existsByEmail(request.getEmail())) {
+            throw new IllegalArgumentException("Ya existe un usuario con ese email");
+        }
+
+        Rol rol = rolRepository.findByNombre(rolNombre)
                 .orElseThrow(() -> new IllegalStateException(
-                        "El rol " + rolSolicitado + " no existe en la base de datos. Ejecuta el seeder de roles."));
+                        "El rol " + rolNombre + " no existe en la base de datos. Ejecuta el seeder de roles."));
 
         Set<Rol> roles = new HashSet<>();
         roles.add(rol);
@@ -60,13 +79,32 @@ public class AuthService {
         usuario.setRoles(roles);
         usuario.setActivo(true);
 
+        return usuarioRepository.save(usuario);
+    }
+
+    // Cambio de contrasena propia: exige la contrasena actual.
+    @Transactional
+    public void cambiarPassword(Long usuarioId, String passwordActual, String passwordNueva) {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+        if (!passwordEncoder.matches(passwordActual, usuario.getPassword())) {
+            throw new IllegalArgumentException("La contrasena actual no es correcta");
+        }
+
+        usuario.setPassword(passwordEncoder.encode(passwordNueva));
         usuarioRepository.save(usuario);
+    }
 
-        UsuarioPrincipal principal = new UsuarioPrincipal(usuario);
-        String token = jwtUtil.generarToken(principal);
+    // Reseteo desde un endpoint protegido con hasRole("ADMIN"): no exige la
+    // contrasena anterior, para cuando otro usuario se olvido la suya.
+    @Transactional
+    public void resetearPassword(Long usuarioId, String passwordNueva) {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
-        return new AuthResponse(token, usuario.getEmail(), usuario.getNombre(),
-                List.of("ROLE_" + rolSolicitado.name()));
+        usuario.setPassword(passwordEncoder.encode(passwordNueva));
+        usuarioRepository.save(usuario);
     }
 
     public AuthResponse login(LoginRequest request) {

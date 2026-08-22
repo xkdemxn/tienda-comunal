@@ -58,8 +58,10 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // login/registro publicos
-                        .requestMatchers("/api/auth/**").permitAll()
+                        // login/registro publicos (rutas explicitas: /api/auth/password NO
+                        // es publica, requiere estar logueado - queda cubierta mas abajo
+                        // por anyRequest().authenticated())
+                        .requestMatchers("/api/auth/login", "/api/auth/registro").permitAll()
                         // estado/gestion de suscripcion: protegido por clave maestra propia,
                         // no por rol, para que sea independiente del login del tiendero
                         .requestMatchers("/api/sistema/**").permitAll()
@@ -81,7 +83,7 @@ public class SecurityConfig {
                         // todo lo de inventario/compras/reportes/admin solo admin
                         .requestMatchers("/api/inventario/**", "/api/compras/**",
                                 "/api/reportes/**", "/api/proveedores/**", "/api/categorias/**",
-                                "/api/admin/**")
+                                "/api/admin/**", "/api/usuarios/**")
                         .hasRole("ADMIN")
                         .requestMatchers("/api/productos/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
