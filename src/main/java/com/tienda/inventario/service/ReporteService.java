@@ -1,6 +1,7 @@
 package com.tienda.inventario.service;
 
 import com.tienda.inventario.dto.FiscalizacionItemDto;
+import com.tienda.inventario.dto.FiscalizacionPorPesoDto;
 import com.tienda.inventario.dto.FiscalizacionResponse;
 import com.tienda.inventario.dto.ProductoStockBajoDto;
 import com.tienda.inventario.dto.ReporteVentasResponse;
@@ -9,6 +10,7 @@ import com.tienda.inventario.entity.MovimientoInventario;
 import com.tienda.inventario.entity.Producto;
 import com.tienda.inventario.entity.Venta;
 import com.tienda.inventario.enums.TipoMovimiento;
+import com.tienda.inventario.repository.DetalleVentaRepository;
 import com.tienda.inventario.repository.MovimientoInventarioRepository;
 import com.tienda.inventario.repository.ProductoRepository;
 import com.tienda.inventario.repository.VentaRepository;
@@ -30,6 +32,7 @@ public class ReporteService {
     private final VentaRepository ventaRepository;
     private final ProductoRepository productoRepository;
     private final MovimientoInventarioRepository movimientoInventarioRepository;
+    private final DetalleVentaRepository detalleVentaRepository;
     private final GastoService gastoService;
     private final DeudorService deudorService;
 
@@ -87,6 +90,13 @@ public class ReporteService {
         Map<String, List<FiscalizacionItemDto>> porCategoria = new LinkedHashMap<>();
 
         for (Producto producto : productosActivos) {
+            // Los productos por peso (ej: carne) nunca pasan por el kardex a
+            // proposito (ver VentaService) - si entraran aca les daria 0 en
+            // todo. Se calculan aparte, mas abajo, directo de las ventas.
+            if (Boolean.TRUE.equals(producto.getVendidoPorPeso())) {
+                continue;
+            }
+
             List<MovimientoInventario> movimientos = movimientosPorProducto
                     .getOrDefault(producto.getId(), List.of());
 
@@ -131,11 +141,50 @@ public class ReporteService {
                 .map(FiscalizacionItemDto::getSumaGanancia)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        List<FiscalizacionPorPesoDto> productosPorPeso = calcularProductosPorPeso(desde, hasta);
+        BigDecimal gananciaPorPeso = productosPorPeso.stream()
+                .map(FiscalizacionPorPesoDto::gananciaEstimada)
+                .filter(g -> g != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        totalGeneralGanancia = totalGeneralGanancia.add(gananciaPorPeso);
+
         BigDecimal totalGastos = gastoService.totalEnRango(desde, hasta);
         BigDecimal q = totalGeneralGanancia.subtract(totalGastos);
         BigDecimal deudasPendientes = deudorService.totalPendiente();
 
-        return new FiscalizacionResponse(porCategoria, totalGeneralGanancia, totalGastos, q, deudasPendientes);
+        return new FiscalizacionResponse(porCategoria, totalGeneralGanancia, totalGastos, q, deudasPendientes,
+                productosPorPeso);
+    }
+
+    // Productos por peso (ej: carne) no tienen kardex, asi que se calculan
+    // directo de DetalleVenta en vez de MovimientoInventario.
+    private List<FiscalizacionPorPesoDto> calcularProductosPorPeso(LocalDateTime desde, LocalDateTime hasta) {
+        // Se agrupa por id (no por la entidad directamente) para no depender
+        // de que Producto tenga equals/hashCode propios.
+        Map<Long, List<DetalleVenta>> porProductoId = detalleVentaRepository
+                .findConPesoEnRango(desde, hasta).stream()
+                .collect(Collectors.groupingBy(d -> d.getProducto().getId()));
+
+        return porProductoId.values().stream()
+                .map(detalles -> {
+                    Producto producto = detalles.get(0).getProducto();
+
+                    BigDecimal pesoVendido = detalles.stream()
+                            .map(DetalleVenta::getPeso)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal ingresoTotal = detalles.stream()
+                            .map(DetalleVenta::getSubtotal)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                    BigDecimal gananciaEstimada = null;
+                    if (producto.getPrecioCompra() != null) {
+                        BigDecimal costoTotal = producto.getPrecioCompra().multiply(pesoVendido);
+                        gananciaEstimada = ingresoTotal.subtract(costoTotal);
+                    }
+
+                    return new FiscalizacionPorPesoDto(producto.getNombre(), pesoVendido, ingresoTotal, gananciaEstimada);
+                })
+                .toList();
     }
 
     private boolean esEntrada(TipoMovimiento tipo) {

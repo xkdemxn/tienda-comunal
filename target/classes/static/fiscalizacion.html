@@ -18,7 +18,7 @@
       <a href="dashboard" data-pagina="inicio">Inicio</a>
       <a href="venta" data-pagina="venta">Vender</a>
       <a href="agregar-stock" data-pagina="agregar-stock" data-solo-admin="1">Agregar stock</a>
-      <a href="deudores" data-pagina="deudores">Deudores</a>
+      <a href="deudores" data-pagina="deudores">Fiar</a>
 
       <button class="grupo-toggle" data-grupo="catalogo" data-solo-admin="1" onclick="toggleGrupo('catalogo')">
         <span>Catalogo</span><span class="grupo-flecha">▾</span>
@@ -167,7 +167,7 @@ async function cargarFiscalizacion() {
       <div class="card">
         <div class="item">
           <div>Total de productos existentes</div>
-          <strong style="color:#ff7300">$${formatoNumero(totales.existentesValor)} · ${totales.existentesUnidades} unidades</strong>
+          <strong style="color:var(--accent)">$${formatoNumero(totales.existentesValor)} · ${totales.existentesUnidades} unidades</strong>
         </div>
         <div class="item">
           <div>Total de productos vendidos</div>
@@ -188,6 +188,8 @@ async function cargarFiscalizacion() {
       </div>`;
 
     html += renderGastosYCierre(r, gastos);
+
+    html += renderProductosPorPeso(r.productosPorPeso || []);
 
     html += `<div class="seccion-titulo">Informe por categorias</div>`;
     categorias.forEach(categoria => {
@@ -318,6 +320,44 @@ function renderGastosYCierre(r, gastos) {
       <div class="item" style="border-bottom:none">
         <div><strong>Ingresa al siguiente mes</strong></div>
         <strong id="cierreSiguienteMes" class="total-general">$${formatoNumero(Number(r.q) + Number(r.deudasPendientes))}</strong>
+      </div>
+    </div>`;
+}
+
+// ---------- PRODUCTOS POR PESO (ej: carnes) ----------
+// Quedan afuera del "Informe por categorias" porque no tienen kardex (no se
+// les lleva stock exacto) - su ganancia se calcula directo de las ventas y
+// ya esta sumada dentro de "Ganancia total del periodo" de arriba.
+function renderProductosPorPeso(productos) {
+  if (productos.length === 0) return "";
+
+  const filas = productos.map(p => `
+    <tr>
+      <td>${p.producto}</td>
+      <td>${Number(p.pesoVendido).toFixed(2)} lb</td>
+      <td>$${formatoNumero(p.ingresoTotal)}</td>
+      <td>${p.gananciaEstimada != null ? "$" + formatoNumero(p.gananciaEstimada) : "N/D"}</td>
+    </tr>`).join("");
+
+  return `
+    <div class="seccion-titulo">Productos por peso (ej. carnes)</div>
+    <div class="card">
+      <p style="color:var(--muted); font-size:13px; margin:-4px 0 12px">
+        No llevan stock exacto (se venden por libra/peso) - la ganancia sale de comparar lo
+        vendido contra el precio de compra configurado en el producto.
+      </p>
+      <div class="tabla-scroll">
+        <table class="tabla-reporte">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th><span class="chip col-azul">Peso vendido</span></th>
+              <th><span class="chip col-tomate">Ingreso</span></th>
+              <th><span class="chip col-verde">Ganancia estimada</span></th>
+            </tr>
+          </thead>
+          <tbody>${filas}</tbody>
+        </table>
       </div>
     </div>`;
 }

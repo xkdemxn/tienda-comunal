@@ -26,4 +26,10 @@ public class FiscalizacionResponse {
     private BigDecimal totalGastos;
     private BigDecimal q;
     private BigDecimal deudasPendientes;
+
+    // Productos "vendidos por peso" (ej: carne): quedan fuera de porCategoria
+    // porque no tienen kardex (no se les lleva stock), asi que el informe por
+    // categoria siempre les daria 0 en todo. Su ganancia real se calcula
+    // directo de las ventas y ya esta sumada dentro de totalGeneralGanancia.
+    private List<FiscalizacionPorPesoDto> productosPorPeso;
 }

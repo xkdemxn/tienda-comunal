@@ -185,6 +185,9 @@ button.grupo-toggle.abierto .grupo-flecha { transform: rotate(180deg); }
   padding: 18px;
 }
 .stat-card .valor { font-size: 26px; font-weight: 700; margin: 6px 0 2px; }
+.stat-card .valor.valor-alerta { color: var(--danger); }
+.stat-card .valor.valor-positivo { color: #307823; }
+.stat-card .valor.valor-azul { color: #1d709d; }
 .stat-card .etiqueta { font-size: 13px; color: var(--muted); }
 
 .tile-grid {
@@ -363,7 +366,7 @@ button.secundario.activo {
 .item:last-child { border-bottom: none; }
 .item small { color: var(--muted); display: block; }
 .hora-venta { color: #15803d; font-weight: 700; }
-.total-general { color: #7f1d1d; font-size: 20px; }
+.total-general { color: #e40000; font-size: 20px; }
 @media (max-width: 480px) {
   #histResultado .item > strong:last-child {
     width: 100%;

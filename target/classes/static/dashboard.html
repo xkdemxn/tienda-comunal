@@ -30,7 +30,7 @@
       <a href="dashboard" data-pagina="inicio">Inicio</a>
       <a href="venta" data-pagina="venta">Vender</a>
       <a href="agregar-stock" data-pagina="agregar-stock" data-solo-admin="1">Agregar stock</a>
-      <a href="deudores" data-pagina="deudores">Deudores</a>
+      <a href="deudores" data-pagina="deudores">Fiar</a>
 
       <button class="grupo-toggle" data-grupo="catalogo" data-solo-admin="1" onclick="toggleGrupo('catalogo')">
         <span>Catalogo</span><span class="grupo-flecha">▾</span>
@@ -150,15 +150,19 @@ async function cargarInicio() {
 
   try {
     const stockBajo = await apiFetch("/productos/stock-bajo");
-    tarjetas.push({ etiqueta: "Con stock bajo", valor: stockBajo.length });
+    tarjetas.push({
+      etiqueta: "Con stock bajo",
+      valor: stockBajo.length,
+      alerta: stockBajo.length > 0
+    });
   } catch (e) {}
 
   if (esAdmin()) {
     try {
       const hoy = fechaISO(new Date());
       const reporte = await apiFetch(`/reportes/ventas?desde=${hoy}T00:00:00&hasta=${hoy}T23:59:59`);
-      tarjetas.push({ etiqueta: "Ventas de hoy", valor: `$${Number(reporte.totalVendido).toFixed(2)}` });
-      tarjetas.push({ etiqueta: "Cantidad de ventas hoy", valor: reporte.cantidadVentas });
+      tarjetas.push({ etiqueta: "Ventas de hoy", valor: `$${Number(reporte.totalVendido).toFixed(2)}`, positivo: true });
+      tarjetas.push({ etiqueta: "Cantidad de ventas hoy", valor: reporte.cantidadVentas, azul: true });
     } catch (e) {}
   }
 
@@ -171,7 +175,7 @@ async function cargarInicio() {
   grid.innerHTML = tarjetas.map(t => `
     <div class="stat-card">
       <div class="etiqueta">${t.etiqueta}</div>
-      <div class="valor">${t.valor}</div>
+      <div class="valor${t.alerta ? " valor-alerta" : ""}${t.positivo ? " valor-positivo" : ""}${t.azul ? " valor-azul" : ""}">${t.valor}</div>
     </div>`).join("");
 }
 
