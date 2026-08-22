@@ -166,6 +166,10 @@ async function cargarFiscalizacion() {
       <div class="seccion-titulo">Resumen general</div>
       <div class="card">
         <div class="item">
+          <div>Total de ventas del periodo <small>bruto, sin restar costo ni gastos</small></div>
+          <strong style="color:#1d709d">$${formatoNumero(r.totalVentasBruto)}</strong>
+        </div>
+        <div class="item">
           <div>Total de productos existentes</div>
           <strong style="color:var(--accent)">$${formatoNumero(totales.existentesValor)} · ${totales.existentesUnidades} unidades</strong>
         </div>
@@ -433,6 +437,7 @@ function descargarExcel() {
     ["Informe de Fiscalizacion Mensual"],
     ["Desde", ultimasFechas.desde, "Hasta", ultimasFechas.hasta],
     [],
+    ["Total de ventas del periodo (bruto)", ultimoReporte.totalVentasBruto],
     ["Total de productos existentes", totales.existentesValor, "Unidades", totales.existentesUnidades],
     ["Total de productos vendidos", totales.vendidos],
     ["Total de productos de compras", totales.deCompras],
@@ -441,7 +446,8 @@ function descargarExcel() {
     [],
     ["Categoria", ...ENCABEZADOS_FISCALIZACION]
   ];
-  const filasResumenGeneral = [3, 4, 5, 6, 7];
+  const filasResumenGeneral = [3, 4, 5, 6, 7, 8];
+  const filaEncabezados = filas.length - 1; // fila "Categoria, Producto, ..." recien agregada arriba
 
   const filasSubtotal = [];
   const filasDatos = [];
@@ -514,7 +520,7 @@ function descargarExcel() {
   filasResumenGeneral.forEach(fila =>
     aplicarEstiloFila(hoja, fila, { font: { bold: true, color: { rgb: "1D1D1F" } }, fill: { fgColor: { rgb: VERDE_PALIDO } } })
   );
-  aplicarEstiloFila(hoja, 9, { // encabezados
+  aplicarEstiloFila(hoja, filaEncabezados, { // encabezados
     font: { bold: true, color: { rgb: "1D1D1F" }, sz: 11 },
     fill: { fgColor: { rgb: GRIS_CLARO } },
     border: BORDE_SUAVE

@@ -16,6 +16,10 @@ public class FiscalizacionResponse {
     private Map<String, List<FiscalizacionItemDto>> porCategoria;
     private BigDecimal totalGeneralGanancia;
 
+    // Suma literal de Venta.totalMonedaLocal en el rango: todo el dinero que
+    // entro por ventas, sin restar costo ni gastos (a diferencia de "ganancia").
+    private BigDecimal totalVentasBruto;
+
     // Cierre de caja del periodo:
     //   totalGastos: gastos registrados en el rango (pago a trabajador, etc.)
     //   q: totalGeneralGanancia - totalGastos

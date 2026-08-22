@@ -152,8 +152,12 @@ public class ReporteService {
         BigDecimal q = totalGeneralGanancia.subtract(totalGastos);
         BigDecimal deudasPendientes = deudorService.totalPendiente();
 
-        return new FiscalizacionResponse(porCategoria, totalGeneralGanancia, totalGastos, q, deudasPendientes,
-                productosPorPeso);
+        BigDecimal totalVentasBruto = ventaRepository.findByFechaBetween(desde, hasta).stream()
+                .map(Venta::getTotalMonedaLocal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return new FiscalizacionResponse(porCategoria, totalGeneralGanancia, totalVentasBruto, totalGastos, q,
+                deudasPendientes, productosPorPeso);
     }
 
     // Productos por peso (ej: carne) no tienen kardex, asi que se calculan
