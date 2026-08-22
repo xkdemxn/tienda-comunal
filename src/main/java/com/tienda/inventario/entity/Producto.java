@@ -63,7 +63,11 @@ public class Producto {
     // Ej: carne, que se cobra segun lo que pese en la balanza, no por unidad
     // entera. precioVenta se interpreta como "precio por libra" en ese caso.
     // No se lleva stock exacto para estos productos (ver VentaService).
-    @Column(nullable = false)
+    // OJO: nullable a proposito (no "nullable = false"). Si fuera obligatoria,
+    // el ALTER TABLE para agregarla falla en una tabla que ya tiene productos
+    // guardados (Postgres no permite una columna NOT NULL nueva sin default
+    // en una tabla con filas existentes) - el codigo ya trata null como false
+    // en todos lados (ProductoService, VentaService), asi que es seguro.
     private Boolean vendidoPorPeso = false;
 
     // Version para bloqueo optimista: evita que dos ventas simultaneas
