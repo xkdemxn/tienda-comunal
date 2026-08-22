@@ -1,20 +1,22 @@
 package com.tienda.inventario.service;
 
-import com.tienda.inventario.dto.DeudorRequest;
-import com.tienda.inventario.dto.DeudorResponse;
-import com.tienda.inventario.dto.MovimientoDeudaRequest;
-import com.tienda.inventario.dto.MovimientoDeudaResponse;
+import com.tienda.inventario.dto.*;
+import com.tienda.inventario.entity.DetalleFiado;
 import com.tienda.inventario.entity.Deudor;
 import com.tienda.inventario.entity.MovimientoDeuda;
+import com.tienda.inventario.entity.Producto;
 import com.tienda.inventario.entity.Usuario;
+import com.tienda.inventario.enums.TipoMovimiento;
 import com.tienda.inventario.enums.TipoMovimientoDeuda;
 import com.tienda.inventario.repository.DeudorRepository;
 import com.tienda.inventario.repository.MovimientoDeudaRepository;
+import com.tienda.inventario.repository.ProductoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -23,6 +25,8 @@ public class DeudorService {
 
     private final DeudorRepository deudorRepository;
     private final MovimientoDeudaRepository movimientoDeudaRepository;
+    private final ProductoRepository productoRepository;
+    private final InventarioService inventarioService;
 
     public List<DeudorResponse> listar() {
         return deudorRepository.findByActivoTrueOrderByNombreAsc().stream()
@@ -57,36 +61,99 @@ public class DeudorService {
 
     public List<MovimientoDeudaResponse> historial(Long deudorId) {
         return movimientoDeudaRepository.findByDeudorIdOrderByFechaDesc(deudorId).stream()
-                .map(m -> new MovimientoDeudaResponse(m.getId(), m.getTipo(), m.getMonto(), m.getDescripcion(), m.getFecha()))
+                .map(this::mapear)
                 .toList();
     }
 
+    // Fiado manual: un monto y una descripcion libre, sin tocar stock (para
+    // casos que no son productos del catalogo, ej. un vuelto fiado).
     @Transactional
     public MovimientoDeudaResponse registrarFiado(Long deudorId, MovimientoDeudaRequest request, Usuario usuario) {
-        return registrarMovimiento(deudorId, request, TipoMovimientoDeuda.FIADO, usuario);
-    }
-
-    @Transactional
-    public MovimientoDeudaResponse registrarAbono(Long deudorId, MovimientoDeudaRequest request, Usuario usuario) {
-        return registrarMovimiento(deudorId, request, TipoMovimientoDeuda.ABONO, usuario);
-    }
-
-    private MovimientoDeudaResponse registrarMovimiento(Long deudorId, MovimientoDeudaRequest request,
-                                                          TipoMovimientoDeuda tipo, Usuario usuario) {
         Deudor deudor = deudorRepository.findById(deudorId)
                 .orElseThrow(() -> new IllegalArgumentException("Deudor no encontrado"));
 
         MovimientoDeuda movimiento = new MovimientoDeuda();
         movimiento.setDeudor(deudor);
-        movimiento.setTipo(tipo);
+        movimiento.setTipo(TipoMovimientoDeuda.FIADO);
         movimiento.setMonto(request.getMonto());
         movimiento.setDescripcion(request.getDescripcion());
         movimiento.setUsuario(usuario);
 
         movimiento = movimientoDeudaRepository.save(movimiento);
+        return mapear(movimiento);
+    }
 
-        return new MovimientoDeudaResponse(movimiento.getId(), movimiento.getTipo(), movimiento.getMonto(),
-                movimiento.getDescripcion(), movimiento.getFecha());
+    // Fiado eligiendo productos del stock (como una venta, pero sin cobrar):
+    // reduce el stock de cada item y deja el detalle con fecha, igual que una
+    // venta normal.
+    @Transactional
+    public MovimientoDeudaResponse registrarFiadoConProductos(Long deudorId, FiadoRequest request, Usuario usuario) {
+        Deudor deudor = deudorRepository.findById(deudorId)
+                .orElseThrow(() -> new IllegalArgumentException("Deudor no encontrado"));
+
+        MovimientoDeuda movimiento = new MovimientoDeuda();
+        movimiento.setDeudor(deudor);
+        movimiento.setTipo(TipoMovimientoDeuda.FIADO);
+        movimiento.setUsuario(usuario);
+
+        BigDecimal total = BigDecimal.ZERO;
+        List<DetalleFiado> detalles = new ArrayList<>();
+        List<String> resumen = new ArrayList<>();
+
+        for (ItemFiadoRequest item : request.getItems()) {
+            Producto producto = productoRepository.findByCodigoBarras(item.getCodigoBarras())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Producto no encontrado para el codigo: " + item.getCodigoBarras()));
+
+            // Reduce el stock y deja registro en el kardex, igual que una venta;
+            // si no hay stock suficiente, se revierte todo el fiado.
+            inventarioService.reducirStock(item.getCodigoBarras(), item.getCantidad(),
+                    TipoMovimiento.VENTA, usuario, "Fiado a " + deudor.getNombre());
+
+            BigDecimal subtotal = producto.getPrecioVenta().multiply(BigDecimal.valueOf(item.getCantidad()));
+            total = total.add(subtotal);
+            resumen.add(item.getCantidad() + "x " + producto.getNombre());
+
+            DetalleFiado detalle = new DetalleFiado();
+            detalle.setMovimientoDeuda(movimiento);
+            detalle.setProducto(producto);
+            detalle.setCantidad(item.getCantidad());
+            detalle.setPrecioUnitario(producto.getPrecioVenta());
+            detalle.setSubtotal(subtotal);
+            detalles.add(detalle);
+        }
+
+        movimiento.setMonto(total);
+        movimiento.setDescripcion(String.join(", ", resumen));
+        movimiento.setDetalles(detalles);
+
+        movimiento = movimientoDeudaRepository.save(movimiento);
+        return mapear(movimiento);
+    }
+
+    @Transactional
+    public MovimientoDeudaResponse registrarAbono(Long deudorId, MovimientoDeudaRequest request, Usuario usuario) {
+        Deudor deudor = deudorRepository.findById(deudorId)
+                .orElseThrow(() -> new IllegalArgumentException("Deudor no encontrado"));
+
+        MovimientoDeuda movimiento = new MovimientoDeuda();
+        movimiento.setDeudor(deudor);
+        movimiento.setTipo(TipoMovimientoDeuda.ABONO);
+        movimiento.setMonto(request.getMonto());
+        movimiento.setDescripcion(request.getDescripcion());
+        movimiento.setUsuario(usuario);
+
+        movimiento = movimientoDeudaRepository.save(movimiento);
+        return mapear(movimiento);
+    }
+
+    private MovimientoDeudaResponse mapear(MovimientoDeuda m) {
+        List<DetalleFiadoResponse> detalles = m.getDetalles().stream()
+                .map(d -> new DetalleFiadoResponse(d.getProducto().getNombre(), d.getCantidad(),
+                        d.getPrecioUnitario(), d.getSubtotal()))
+                .toList();
+        return new MovimientoDeudaResponse(m.getId(), m.getTipo(), m.getMonto(), m.getDescripcion(),
+                m.getFecha(), detalles);
     }
 
     private BigDecimal calcularSaldo(Long deudorId) {

@@ -2,6 +2,7 @@ package com.tienda.inventario.controller;
 
 import com.tienda.inventario.dto.DeudorRequest;
 import com.tienda.inventario.dto.DeudorResponse;
+import com.tienda.inventario.dto.FiadoRequest;
 import com.tienda.inventario.dto.MovimientoDeudaRequest;
 import com.tienda.inventario.dto.MovimientoDeudaResponse;
 import com.tienda.inventario.entity.Deudor;
@@ -50,6 +51,15 @@ public class DeudorController {
                                                            @AuthenticationPrincipal UsuarioPrincipal principal) {
         Usuario usuario = principal.getUsuario();
         return ResponseEntity.ok(deudorService.registrarFiado(id, request, usuario));
+    }
+
+    // Fiado eligiendo productos del stock (como una venta, pero sin cobrar).
+    @PostMapping("/{id}/fiado-productos")
+    public ResponseEntity<MovimientoDeudaResponse> fiadoConProductos(@PathVariable Long id,
+                                                                       @Valid @RequestBody FiadoRequest request,
+                                                                       @AuthenticationPrincipal UsuarioPrincipal principal) {
+        Usuario usuario = principal.getUsuario();
+        return ResponseEntity.ok(deudorService.registrarFiadoConProductos(id, request, usuario));
     }
 
     @PostMapping("/{id}/abono")

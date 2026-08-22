@@ -8,6 +8,8 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Registro historico (kardex) de fiados y abonos de un deudor. El saldo
@@ -37,6 +39,11 @@ public class MovimientoDeuda {
     private BigDecimal monto; // siempre positivo, el signo lo da el "tipo"
 
     private String descripcion; // ej: "2 panes y una gaseosa", opcional
+
+    // Detalle de productos cuando el fiado se registra eligiendo del stock
+    // (en vez de un monto manual). Queda vacio en abonos y en fiados manuales.
+    @OneToMany(mappedBy = "movimientoDeuda", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DetalleFiado> detalles = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id")

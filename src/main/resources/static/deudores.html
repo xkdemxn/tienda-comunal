@@ -6,6 +6,20 @@
 <title>Deudores</title>
 <link rel="stylesheet" href="dashboard.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+  .resultados-busqueda .item button {
+    width: auto;
+    padding: 8px 12px;
+    margin-bottom: 0;
+  }
+  .total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 18px;
+    font-weight: 700;
+    margin-top: 12px;
+  }
+</style>
 </head>
 <body>
 
@@ -81,16 +95,49 @@
   </div>
 </div>
 
-<!-- Modal fiar/abonar -->
-<div id="modalMovimientoFondo" class="modal-fondo oculto" onclick="cerrarModalMovimientoSiFondo(event)">
+<!-- Modal Fiar: elige productos del stock, como una venta pero sin cobrar -->
+<div id="modalFiarFondo" class="modal-fondo oculto" onclick="cerrarModalFiarSiFondo(event)">
+  <div class="modal" style="text-align:left; max-width:420px">
+    <h2 id="modalFiarTitulo">Fiar</h2>
+
+    <label class="campo">Buscar producto</label>
+    <input type="text" id="buscarProductoFiar" placeholder="Buscar por nombre..." oninput="buscarProductoParaFiar()">
+    <div id="resultadosBusquedaFiar" class="resultados-busqueda"></div>
+
+    <div id="carritoFiar"></div>
+    <div class="total">
+      <span>Total</span>
+      <span id="totalFiar">$0.00</span>
+    </div>
+
+    <button onclick="confirmarFiadoProductos()">Confirmar fiado</button>
+    <button class="secundario" onclick="cerrarModalFiar()">Cancelar</button>
+
+    <p style="text-align:center; margin:10px 0 0">
+      <a href="#" onclick="mostrarFiadoManual(event)" style="font-size:12px; color:var(--muted)">
+        ¿Fiar un monto sin elegir productos?
+      </a>
+    </p>
+    <div id="fiadoManualBloque" class="oculto" style="margin-top:10px; border-top:1px solid var(--border); padding-top:10px">
+      <label class="campo">Monto</label>
+      <input type="number" min="0.01" step="0.01" id="fiadoManualMonto" placeholder="0.00">
+      <label class="campo">Detalle (opcional)</label>
+      <input type="text" id="fiadoManualDescripcion" placeholder="Ej: vuelto fiado">
+      <button class="secundario" onclick="confirmarFiadoManual()">Confirmar monto manual</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Abonar -->
+<div id="modalAbonoFondo" class="modal-fondo oculto" onclick="cerrarModalAbonoSiFondo(event)">
   <div class="modal" style="text-align:left">
-    <h2 id="modalMovimientoTitulo">Registrar</h2>
+    <h2 id="modalAbonoTitulo">Abonar</h2>
     <label class="campo">Monto</label>
-    <input type="number" min="0.01" step="0.01" id="movimientoMonto" placeholder="0.00">
+    <input type="number" min="0.01" step="0.01" id="abonoMonto" placeholder="0.00">
     <label class="campo">Detalle (opcional)</label>
-    <input type="text" id="movimientoDescripcion" placeholder="Ej: pan, leche y arroz">
-    <button onclick="confirmarMovimiento()">Confirmar</button>
-    <button class="secundario" onclick="cerrarModalMovimiento()">Cancelar</button>
+    <input type="text" id="abonoDescripcion" placeholder="Ej: pago parcial">
+    <button onclick="confirmarAbono()">Confirmar</button>
+    <button class="secundario" onclick="cerrarModalAbono()">Cancelar</button>
   </div>
 </div>
 
@@ -108,8 +155,6 @@
 initSidebar("deudores");
 
 let deudores = [];
-let deudorSeleccionadoId = null;
-let tipoMovimiento = null; // "fiado" o "abono"
 
 async function cargarDeudores() {
   const div = document.getElementById("listaDeudores");
@@ -143,8 +188,8 @@ function renderDeudores() {
         </div>
         <div class="item-acciones">
           <span class="badge ${badgeClase}">$${saldo.toFixed(2)}</span>
-          <button onclick="abrirModalMovimiento(${d.id}, 'fiado')">Fiar</button>
-          <button class="secundario" onclick="abrirModalMovimiento(${d.id}, 'abono')">Abonar</button>
+          <button onclick="abrirModalFiar(${d.id})">Fiar</button>
+          <button class="secundario" onclick="abrirModalAbono(${d.id})">Abonar</button>
           <button class="secundario" onclick="abrirHistorial(${d.id})">Historial</button>
           <button class="secundario" onclick="eliminarDeudor(${d.id})">Eliminar</button>
         </div>
@@ -186,31 +231,154 @@ async function eliminarDeudor(id) {
   }
 }
 
-// ---------- FIAR / ABONAR ----------
-function abrirModalMovimiento(deudorId, tipo) {
-  deudorSeleccionadoId = deudorId;
-  tipoMovimiento = tipo;
+// ---------- FIAR (elegir productos del stock) ----------
+let deudorFiarId = null;
+let carritoFiar = []; // { codigoBarras, nombre, precio, cantidad }
+let temporizadorBusquedaFiar;
+
+function abrirModalFiar(deudorId) {
+  deudorFiarId = deudorId;
   const deudor = deudores.find(d => d.id === deudorId);
-  document.getElementById("modalMovimientoTitulo").innerText =
-    tipo === "fiado" ? `Fiar a ${deudor.nombre}` : `Abonar de ${deudor.nombre}`;
-  document.getElementById("movimientoMonto").value = "";
-  document.getElementById("movimientoDescripcion").value = "";
-  document.getElementById("modalMovimientoFondo").classList.remove("oculto");
+  document.getElementById("modalFiarTitulo").innerText = `Fiar a ${deudor.nombre}`;
+  carritoFiar = [];
+  renderCarritoFiar();
+  document.getElementById("buscarProductoFiar").value = "";
+  document.getElementById("resultadosBusquedaFiar").innerHTML = "";
+  document.getElementById("fiadoManualBloque").classList.add("oculto");
+  document.getElementById("fiadoManualMonto").value = "";
+  document.getElementById("fiadoManualDescripcion").value = "";
+  document.getElementById("modalFiarFondo").classList.remove("oculto");
 }
 
-function cerrarModalMovimiento() {
-  document.getElementById("modalMovimientoFondo").classList.add("oculto");
-  deudorSeleccionadoId = null;
-  tipoMovimiento = null;
+function cerrarModalFiar() {
+  document.getElementById("modalFiarFondo").classList.add("oculto");
+  deudorFiarId = null;
 }
 
-function cerrarModalMovimientoSiFondo(event) {
-  if (event.target.id === "modalMovimientoFondo") cerrarModalMovimiento();
+function cerrarModalFiarSiFondo(event) {
+  if (event.target.id === "modalFiarFondo") cerrarModalFiar();
 }
 
-async function confirmarMovimiento() {
-  const monto = parseFloat(document.getElementById("movimientoMonto").value);
-  const descripcion = document.getElementById("movimientoDescripcion").value.trim();
+function mostrarFiadoManual(event) {
+  event.preventDefault();
+  document.getElementById("fiadoManualBloque").classList.toggle("oculto");
+}
+
+function buscarProductoParaFiar() {
+  clearTimeout(temporizadorBusquedaFiar);
+  const texto = document.getElementById("buscarProductoFiar").value.trim();
+  const div = document.getElementById("resultadosBusquedaFiar");
+
+  if (texto.length < 2) {
+    div.innerHTML = "";
+    return;
+  }
+
+  temporizadorBusquedaFiar = setTimeout(async () => {
+    try {
+      const productos = await apiFetch(`/productos/buscar?nombre=${encodeURIComponent(texto)}`);
+      if (productos.length === 0) {
+        div.innerHTML = `<p style="color:var(--muted); font-size:13px; margin:8px 0 0">Sin resultados</p>`;
+        return;
+      }
+      div.innerHTML = "";
+      productos.forEach(p => {
+        div.innerHTML += `
+          <div class="item">
+            <div>${p.nombre}<small>Stock: ${p.stockActual} · $${Number(p.precioVenta).toFixed(2)}</small></div>
+            <button onclick="agregarProductoAlFiado(${p.id})">Agregar</button>
+          </div>`;
+      });
+      window.__resultadosBusquedaFiar = productos;
+    } catch (e) {
+      div.innerHTML = `<div class="msg error">${e.message}</div>`;
+    }
+  }, 300);
+}
+
+function agregarProductoAlFiado(id) {
+  const producto = (window.__resultadosBusquedaFiar || []).find(p => p.id === id);
+  if (!producto) return;
+
+  const existente = carritoFiar.find(i => i.codigoBarras === producto.codigoBarras);
+  if (existente) {
+    existente.cantidad += 1;
+  } else {
+    carritoFiar.push({
+      codigoBarras: producto.codigoBarras,
+      nombre: producto.nombre,
+      precio: producto.precioVenta,
+      cantidad: 1
+    });
+  }
+  document.getElementById("buscarProductoFiar").value = "";
+  document.getElementById("resultadosBusquedaFiar").innerHTML = "";
+  renderCarritoFiar();
+}
+
+function renderCarritoFiar() {
+  const div = document.getElementById("carritoFiar");
+  let total = 0;
+  div.innerHTML = "";
+  carritoFiar.forEach((item, idx) => {
+    const subtotal = item.precio * item.cantidad;
+    total += subtotal;
+    div.innerHTML += `
+      <div class="item">
+        <div>
+          ${item.nombre}
+          <small>$${Number(item.precio).toFixed(2)} c/u</small>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px">
+          <input type="number" min="1" value="${item.cantidad}" style="width:55px; margin-bottom:0"
+                 onchange="actualizarCantidadFiado(${idx}, this.value)">
+          <span>$${subtotal.toFixed(2)}</span>
+          <button class="secundario" style="width:auto; padding:4px 8px"
+                  onclick="quitarDelFiado(${idx})"><i class="bi bi-x-lg"></i></button>
+        </div>
+      </div>`;
+  });
+  document.getElementById("totalFiar").innerText = `$${total.toFixed(2)}`;
+}
+
+function actualizarCantidadFiado(idx, valor) {
+  const cantidad = parseInt(valor, 10);
+  if (!cantidad || cantidad < 1) {
+    renderCarritoFiar();
+    return;
+  }
+  carritoFiar[idx].cantidad = cantidad;
+  renderCarritoFiar();
+}
+
+function quitarDelFiado(idx) {
+  carritoFiar.splice(idx, 1);
+  renderCarritoFiar();
+}
+
+async function confirmarFiadoProductos() {
+  if (carritoFiar.length === 0) {
+    mostrarMensajeEn("mensajeDeudores", "Agrega al menos un producto (o usa el monto manual)", "error");
+    return;
+  }
+  try {
+    await apiFetch(`/deudores/${deudorFiarId}/fiado-productos`, {
+      method: "POST",
+      body: JSON.stringify({
+        items: carritoFiar.map(i => ({ codigoBarras: i.codigoBarras, cantidad: i.cantidad }))
+      })
+    });
+    mostrarMensajeEn("mensajeDeudores", "Fiado registrado", "ok");
+    cerrarModalFiar();
+    await cargarDeudores();
+  } catch (e) {
+    mostrarMensajeEn("mensajeDeudores", e.message, "error");
+  }
+}
+
+async function confirmarFiadoManual() {
+  const monto = parseFloat(document.getElementById("fiadoManualMonto").value);
+  const descripcion = document.getElementById("fiadoManualDescripcion").value.trim();
 
   if (!monto || monto <= 0) {
     mostrarMensajeEn("mensajeDeudores", "Ingresa un monto valido", "error");
@@ -218,13 +386,55 @@ async function confirmarMovimiento() {
   }
 
   try {
-    await apiFetch(`/deudores/${deudorSeleccionadoId}/${tipoMovimiento}`, {
+    await apiFetch(`/deudores/${deudorFiarId}/fiado`, {
       method: "POST",
       body: JSON.stringify({ monto, descripcion: descripcion || null })
     });
-    mostrarMensajeEn("mensajeDeudores",
-      tipoMovimiento === "fiado" ? "Fiado registrado" : "Abono registrado", "ok");
-    cerrarModalMovimiento();
+    mostrarMensajeEn("mensajeDeudores", "Fiado registrado", "ok");
+    cerrarModalFiar();
+    await cargarDeudores();
+  } catch (e) {
+    mostrarMensajeEn("mensajeDeudores", e.message, "error");
+  }
+}
+
+// ---------- ABONAR ----------
+let deudorAbonoId = null;
+
+function abrirModalAbono(deudorId) {
+  deudorAbonoId = deudorId;
+  const deudor = deudores.find(d => d.id === deudorId);
+  document.getElementById("modalAbonoTitulo").innerText = `Abonar de ${deudor.nombre}`;
+  document.getElementById("abonoMonto").value = "";
+  document.getElementById("abonoDescripcion").value = "";
+  document.getElementById("modalAbonoFondo").classList.remove("oculto");
+}
+
+function cerrarModalAbono() {
+  document.getElementById("modalAbonoFondo").classList.add("oculto");
+  deudorAbonoId = null;
+}
+
+function cerrarModalAbonoSiFondo(event) {
+  if (event.target.id === "modalAbonoFondo") cerrarModalAbono();
+}
+
+async function confirmarAbono() {
+  const monto = parseFloat(document.getElementById("abonoMonto").value);
+  const descripcion = document.getElementById("abonoDescripcion").value.trim();
+
+  if (!monto || monto <= 0) {
+    mostrarMensajeEn("mensajeDeudores", "Ingresa un monto valido", "error");
+    return;
+  }
+
+  try {
+    await apiFetch(`/deudores/${deudorAbonoId}/abono`, {
+      method: "POST",
+      body: JSON.stringify({ monto, descripcion: descripcion || null })
+    });
+    mostrarMensajeEn("mensajeDeudores", "Abono registrado", "ok");
+    cerrarModalAbono();
     await cargarDeudores();
   } catch (e) {
     mostrarMensajeEn("mensajeDeudores", e.message, "error");
@@ -251,11 +461,14 @@ async function abrirHistorial(deudorId) {
       const fecha = new Date(m.fecha).toLocaleString("es", {
         day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
       });
+      const detalleTexto = (m.detalles && m.detalles.length > 0)
+        ? m.detalles.map(d => `${d.cantidad}x ${d.producto}`).join(", ")
+        : (m.descripcion || "");
       div.innerHTML += `
         <div class="item">
           <div>
             ${esFiado ? "Fiado" : "Abono"}
-            <small>${m.descripcion || ""} · ${fecha}</small>
+            <small>${detalleTexto} · ${fecha}</small>
           </div>
           <strong style="color:${esFiado ? "#7f1d1d" : "#15803d"}">
             ${esFiado ? "+" : "-"}$${Number(m.monto).toFixed(2)}
