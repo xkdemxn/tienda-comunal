@@ -119,7 +119,16 @@ async function cargarHistorial() {
       porDia.get(dia).push(v);
     });
 
-    let html = "";
+    const totalGeneral = ventas.reduce((acc, v) => acc + Number(v.totalMonedaLocal), 0);
+    let html = `
+      <div class="card">
+        <div class="item" style="border-bottom:none">
+          <div><strong>Total del periodo</strong>
+            <small>${ventas.length} venta${ventas.length === 1 ? "" : "s"} en total</small>
+          </div>
+          <strong class="total-general">$${totalGeneral.toFixed(2)}</strong>
+        </div>
+      </div>`;
     porDia.forEach((ventasDelDia, dia) => {
       const totalDia = ventasDelDia.reduce((acc, v) => acc + Number(v.totalMonedaLocal), 0);
       html += `

@@ -249,9 +249,9 @@ button.grupo-toggle.abierto .grupo-flecha { transform: rotate(180deg); }
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
-.chip.col-azul { background: #dbeafe; color: #1e40af; }
-.chip.col-verde { background: #dcfce7; color: #166534; }
-.chip.col-tomate { background: #ffe1d6; color: #9a3412; }
+.chip.col-azul { background: #eff6ff; color: var(--text); }
+.chip.col-verde { background: #f0fdf4; color: var(--text); }
+.chip.col-tomate { background: #fff4f0; color: var(--text); }
 .tabla-reporte tbody tr:last-child td { border-bottom: none; }
 .tabla-reporte tfoot td {
   font-weight: 700;
@@ -346,7 +346,15 @@ button.secundario.activo {
 }
 .item:last-child { border-bottom: none; }
 .item small { color: var(--muted); display: block; }
-.hora-venta { color: #ea580c; font-weight: 700; }
+.hora-venta { color: #15803d; font-weight: 700; }
+.total-general { color: #7f1d1d; font-size: 20px; }
+@media (max-width: 480px) {
+  #histResultado .item > strong:last-child {
+    width: 100%;
+    text-align: right;
+    margin-top: 2px;
+  }
+}
 .item button {
   width: auto;
   padding: 8px 12px;
