@@ -12,6 +12,17 @@ console.log(
 
 const API_BASE = window.location.origin + "/api";
 
+// OJO: nunca usar date.toISOString().slice(0,10) para "hoy" - toISOString()
+// convierte a UTC, y en Ecuador (UTC-5) desde ~7pm ya cae en el dia siguiente
+// en UTC, dando fechas equivocadas (esto causaba que "Ventas de hoy" no
+// encontrara nada). Esta usa los componentes de fecha LOCALES del navegador.
+function fechaLocalISO(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 function getToken() {
   return localStorage.getItem("token") || "";
 }

@@ -110,7 +110,7 @@ document.querySelectorAll(".tile[data-solo-admin]").forEach(a => {
 });
 
 function fechaISO(date) {
-  return date.toISOString().slice(0, 10);
+  return fechaLocalISO(date);
 }
 
 async function suscripcionActiva() {

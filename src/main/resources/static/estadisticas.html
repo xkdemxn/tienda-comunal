@@ -76,7 +76,7 @@
 initSidebar("estadisticas");
 
 function fechaHoyISO() {
-  return new Date().toISOString().slice(0, 10);
+  return fechaLocalISO(new Date());
 }
 
 function prepararFechasStats() {
@@ -86,7 +86,7 @@ function prepararFechasStats() {
   if (!desde.value) {
     const hace30 = new Date();
     hace30.setDate(hace30.getDate() - 30);
-    desde.value = hace30.toISOString().slice(0, 10);
+    desde.value = fechaLocalISO(hace30);
   }
 }
 

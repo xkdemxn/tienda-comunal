@@ -89,11 +89,11 @@ const ENCABEZADOS_FISCALIZACION = [
 function primerDiaMesISO() {
   const d = new Date();
   d.setDate(1);
-  return d.toISOString().slice(0, 10);
+  return fechaLocalISO(d);
 }
 
 function hoyISO() {
-  return new Date().toISOString().slice(0, 10);
+  return fechaLocalISO(new Date());
 }
 
 function prepararFechas() {
