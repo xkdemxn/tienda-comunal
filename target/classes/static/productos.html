@@ -192,7 +192,7 @@ function renderProductos(lista) {
           ${p.nombre}
           <small>${categoriaTexto}${p.codigoBarras}${infoCaja}${inactivo}</small>
         </div>
-        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end">
+        <div class="item-acciones">
           <span class="badge ${bajo ? "bajo" : "ok"}">${p.stockActual} en stock</span>
           <button onclick="verCodigoBarras(${p.id})">Ver</button>
           <button class="secundario" onclick="abrirEditar(${p.id})">Editar</button>

@@ -299,6 +299,28 @@ button.secundario.activo {
   border-bottom: 1px solid var(--border);
   font-size: 14px;
   gap: 10px;
+  flex-wrap: wrap;
+}
+/* Grupo de botones de accion dentro de un .item (ej: Categorias, Productos).
+   En pantallas angostas baja a su propia fila con mas espacio, en vez de
+   quedar apretado pegado a la derecha del nombre. */
+.item-acciones {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+@media (max-width: 600px) {
+  .item-acciones {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+    margin-top: 4px;
+  }
+  .item-acciones button {
+    flex: 1 1 auto;
+    min-width: 90px;
+  }
 }
 .item:last-child { border-bottom: none; }
 .item small { color: var(--muted); display: block; }

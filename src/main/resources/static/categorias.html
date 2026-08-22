@@ -113,7 +113,7 @@ function renderCategorias() {
     div.innerHTML += `
       <div class="item">
         <div>${c.nombre}<small>${c.descripcion || ""}</small></div>
-        <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end">
+        <div class="item-acciones">
           <button onclick="verProductosDeCategoria(${c.id})">Ver productos</button>
           <button class="secundario" onclick="abrirEditarCategoria(${c.id})">Editar</button>
           <button class="secundario" onclick="eliminarCategoria(${c.id})">Eliminar</button>
