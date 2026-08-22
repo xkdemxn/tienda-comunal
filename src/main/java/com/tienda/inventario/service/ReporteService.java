@@ -30,6 +30,8 @@ public class ReporteService {
     private final VentaRepository ventaRepository;
     private final ProductoRepository productoRepository;
     private final MovimientoInventarioRepository movimientoInventarioRepository;
+    private final GastoService gastoService;
+    private final DeudorService deudorService;
 
     /**
      * Reporte de ventas en un rango de fechas: total vendido, cantidad de ventas,
@@ -129,7 +131,11 @@ public class ReporteService {
                 .map(FiscalizacionItemDto::getSumaGanancia)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        return new FiscalizacionResponse(porCategoria, totalGeneralGanancia);
+        BigDecimal totalGastos = gastoService.totalEnRango(desde, hasta);
+        BigDecimal q = totalGeneralGanancia.subtract(totalGastos);
+        BigDecimal deudasPendientes = deudorService.totalPendiente();
+
+        return new FiscalizacionResponse(porCategoria, totalGeneralGanancia, totalGastos, q, deudasPendientes);
     }
 
     private boolean esEntrada(TipoMovimiento tipo) {

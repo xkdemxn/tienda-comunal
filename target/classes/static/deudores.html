@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deudores</title>
+<link rel="stylesheet" href="dashboard.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+
+<div class="app">
+  <div id="fondoSidebarMovil" class="fondo-sidebar-movil"></div>
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-header"><i class="bi bi-shop"></i> Tienda</div>
+    <nav class="sidebar-nav">
+      <a href="dashboard" data-pagina="inicio">Inicio</a>
+      <a href="venta" data-pagina="venta">Vender</a>
+      <a href="agregar-stock" data-pagina="agregar-stock" data-solo-admin="1">Agregar stock</a>
+      <a href="deudores" data-pagina="deudores">Deudores</a>
+
+      <button class="grupo-toggle" data-grupo="catalogo" data-solo-admin="1" onclick="toggleGrupo('catalogo')">
+        <span>Catalogo</span><span class="grupo-flecha">▾</span>
+      </button>
+      <div class="grupo-links oculto" id="grupo-catalogo" data-grupo="catalogo">
+        <a href="categorias" data-pagina="categorias" data-solo-admin="1">Categorias</a>
+        <a href="productos" data-pagina="productos" data-solo-admin="1">Productos</a>
+      </div>
+
+      <button class="grupo-toggle" data-grupo="abastecimiento" data-solo-admin="1" onclick="toggleGrupo('abastecimiento')">
+        <span>Abastecimiento</span><span class="grupo-flecha">▾</span>
+      </button>
+      <div class="grupo-links oculto" id="grupo-abastecimiento" data-grupo="abastecimiento">
+        <a href="proveedores" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
+        <a href="compras" data-pagina="compras" data-solo-admin="1">Compras</a>
+      </div>
+
+      <button class="grupo-toggle" data-grupo="reportes" data-solo-admin="1" onclick="toggleGrupo('reportes')">
+        <span>Reportes</span><span class="grupo-flecha">▾</span>
+      </button>
+      <div class="grupo-links oculto" id="grupo-reportes" data-grupo="reportes">
+        <a href="historial-ventas" data-pagina="historial-ventas" data-solo-admin="1">Historial de ventas</a>
+        <a href="estadisticas" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
+        <a href="fiscalizacion" data-pagina="fiscalizacion" data-solo-admin="1">Fiscalizacion</a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="nombre" id="sidebarNombre"></div>
+      <div class="rol" id="sidebarRol"></div>
+      <button onclick="logout()">Cerrar sesion</button>
+    </div>
+  </aside>
+
+  <div class="contenido">
+    <div class="topbar">
+      <button id="btnHamburguesa" class="btn-hamburguesa"><i class="bi bi-list"></i></button>
+      <h1>Deudores</h1>
+    </div>
+    <div class="pagina">
+
+      <div class="card">
+        <div class="item" style="border-bottom:none">
+          <div>Deuda total pendiente</div>
+          <strong id="deudaTotalGeneral" class="total-general">$0.00</strong>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Nuevo deudor</h2>
+        <input type="text" id="nuevoNombre" placeholder="Nombre">
+        <input type="text" id="nuevoTelefono" placeholder="Telefono (opcional)">
+        <button onclick="crearDeudor()">Agregar deudor</button>
+      </div>
+
+      <div class="card">
+        <div id="mensajeDeudores"></div>
+        <div id="listaDeudores">Cargando deudores...</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal fiar/abonar -->
+<div id="modalMovimientoFondo" class="modal-fondo oculto" onclick="cerrarModalMovimientoSiFondo(event)">
+  <div class="modal" style="text-align:left">
+    <h2 id="modalMovimientoTitulo">Registrar</h2>
+    <label class="campo">Monto</label>
+    <input type="number" min="0.01" step="0.01" id="movimientoMonto" placeholder="0.00">
+    <label class="campo">Detalle (opcional)</label>
+    <input type="text" id="movimientoDescripcion" placeholder="Ej: pan, leche y arroz">
+    <button onclick="confirmarMovimiento()">Confirmar</button>
+    <button class="secundario" onclick="cerrarModalMovimiento()">Cancelar</button>
+  </div>
+</div>
+
+<!-- Modal historial -->
+<div id="modalHistorialFondo" class="modal-fondo oculto" onclick="cerrarModalHistorialSiFondo(event)">
+  <div class="modal" style="text-align:left; max-width:420px">
+    <h2 id="modalHistorialTitulo">Historial</h2>
+    <div id="listaHistorial" style="max-height:50vh; overflow-y:auto"></div>
+    <button class="secundario" onclick="cerrarModalHistorial()">Cerrar</button>
+  </div>
+</div>
+
+<script src="dashboard.js"></script>
+<script>
+initSidebar("deudores");
+
+let deudores = [];
+let deudorSeleccionadoId = null;
+let tipoMovimiento = null; // "fiado" o "abono"
+
+async function cargarDeudores() {
+  const div = document.getElementById("listaDeudores");
+  try {
+    deudores = await apiFetch("/deudores");
+    renderDeudores();
+  } catch (e) {
+    div.innerHTML = `<div class="msg error">${e.message}</div>`;
+  }
+}
+
+function renderDeudores() {
+  const div = document.getElementById("listaDeudores");
+  const totalGeneral = deudores.reduce((acc, d) => acc + Number(d.saldoActual), 0);
+  document.getElementById("deudaTotalGeneral").innerText = `$${totalGeneral.toFixed(2)}`;
+
+  if (deudores.length === 0) {
+    div.innerHTML = `<p style="color:var(--muted)">Sin deudores todavia</p>`;
+    return;
+  }
+
+  div.innerHTML = "";
+  deudores.forEach(d => {
+    const saldo = Number(d.saldoActual);
+    const badgeClase = saldo > 0 ? "bajo" : "ok";
+    div.innerHTML += `
+      <div class="item">
+        <div>
+          ${d.nombre}
+          <small>${d.telefono || "Sin telefono"}</small>
+        </div>
+        <div class="item-acciones">
+          <span class="badge ${badgeClase}">$${saldo.toFixed(2)}</span>
+          <button onclick="abrirModalMovimiento(${d.id}, 'fiado')">Fiar</button>
+          <button class="secundario" onclick="abrirModalMovimiento(${d.id}, 'abono')">Abonar</button>
+          <button class="secundario" onclick="abrirHistorial(${d.id})">Historial</button>
+          <button class="secundario" onclick="eliminarDeudor(${d.id})">Eliminar</button>
+        </div>
+      </div>`;
+  });
+}
+
+async function crearDeudor() {
+  const nombre = document.getElementById("nuevoNombre").value.trim();
+  const telefono = document.getElementById("nuevoTelefono").value.trim();
+
+  if (!nombre) {
+    mostrarMensajeEn("mensajeDeudores", "Falta el nombre del deudor", "error");
+    return;
+  }
+
+  try {
+    await apiFetch("/deudores", {
+      method: "POST",
+      body: JSON.stringify({ nombre, telefono: telefono || null })
+    });
+    document.getElementById("nuevoNombre").value = "";
+    document.getElementById("nuevoTelefono").value = "";
+    mostrarMensajeEn("mensajeDeudores", "Deudor agregado", "ok");
+    await cargarDeudores();
+  } catch (e) {
+    mostrarMensajeEn("mensajeDeudores", e.message, "error");
+  }
+}
+
+async function eliminarDeudor(id) {
+  if (!confirm("¿Eliminar este deudor de la lista?")) return;
+  try {
+    await apiFetch(`/deudores/${id}`, { method: "DELETE" });
+    mostrarMensajeEn("mensajeDeudores", "Deudor eliminado", "ok");
+    await cargarDeudores();
+  } catch (e) {
+    mostrarMensajeEn("mensajeDeudores", e.message, "error");
+  }
+}
+
+// ---------- FIAR / ABONAR ----------
+function abrirModalMovimiento(deudorId, tipo) {
+  deudorSeleccionadoId = deudorId;
+  tipoMovimiento = tipo;
+  const deudor = deudores.find(d => d.id === deudorId);
+  document.getElementById("modalMovimientoTitulo").innerText =
+    tipo === "fiado" ? `Fiar a ${deudor.nombre}` : `Abonar de ${deudor.nombre}`;
+  document.getElementById("movimientoMonto").value = "";
+  document.getElementById("movimientoDescripcion").value = "";
+  document.getElementById("modalMovimientoFondo").classList.remove("oculto");
+}
+
+function cerrarModalMovimiento() {
+  document.getElementById("modalMovimientoFondo").classList.add("oculto");
+  deudorSeleccionadoId = null;
+  tipoMovimiento = null;
+}
+
+function cerrarModalMovimientoSiFondo(event) {
+  if (event.target.id === "modalMovimientoFondo") cerrarModalMovimiento();
+}
+
+async function confirmarMovimiento() {
+  const monto = parseFloat(document.getElementById("movimientoMonto").value);
+  const descripcion = document.getElementById("movimientoDescripcion").value.trim();
+
+  if (!monto || monto <= 0) {
+    mostrarMensajeEn("mensajeDeudores", "Ingresa un monto valido", "error");
+    return;
+  }
+
+  try {
+    await apiFetch(`/deudores/${deudorSeleccionadoId}/${tipoMovimiento}`, {
+      method: "POST",
+      body: JSON.stringify({ monto, descripcion: descripcion || null })
+    });
+    mostrarMensajeEn("mensajeDeudores",
+      tipoMovimiento === "fiado" ? "Fiado registrado" : "Abono registrado", "ok");
+    cerrarModalMovimiento();
+    await cargarDeudores();
+  } catch (e) {
+    mostrarMensajeEn("mensajeDeudores", e.message, "error");
+  }
+}
+
+// ---------- HISTORIAL ----------
+async function abrirHistorial(deudorId) {
+  const deudor = deudores.find(d => d.id === deudorId);
+  document.getElementById("modalHistorialTitulo").innerText = `Historial de ${deudor.nombre}`;
+  const div = document.getElementById("listaHistorial");
+  div.innerHTML = `<p style="color:var(--muted)">Cargando...</p>`;
+  document.getElementById("modalHistorialFondo").classList.remove("oculto");
+
+  try {
+    const movimientos = await apiFetch(`/deudores/${deudorId}/movimientos`);
+    if (movimientos.length === 0) {
+      div.innerHTML = `<p style="color:var(--muted)">Sin movimientos todavia</p>`;
+      return;
+    }
+    div.innerHTML = "";
+    movimientos.forEach(m => {
+      const esFiado = m.tipo === "FIADO";
+      const fecha = new Date(m.fecha).toLocaleString("es", {
+        day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
+      });
+      div.innerHTML += `
+        <div class="item">
+          <div>
+            ${esFiado ? "Fiado" : "Abono"}
+            <small>${m.descripcion || ""} · ${fecha}</small>
+          </div>
+          <strong style="color:${esFiado ? "#7f1d1d" : "#15803d"}">
+            ${esFiado ? "+" : "-"}$${Number(m.monto).toFixed(2)}
+          </strong>
+        </div>`;
+    });
+  } catch (e) {
+    div.innerHTML = `<div class="msg error">${e.message}</div>`;
+  }
+}
+
+function cerrarModalHistorial() {
+  document.getElementById("modalHistorialFondo").classList.add("oculto");
+}
+
+function cerrarModalHistorialSiFondo(event) {
+  if (event.target.id === "modalHistorialFondo") cerrarModalHistorial();
+}
+
+cargarDeudores();
+</script>
+
+</body>
+</html>

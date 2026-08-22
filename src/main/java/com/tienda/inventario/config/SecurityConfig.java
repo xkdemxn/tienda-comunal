@@ -71,19 +71,21 @@ public class SecurityConfig {
                         .requestMatchers("/", "/login.html", "/dashboard.html", "/productos.html",
                                 "/categorias.html", "/agregar-stock.html", "/estadisticas.html",
                                 "/proveedores.html", "/compras.html", "/venta.html", "/fiscalizacion.html",
-                                "/historial-ventas.html",
+                                "/historial-ventas.html", "/deudores.html",
                                 "/login", "/dashboard", "/productos", "/categorias", "/agregar-stock",
                                 "/estadisticas", "/proveedores", "/compras", "/venta", "/fiscalizacion",
-                                "/historial-ventas",
+                                "/historial-ventas", "/deudores",
                                 "/*.js", "/*.css", "/favicon.ico", "/img/**").permitAll()
                         // ver productos (util para catalogo publico si se necesita)
                         .requestMatchers("GET", "/api/productos/**").hasAnyRole("ADMIN", "VENDEDOR")
                         // registrar ventas: admin y vendedor
                         .requestMatchers("/api/ventas/**").hasAnyRole("ADMIN", "VENDEDOR")
+                        // fiar/abonar: admin y vendedor (se hace en el mostrador, como una venta)
+                        .requestMatchers("/api/deudores/**").hasAnyRole("ADMIN", "VENDEDOR")
                         // todo lo de inventario/compras/reportes/admin solo admin
                         .requestMatchers("/api/inventario/**", "/api/compras/**",
                                 "/api/reportes/**", "/api/proveedores/**", "/api/categorias/**",
-                                "/api/admin/**", "/api/usuarios/**")
+                                "/api/admin/**", "/api/usuarios/**", "/api/gastos/**")
                         .hasRole("ADMIN")
                         .requestMatchers("/api/productos/**").hasRole("ADMIN")
                         .anyRequest().authenticated()

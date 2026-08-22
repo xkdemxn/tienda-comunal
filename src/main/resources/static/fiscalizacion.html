@@ -18,6 +18,7 @@
       <a href="dashboard" data-pagina="inicio">Inicio</a>
       <a href="venta" data-pagina="venta">Vender</a>
       <a href="agregar-stock" data-pagina="agregar-stock" data-solo-admin="1">Agregar stock</a>
+      <a href="deudores" data-pagina="deudores">Deudores</a>
 
       <button class="grupo-toggle" data-grupo="catalogo" data-solo-admin="1" onclick="toggleGrupo('catalogo')">
         <span>Catalogo</span><span class="grupo-flecha">▾</span>
@@ -78,6 +79,7 @@
 initSidebar("fiscalizacion");
 
 let ultimoReporte = null;
+let ultimosGastos = [];
 let ultimasFechas = { desde: "", hasta: "" };
 
 const ENCABEZADOS_FISCALIZACION = [
@@ -136,10 +138,14 @@ async function cargarFiscalizacion() {
   div.innerHTML = `<p style="color:var(--muted)">Generando informe...</p>`;
 
   try {
-    const r = await apiFetch(`/reportes/fiscalizacion?desde=${desde}&hasta=${hasta}`);
+    const [r, gastos] = await Promise.all([
+      apiFetch(`/reportes/fiscalizacion?desde=${desde}&hasta=${hasta}`),
+      apiFetch(`/gastos?desde=${desde}&hasta=${hasta}`)
+    ]);
     const categorias = Object.keys(r.porCategoria || {});
 
     ultimoReporte = r;
+    ultimosGastos = gastos;
     ultimasFechas = {
       desde: document.getElementById("fiscalDesde").value,
       hasta: document.getElementById("fiscalHasta").value
@@ -175,6 +181,8 @@ async function cargarFiscalizacion() {
           <strong>$${formatoNumero(r.totalGeneralGanancia)}</strong>
         </div>
       </div>`;
+
+    html += renderGastosYCierre(r, gastos);
 
     categorias.forEach(categoria => {
       const items = r.porCategoria[categoria];
@@ -243,6 +251,102 @@ async function cargarFiscalizacion() {
     div.innerHTML = html;
   } catch (e) {
     div.innerHTML = `<div class="msg error">${e.message}</div>`;
+  }
+}
+
+// ---------- GASTOS DEL PERIODO Y CIERRE DE CAJA ----------
+function renderGastosYCierre(r, gastos) {
+  const totalGastos = gastos.reduce((acc, g) => acc + Number(g.monto), 0);
+
+  let filasGastos = gastos.map(g => `
+    <div class="item">
+      <div>${g.descripcion}<small>${new Date(g.fecha).toLocaleDateString("es")}</small></div>
+      <div class="item-acciones">
+        <span>$${formatoNumero(g.monto)}</span>
+        <button class="secundario" onclick="eliminarGasto(${g.id})"><i class="bi bi-x-lg"></i></button>
+      </div>
+    </div>`).join("");
+
+  if (gastos.length === 0) {
+    filasGastos = `<p style="color:var(--muted); font-size:13px">Sin gastos registrados en este rango</p>`;
+  }
+
+  return `
+    <div class="card">
+      <h2>Gastos del periodo</h2>
+      <input type="text" id="gastoDescripcion" placeholder="Ej: Pago a trabajador">
+      <input type="number" min="0.01" step="0.01" id="gastoMonto" placeholder="Monto">
+      <button onclick="agregarGasto()">Agregar gasto</button>
+      <div id="mensajeGastos"></div>
+      ${filasGastos}
+      <div class="item" style="border-bottom:none; font-weight:700">
+        <div>Total de gastos</div>
+        <div>$${formatoNumero(totalGastos)}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Cierre de caja</h2>
+      <div class="item">
+        <div>Ganancia del periodo</div>
+        <strong>$${formatoNumero(r.totalGeneralGanancia)}</strong>
+      </div>
+      <div class="item">
+        <div>Total de gastos</div>
+        <strong>-$${formatoNumero(r.totalGastos)}</strong>
+      </div>
+      <div class="item">
+        <div><strong>q (ganancia − gastos)</strong></div>
+        <strong>$${formatoNumero(r.q)}</strong>
+      </div>
+      <div class="item">
+        <div>Deudas pendientes (todos los deudores)</div>
+        <strong>+$${formatoNumero(r.deudasPendientes)}</strong>
+      </div>
+      <div class="item">
+        <div>Ingreso en efectivo <small>conteo fisico, se ingresa a mano</small></div>
+        <input type="number" min="0" step="0.01" id="cierreIngresoEfectivo"
+               style="width:120px; margin-bottom:0; text-align:right"
+               oninput="actualizarCierreDeCaja()" placeholder="0.00">
+      </div>
+      <div class="item" style="border-bottom:none">
+        <div><strong>Ingresa al siguiente mes</strong></div>
+        <strong id="cierreSiguienteMes" class="total-general">$${formatoNumero(Number(r.q) + Number(r.deudasPendientes))}</strong>
+      </div>
+    </div>`;
+}
+
+function actualizarCierreDeCaja() {
+  if (!ultimoReporte) return;
+  const ingreso = Number(document.getElementById("cierreIngresoEfectivo").value) || 0;
+  const siguienteMes = Number(ultimoReporte.q) + ingreso + Number(ultimoReporte.deudasPendientes);
+  document.getElementById("cierreSiguienteMes").innerText = `$${formatoNumero(siguienteMes)}`;
+}
+
+async function agregarGasto() {
+  const descripcion = document.getElementById("gastoDescripcion").value.trim();
+  const monto = parseFloat(document.getElementById("gastoMonto").value);
+
+  if (!descripcion || !monto || monto <= 0) {
+    mostrarMensajeEn("mensajeGastos", "Completa la descripcion y un monto valido", "error");
+    return;
+  }
+
+  try {
+    await apiFetch("/gastos", { method: "POST", body: JSON.stringify({ descripcion, monto }) });
+    await cargarFiscalizacion();
+  } catch (e) {
+    mostrarMensajeEn("mensajeGastos", e.message, "error");
+  }
+}
+
+async function eliminarGasto(id) {
+  if (!confirm("¿Eliminar este gasto?")) return;
+  try {
+    await apiFetch(`/gastos/${id}`, { method: "DELETE" });
+    await cargarFiscalizacion();
+  } catch (e) {
+    alert(e.message);
   }
 }
 

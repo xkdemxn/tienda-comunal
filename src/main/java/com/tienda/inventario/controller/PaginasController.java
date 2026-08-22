@@ -64,4 +64,9 @@ public class PaginasController {
     public String fiscalizacion() {
         return "forward:/fiscalizacion.html";
     }
+
+    @GetMapping("/deudores")
+    public String deudores() {
+        return "forward:/deudores.html";
+    }
 }
