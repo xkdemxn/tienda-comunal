@@ -193,16 +193,16 @@ async function cargarFiscalizacion() {
                 <tr>
                   <th>Producto</th>
                   <th>Codigo</th>
-                  <th class="col-azul">Saldo anterior</th>
-                  <th class="col-azul">Entrada del mes</th>
-                  <th class="col-azul">Total</th>
-                  <th class="col-verde">Existencia actual</th>
-                  <th class="col-verde">Valor existencia</th>
-                  <th class="col-tomate">Cant. vendida</th>
-                  <th class="col-tomate">Salida c/ganancia</th>
-                  <th class="col-tomate">Salida p/mercado</th>
-                  <th class="col-azul">Prod. neto existente</th>
-                  <th class="col-verde">Ganancia</th>
+                  <th><span class="chip col-azul">Saldo anterior</span></th>
+                  <th><span class="chip col-azul">Entrada del mes</span></th>
+                  <th><span class="chip col-azul">Total</span></th>
+                  <th><span class="chip col-verde">Existencia actual</span></th>
+                  <th><span class="chip col-verde">Valor existencia</span></th>
+                  <th><span class="chip col-tomate">Cant. vendida</span></th>
+                  <th><span class="chip col-tomate">Salida c/ganancia</span></th>
+                  <th><span class="chip col-tomate">Salida p/mercado</span></th>
+                  <th><span class="chip col-azul">Prod. neto existente</span></th>
+                  <th><span class="chip col-verde">Ganancia</span></th>
                 </tr>
               </thead>
               <tbody>`;
@@ -214,16 +214,16 @@ async function cargarFiscalizacion() {
           <tr>
             <td>${it.nombre}</td>
             <td>${it.codigoBarras}</td>
-            <td class="col-azul">${it.saldoAnterior}</td>
-            <td class="col-azul">${it.entradaDelMes}</td>
-            <td class="col-azul">${it.total}</td>
-            <td class="col-verde">${it.existenciaActual}</td>
-            <td class="col-verde">$${formatoNumero(it.valorExistencia)}</td>
-            <td class="col-tomate">${it.cantidadVendida}</td>
-            <td class="col-tomate">$${formatoNumero(it.salidaConGanancia)}</td>
-            <td class="col-tomate">$${formatoNumero(it.salidaPrecioMercado)}</td>
-            <td class="col-azul">$${formatoNumero(it.productoNetoExistentes)}</td>
-            <td class="col-verde">$${formatoNumero(it.sumaGanancia)}</td>
+            <td>${it.saldoAnterior}</td>
+            <td>${it.entradaDelMes}</td>
+            <td>${it.total}</td>
+            <td>${it.existenciaActual}</td>
+            <td>$${formatoNumero(it.valorExistencia)}</td>
+            <td>${it.cantidadVendida}</td>
+            <td>$${formatoNumero(it.salidaConGanancia)}</td>
+            <td>$${formatoNumero(it.salidaPrecioMercado)}</td>
+            <td>$${formatoNumero(it.productoNetoExistentes)}</td>
+            <td>$${formatoNumero(it.sumaGanancia)}</td>
           </tr>`;
       });
 

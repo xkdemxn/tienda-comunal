@@ -236,25 +236,22 @@ button.grupo-toggle.abierto .grupo-flecha { transform: rotate(180deg); }
   font-size: 11px;
   text-transform: uppercase;
 }
-/* 3 colores pasteles para diferenciar grupos de columnas de un vistazo. El
-   texto siempre queda negro (var(--text)), solo cambia el fondo. */
-.tabla-reporte th.col-azul,
-.tabla-reporte td.col-azul {
-  background: #dbeafe;
+/* Las celdas de datos quedan siempre sin color (blanco, texto negro). La
+   diferencia de color va solo en una "pastilla" alrededor del titulo de la
+   columna, estilo chip/badge (iOS/Apple): fondo pastel + texto en un tono
+   mas oscuro del mismo color, redondeado, chiquito - no pinta toda la celda. */
+.tabla-reporte th .chip {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
-.tabla-reporte th.col-verde,
-.tabla-reporte td.col-verde {
-  background: #dcfce7;
-}
-.tabla-reporte th.col-tomate,
-.tabla-reporte td.col-tomate {
-  background: #ffe1d6;
-}
-.tabla-reporte thead th.col-azul,
-.tabla-reporte thead th.col-verde,
-.tabla-reporte thead th.col-tomate {
-  color: var(--text);
-}
+.chip.col-azul { background: #dbeafe; color: #1e40af; }
+.chip.col-verde { background: #dcfce7; color: #166534; }
+.chip.col-tomate { background: #ffe1d6; color: #9a3412; }
 .tabla-reporte tbody tr:last-child td { border-bottom: none; }
 .tabla-reporte tfoot td {
   font-weight: 700;
@@ -349,7 +346,7 @@ button.secundario.activo {
 }
 .item:last-child { border-bottom: none; }
 .item small { color: var(--muted); display: block; }
-.hora-venta { color: #2563eb; font-weight: 600; }
+.hora-venta { color: #ea580c; font-weight: 700; }
 .item button {
   width: auto;
   padding: 8px 12px;
