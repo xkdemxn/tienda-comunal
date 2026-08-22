@@ -230,6 +230,16 @@ button.grupo-toggle.abierto .grupo-flecha { transform: rotate(180deg); }
 }
 .tabla-reporte thead th.col-precio { color: #2563eb; }
 .tabla-reporte thead th.col-ganancia { color: var(--accent-dark); }
+/* Fondo pastel en toda la columna (encabezado + celdas) para diferenciar de
+   un vistazo, ademas del color del texto en el titulo. */
+.tabla-reporte th.col-precio,
+.tabla-reporte td.col-precio {
+  background: #eff6ff;
+}
+.tabla-reporte th.col-ganancia,
+.tabla-reporte td.col-ganancia {
+  background: #f0fdf4;
+}
 .tabla-reporte tbody tr:last-child td { border-bottom: none; }
 .tabla-reporte tfoot td {
   font-weight: 700;
@@ -342,7 +352,11 @@ button.secundario.activo {
 .msg { padding: 10px; border-radius: 8px; font-size: 14px; margin-bottom: 10px; }
 .msg.ok { background: #dcfce7; color: #166534; }
 .msg.error { background: #fee2e2; color: #991b1b; }
-.oculto { display: none; }
+/* !important a proposito: .oculto es una clase utilitaria de "ocultar" que
+   debe ganarle siempre a cualquier "display" que defina un componente, sin
+   importar el orden en que se declaren en el archivo (esto es justo lo que
+   causaba que el banner de suscripcion se viera aunque tuviera .oculto). */
+.oculto { display: none !important; }
 
 /* ---------- Aviso destacado de suscripcion suspendida (Inicio) ---------- */
 .banner-suscripcion {

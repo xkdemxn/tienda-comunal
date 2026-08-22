@@ -218,12 +218,12 @@ async function cargarFiscalizacion() {
             <td>${it.entradaDelMes}</td>
             <td>${it.total}</td>
             <td>${it.existenciaActual}</td>
-            <td>$${formatoNumero(it.valorExistencia)}</td>
+            <td class="col-precio">$${formatoNumero(it.valorExistencia)}</td>
             <td>${it.cantidadVendida}</td>
-            <td>$${formatoNumero(it.salidaConGanancia)}</td>
-            <td>$${formatoNumero(it.salidaPrecioMercado)}</td>
-            <td>$${formatoNumero(it.productoNetoExistentes)}</td>
-            <td>$${formatoNumero(it.sumaGanancia)}</td>
+            <td class="col-precio">$${formatoNumero(it.salidaConGanancia)}</td>
+            <td class="col-precio">$${formatoNumero(it.salidaPrecioMercado)}</td>
+            <td class="col-precio">$${formatoNumero(it.productoNetoExistentes)}</td>
+            <td class="col-ganancia">$${formatoNumero(it.sumaGanancia)}</td>
           </tr>`;
       });
 
