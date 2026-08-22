@@ -1,6 +1,7 @@
 package com.tienda.inventario.controller;
 
 import com.tienda.inventario.dto.AjusteInventarioRequest;
+import com.tienda.inventario.dto.MovimientoInventarioResponse;
 import com.tienda.inventario.entity.Producto;
 import com.tienda.inventario.entity.Usuario;
 import com.tienda.inventario.enums.TipoMovimiento;
@@ -8,9 +9,13 @@ import com.tienda.inventario.security.UsuarioPrincipal;
 import com.tienda.inventario.service.InventarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/inventario")
@@ -38,5 +43,13 @@ public class InventarioController {
         }
 
         return ResponseEntity.ok(producto);
+    }
+
+    // Historial de caducados/mermas (AJUSTE_NEGATIVO) en un rango de fechas.
+    @GetMapping("/ajustes")
+    public ResponseEntity<List<MovimientoInventarioResponse>> listarAjustesNegativos(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime desde,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime hasta) {
+        return ResponseEntity.ok(inventarioService.listarPorTipo(TipoMovimiento.AJUSTE_NEGATIVO, desde, hasta));
     }
 }

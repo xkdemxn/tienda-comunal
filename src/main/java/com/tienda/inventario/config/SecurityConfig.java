@@ -71,10 +71,10 @@ public class SecurityConfig {
                         .requestMatchers("/", "/login.html", "/dashboard.html", "/productos.html",
                                 "/categorias.html", "/agregar-stock.html", "/estadisticas.html",
                                 "/proveedores.html", "/compras.html", "/venta.html", "/fiscalizacion.html",
-                                "/historial-ventas.html", "/deudores.html",
+                                "/historial-ventas.html", "/deudores.html", "/caducados.html",
                                 "/login", "/dashboard", "/productos", "/categorias", "/agregar-stock",
                                 "/estadisticas", "/proveedores", "/compras", "/venta", "/fiscalizacion",
-                                "/historial-ventas", "/deudores",
+                                "/historial-ventas", "/deudores", "/caducados",
                                 "/*.js", "/*.css", "/favicon.ico", "/img/**").permitAll()
                         // ver productos (util para catalogo publico si se necesita)
                         .requestMatchers("GET", "/api/productos/**").hasAnyRole("ADMIN", "VENDEDOR")

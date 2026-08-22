@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caducados</title>
+<link rel="stylesheet" href="dashboard.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+
+<div class="app">
+  <div id="fondoSidebarMovil" class="fondo-sidebar-movil"></div>
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-header"><i class="bi bi-shop"></i> Tienda</div>
+    <nav class="sidebar-nav">
+      <a href="dashboard" data-pagina="inicio">Inicio</a>
+      <a href="venta" data-pagina="venta">Vender</a>
+      <a href="agregar-stock" data-pagina="agregar-stock" data-solo-admin="1">Agregar stock</a>
+      <a href="caducados" data-pagina="caducados" data-solo-admin="1">Caducados</a>
+      <a href="deudores" data-pagina="deudores">Fiar</a>
+
+      <button class="grupo-toggle" data-grupo="catalogo" data-solo-admin="1" onclick="toggleGrupo('catalogo')">
+        <span>Catalogo</span><span class="grupo-flecha">▾</span>
+      </button>
+      <div class="grupo-links oculto" id="grupo-catalogo" data-grupo="catalogo">
+        <a href="categorias" data-pagina="categorias" data-solo-admin="1">Categorias</a>
+        <a href="productos" data-pagina="productos" data-solo-admin="1">Productos</a>
+      </div>
+
+      <button class="grupo-toggle" data-grupo="abastecimiento" data-solo-admin="1" onclick="toggleGrupo('abastecimiento')">
+        <span>Abastecimiento</span><span class="grupo-flecha">▾</span>
+      </button>
+      <div class="grupo-links oculto" id="grupo-abastecimiento" data-grupo="abastecimiento">
+        <a href="proveedores" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
+        <a href="compras" data-pagina="compras" data-solo-admin="1">Compras</a>
+      </div>
+
+      <button class="grupo-toggle" data-grupo="reportes" data-solo-admin="1" onclick="toggleGrupo('reportes')">
+        <span>Reportes</span><span class="grupo-flecha">▾</span>
+      </button>
+      <div class="grupo-links oculto" id="grupo-reportes" data-grupo="reportes">
+        <a href="historial-ventas" data-pagina="historial-ventas" data-solo-admin="1">Historial de ventas</a>
+        <a href="estadisticas" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
+        <a href="fiscalizacion" data-pagina="fiscalizacion" data-solo-admin="1">Fiscalizacion</a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="nombre" id="sidebarNombre"></div>
+      <div class="rol" id="sidebarRol"></div>
+      <button onclick="logout()">Cerrar sesion</button>
+    </div>
+  </aside>
+
+  <div class="contenido">
+    <div class="topbar">
+      <button id="btnHamburguesa" class="btn-hamburguesa"><i class="bi bi-list"></i></button>
+      <h1>Productos caducados</h1>
+    </div>
+    <div class="pagina">
+
+      <div class="card">
+        <p style="color:var(--muted); font-size:13px; margin:0 0 12px">
+          Registra un producto vencido/dañado: se descuenta del stock y queda guardado como
+          perdida (no como venta), para que el conteo de inventario y ganancia queden correctos.
+        </p>
+        <label class="campo">Buscar producto</label>
+        <input type="text" id="buscarProductoCaducado" placeholder="Buscar por nombre..." oninput="buscarProductoCaducado()">
+        <div id="resultadosBusquedaCaducado" class="resultados-busqueda"></div>
+      </div>
+
+      <div class="card oculto" id="cardConfirmarCaducado">
+        <h2 id="tituloConfirmarCaducado">Registrar caducado</h2>
+        <label class="campo">Cantidad</label>
+        <input type="number" id="cantidadCaducado" min="1" value="1">
+        <label class="campo">Detalle (opcional)</label>
+        <input type="text" id="detalleCaducado" placeholder="Ej: vencio la fecha, se dano en bodega...">
+        <button onclick="confirmarCaducado()">Registrar como caducado</button>
+        <button class="secundario" onclick="cancelarCaducado()">Cancelar</button>
+      </div>
+
+      <div id="mensajeCaducados"></div>
+
+      <div class="card">
+        <label class="campo">Desde</label>
+        <input type="date" id="caducadosDesde">
+        <label class="campo">Hasta</label>
+        <input type="date" id="caducadosHasta">
+        <button onclick="cargarCaducados()">Consultar</button>
+      </div>
+
+      <div class="card">
+        <div class="item" style="border-bottom:none">
+          <div>Total registrado como caducado en el rango</div>
+          <strong id="totalCaducados" class="total-general">0 unidades</strong>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Historial</h2>
+        <div id="listaCaducados">Cargando...</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="dashboard.js"></script>
+<script>
+initSidebar("caducados");
+
+let productoSeleccionadoCaducado = null;
+let temporizadorBusquedaCaducado;
+
+function buscarProductoCaducado() {
+  clearTimeout(temporizadorBusquedaCaducado);
+  const texto = document.getElementById("buscarProductoCaducado").value.trim();
+  const div = document.getElementById("resultadosBusquedaCaducado");
+
+  if (texto.length < 2) {
+    div.innerHTML = "";
+    return;
+  }
+
+  temporizadorBusquedaCaducado = setTimeout(async () => {
+    try {
+      const productos = await apiFetch(`/productos/buscar?nombre=${encodeURIComponent(texto)}`);
+      if (productos.length === 0) {
+        div.innerHTML = `<p style="color:var(--muted); font-size:13px; margin:8px 0 0">Sin resultados</p>`;
+        return;
+      }
+      div.innerHTML = "";
+      productos.forEach(p => {
+        div.innerHTML += `
+          <div class="item">
+            <div>${p.nombre}<small>Stock actual: ${p.stockActual}</small></div>
+            <button onclick="seleccionarProductoCaducado(${p.id})">Elegir</button>
+          </div>`;
+      });
+      window.__resultadosBusquedaCaducado = productos;
+    } catch (e) {
+      div.innerHTML = `<div class="msg error">${e.message}</div>`;
+    }
+  }, 300);
+}
+
+function seleccionarProductoCaducado(id) {
+  const producto = (window.__resultadosBusquedaCaducado || []).find(p => p.id === id);
+  if (!producto) return;
+
+  productoSeleccionadoCaducado = producto;
+  document.getElementById("tituloConfirmarCaducado").innerText = `Registrar caducado: ${producto.nombre}`;
+  document.getElementById("cantidadCaducado").value = "1";
+  document.getElementById("detalleCaducado").value = "";
+  document.getElementById("cardConfirmarCaducado").classList.remove("oculto");
+  document.getElementById("buscarProductoCaducado").value = "";
+  document.getElementById("resultadosBusquedaCaducado").innerHTML = "";
+}
+
+function cancelarCaducado() {
+  productoSeleccionadoCaducado = null;
+  document.getElementById("cardConfirmarCaducado").classList.add("oculto");
+}
+
+async function confirmarCaducado() {
+  if (!productoSeleccionadoCaducado) return;
+
+  const cantidad = parseInt(document.getElementById("cantidadCaducado").value, 10);
+  const detalle = document.getElementById("detalleCaducado").value.trim();
+
+  if (!cantidad || cantidad < 1) {
+    mostrarMensajeEn("mensajeCaducados", "Ingresa una cantidad valida", "error");
+    return;
+  }
+  if (cantidad > productoSeleccionadoCaducado.stockActual) {
+    mostrarMensajeEn("mensajeCaducados",
+      `No hay ${cantidad} unidades en stock (disponible: ${productoSeleccionadoCaducado.stockActual})`, "error");
+    return;
+  }
+
+  const motivo = "Producto caducado" + (detalle ? ": " + detalle : "");
+
+  try {
+    await apiFetch("/inventario/ajuste", {
+      method: "POST",
+      body: JSON.stringify({
+        codigoBarras: productoSeleccionadoCaducado.codigoBarras,
+        cantidad,
+        motivo,
+        esPositivo: false
+      })
+    });
+    mostrarMensajeEn("mensajeCaducados", "Registrado como caducado", "ok");
+    cancelarCaducado();
+    await cargarCaducados();
+  } catch (e) {
+    mostrarMensajeEn("mensajeCaducados", e.message, "error");
+  }
+}
+
+// ---------- HISTORIAL ----------
+function primerDiaMesISO() {
+  const d = new Date();
+  d.setDate(1);
+  return fechaLocalISO(d);
+}
+
+function prepararFechasCaducados() {
+  const desde = document.getElementById("caducadosDesde");
+  const hasta = document.getElementById("caducadosHasta");
+  if (!desde.value) desde.value = primerDiaMesISO();
+  if (!hasta.value) hasta.value = fechaLocalISO(new Date());
+}
+
+async function cargarCaducados() {
+  prepararFechasCaducados();
+  const desde = `${document.getElementById("caducadosDesde").value}T00:00:00`;
+  const hasta = `${document.getElementById("caducadosHasta").value}T23:59:59`;
+  const div = document.getElementById("listaCaducados");
+  div.innerHTML = `<p style="color:var(--muted)">Cargando...</p>`;
+
+  try {
+    const movimientos = await apiFetch(`/inventario/ajustes?desde=${desde}&hasta=${hasta}`);
+
+    const totalUnidades = movimientos.reduce((acc, m) => acc + m.cantidad, 0);
+    document.getElementById("totalCaducados").innerText = `${totalUnidades} unidades`;
+
+    if (movimientos.length === 0) {
+      div.innerHTML = `<p style="color:var(--muted)">Sin productos caducados registrados en este rango</p>`;
+      return;
+    }
+
+    div.innerHTML = "";
+    movimientos.forEach(m => {
+      const fecha = new Date(m.fecha).toLocaleString("es", {
+        day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
+      });
+      div.innerHTML += `
+        <div class="item">
+          <div>
+            ${m.producto}
+            <small>${m.motivo || ""} · ${fecha}</small>
+          </div>
+          <strong style="color:var(--danger)">-${m.cantidad}</strong>
+        </div>`;
+    });
+  } catch (e) {
+    div.innerHTML = `<div class="msg error">${e.message}</div>`;
+  }
+}
+
+cargarCaducados();
+</script>
+
+</body>
+</html>

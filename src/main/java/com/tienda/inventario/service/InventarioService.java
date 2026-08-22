@@ -1,5 +1,6 @@
 package com.tienda.inventario.service;
 
+import com.tienda.inventario.dto.MovimientoInventarioResponse;
 import com.tienda.inventario.entity.MovimientoInventario;
 import com.tienda.inventario.entity.Producto;
 import com.tienda.inventario.entity.Usuario;
@@ -10,6 +11,9 @@ import jakarta.persistence.OptimisticLockException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Punto UNICO por donde debe pasar cualquier cambio de stock.
@@ -89,5 +93,15 @@ public class InventarioService {
         mov.setUsuario(usuario);
         mov.setMotivo(motivo);
         movimientoRepository.save(mov);
+    }
+
+    // Historial de un tipo de movimiento en un rango (ej: AJUSTE_NEGATIVO
+    // para ver productos caducados/mermas registrados).
+    public List<MovimientoInventarioResponse> listarPorTipo(TipoMovimiento tipo, LocalDateTime desde, LocalDateTime hasta) {
+        return movimientoRepository.findByTipoAndFechaBetweenOrderByFechaDesc(tipo, desde, hasta).stream()
+                .map(m -> new MovimientoInventarioResponse(
+                        m.getId(), m.getProducto().getNombre(), m.getProducto().getCodigoBarras(),
+                        m.getCantidad(), m.getMotivo(), m.getFecha()))
+                .toList();
     }
 }

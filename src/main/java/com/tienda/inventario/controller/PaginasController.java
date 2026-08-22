@@ -69,4 +69,9 @@ public class PaginasController {
     public String deudores() {
         return "forward:/deudores.html";
     }
+
+    @GetMapping("/caducados")
+    public String caducados() {
+        return "forward:/caducados.html";
+    }
 }

@@ -18,6 +18,7 @@
       <a href="dashboard" data-pagina="inicio">Inicio</a>
       <a href="venta" data-pagina="venta">Vender</a>
       <a href="agregar-stock" data-pagina="agregar-stock" data-solo-admin="1">Agregar stock</a>
+      <a href="caducados" data-pagina="caducados" data-solo-admin="1">Caducados</a>
       <a href="deudores" data-pagina="deudores">Fiar</a>
 
       <button class="grupo-toggle" data-grupo="catalogo" data-solo-admin="1" onclick="toggleGrupo('catalogo')">
@@ -442,11 +443,27 @@ function descargarExcel() {
     ["Total de productos vendidos", totales.vendidos],
     ["Total de productos de compras", totales.deCompras],
     ["Total de productos netos", totales.netos],
-    ["Ganancia total del periodo", ultimoReporte.totalGeneralGanancia],
-    [],
-    ["Categoria", ...ENCABEZADOS_FISCALIZACION]
+    ["Ganancia total del periodo", ultimoReporte.totalGeneralGanancia]
   ];
   const filasResumenGeneral = [3, 4, 5, 6, 7, 8];
+
+  // Productos por peso (ej: carnes): mismo bloque que se ve en pantalla,
+  // aparte del informe por categoria porque no tienen kardex.
+  const filasPorPeso = [];
+  const productosPorPeso = ultimoReporte.productosPorPeso || [];
+  if (productosPorPeso.length > 0) {
+    filas.push([]);
+    filas.push(["PRODUCTOS POR PESO (ej: carnes)"]);
+    filasPorPeso.push(filas.length - 1);
+    filas.push(["Producto", "Peso vendido (lb)", "Ingreso", "Ganancia estimada"]);
+    filasPorPeso.push(filas.length - 1);
+    productosPorPeso.forEach(p => {
+      filas.push([p.producto, p.pesoVendido, p.ingresoTotal, p.gananciaEstimada != null ? p.gananciaEstimada : "N/D"]);
+    });
+  }
+
+  filas.push([]);
+  filas.push(["Categoria", ...ENCABEZADOS_FISCALIZACION]);
   const filaEncabezados = filas.length - 1; // fila "Categoria, Producto, ..." recien agregada arriba
 
   const filasSubtotal = [];
@@ -529,6 +546,9 @@ function descargarExcel() {
     aplicarEstiloFila(hoja, fila, { font: { bold: true, color: { rgb: "1D1D1F" } }, fill: { fgColor: { rgb: CREMA_PALIDO } } })
   );
   aplicarEstiloFila(hoja, filaTotalGeneral, { font: { bold: true, sz: 12, color: { rgb: "1D1D1F" } }, fill: { fgColor: { rgb: VERDE_PALIDO } } });
+  filasPorPeso.forEach(fila =>
+    aplicarEstiloFila(hoja, fila, { font: { bold: true, color: { rgb: "1D1D1F" } }, fill: { fgColor: { rgb: TOMATE_DATOS } } })
+  );
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, hoja, "Fiscalizacion");
