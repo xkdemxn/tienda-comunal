@@ -206,17 +206,25 @@ button.grupo-toggle.abierto .grupo-flecha { transform: rotate(180deg); }
 .tile small { display: block; color: var(--muted); font-weight: 400; margin-top: 4px; }
 
 /* ---------- Tablas de reportes (ej: Fiscalizacion) ---------- */
-.tabla-scroll { overflow-x: auto; }
+.tabla-scroll {
+  overflow-x: auto;
+  /* Degradado en el borde derecho: en vez de que el texto se vea "cortado" a
+     lo bruto cuando hay que hacer scroll, se desvanece suavemente (el corte
+     sigue existiendo, pero se ve intencional). */
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+  mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+}
 .tabla-reporte {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
 }
 .tabla-reporte th, .tabla-reporte td {
-  padding: 8px 10px;
+  padding: 8px 14px 8px 10px;
   text-align: right;
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
+  color: var(--text);
 }
 .tabla-reporte th:first-child, .tabla-reporte td:first-child,
 .tabla-reporte th:nth-child(2), .tabla-reporte td:nth-child(2) {
@@ -228,17 +236,24 @@ button.grupo-toggle.abierto .grupo-flecha { transform: rotate(180deg); }
   font-size: 11px;
   text-transform: uppercase;
 }
-.tabla-reporte thead th.col-precio { color: #2563eb; }
-.tabla-reporte thead th.col-ganancia { color: var(--accent-dark); }
-/* Fondo pastel en toda la columna (encabezado + celdas) para diferenciar de
-   un vistazo, ademas del color del texto en el titulo. */
-.tabla-reporte th.col-precio,
-.tabla-reporte td.col-precio {
-  background: #eff6ff;
+/* 3 colores pasteles para diferenciar grupos de columnas de un vistazo. El
+   texto siempre queda negro (var(--text)), solo cambia el fondo. */
+.tabla-reporte th.col-azul,
+.tabla-reporte td.col-azul {
+  background: #dbeafe;
 }
-.tabla-reporte th.col-ganancia,
-.tabla-reporte td.col-ganancia {
-  background: #f0fdf4;
+.tabla-reporte th.col-verde,
+.tabla-reporte td.col-verde {
+  background: #dcfce7;
+}
+.tabla-reporte th.col-tomate,
+.tabla-reporte td.col-tomate {
+  background: #ffe1d6;
+}
+.tabla-reporte thead th.col-azul,
+.tabla-reporte thead th.col-verde,
+.tabla-reporte thead th.col-tomate {
+  color: var(--text);
 }
 .tabla-reporte tbody tr:last-child td { border-bottom: none; }
 .tabla-reporte tfoot td {
@@ -334,6 +349,7 @@ button.secundario.activo {
 }
 .item:last-child { border-bottom: none; }
 .item small { color: var(--muted); display: block; }
+.hora-venta { color: #2563eb; font-weight: 600; }
 .item button {
   width: auto;
   padding: 8px 12px;

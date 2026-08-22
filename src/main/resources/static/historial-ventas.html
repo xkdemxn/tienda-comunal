@@ -136,7 +136,7 @@ async function cargarHistorial() {
         html += `
           <div class="item">
             <div>
-              ${formatoHora(v.fecha)}
+              <span class="hora-venta">${formatoHora(v.fecha)}</span>
               <small>${items}</small>
             </div>
             <strong>$${Number(v.totalMonedaLocal).toFixed(2)}</strong>
