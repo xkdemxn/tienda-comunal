@@ -257,6 +257,20 @@ function aplicarEstiloFila(hoja, filaIndex, estilo) {
   }
 }
 
+// Columnas del bloque de datos (0=Categoria, 1=Producto, 2=Codigo quedan en
+// blanco a proposito, son nombres/identificadores, no numeros destacables).
+const COLUMNAS_AZUL = [3, 4, 5, 11];    // Saldo anterior, Entrada del mes, Total, Prod. neto existente
+const COLUMNAS_VERDE = [6, 7, 12];      // Existencia actual, Valor existencia, Ganancia
+const COLUMNAS_TOMATE = [8, 9, 10];     // Cant. vendida, Salida c/ganancia, Salida p/mercado
+
+function aplicarColorColumnas(hoja, filaIndex, columnas, colorHex) {
+  columnas.forEach(c => {
+    const addr = XLSX.utils.encode_cell({ r: filaIndex, c });
+    if (!hoja[addr]) hoja[addr] = { t: "s", v: "" };
+    hoja[addr].s = { fill: { fgColor: { rgb: colorHex } } };
+  });
+}
+
 function descargarExcel() {
   if (!ultimoReporte || Object.keys(ultimoReporte.porCategoria || {}).length === 0) {
     alert("Primero genera el informe (no hay datos para descargar)");
@@ -280,6 +294,7 @@ function descargarExcel() {
   const filasResumenGeneral = [3, 4, 5, 6, 7];
 
   const filasSubtotal = [];
+  const filasDatos = [];
   Object.entries(ultimoReporte.porCategoria).forEach(([categoria, items]) => {
     let subtotalGanancia = 0;
 
@@ -294,6 +309,7 @@ function descargarExcel() {
         it.existenciaActual, it.valorExistencia, it.cantidadVendida,
         it.salidaConGanancia, it.salidaPrecioMercado, it.productoNetoExistentes, it.sumaGanancia
       ]);
+      filasDatos.push(filas.length - 1);
     });
 
     filas.push(["", `Subtotal ganancia — ${categoria}`, "", "", "", "", "", "", "", "", "", "", subtotalGanancia]);
@@ -331,7 +347,18 @@ function descargarExcel() {
   const GRIS_CLARO = "F2F2F7";
   const VERDE_PALIDO = "F1F8F4";
   const CREMA_PALIDO = "FFFBF0";
+  const AZUL_DATOS = "EFF6FF";
+  const VERDE_DATOS = "F0FDF4";
+  const TOMATE_DATOS = "FFF4F0";
   const BORDE_SUAVE = { bottom: { style: "thin", color: { rgb: "E5E5EA" } } };
+
+  // En cada fila de producto: Categoria/Producto/Codigo quedan en blanco, y
+  // las columnas de numeros/valores destacables se colorean por grupo.
+  filasDatos.forEach(fila => {
+    aplicarColorColumnas(hoja, fila, COLUMNAS_AZUL, AZUL_DATOS);
+    aplicarColorColumnas(hoja, fila, COLUMNAS_VERDE, VERDE_DATOS);
+    aplicarColorColumnas(hoja, fila, COLUMNAS_TOMATE, TOMATE_DATOS);
+  });
 
   aplicarEstiloFila(hoja, 0, { font: { bold: true, sz: 14, color: { rgb: "1D1D1F" } } }); // titulo
   filasResumenGeneral.forEach(fila =>
