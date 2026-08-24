@@ -365,6 +365,47 @@ button.secundario.activo {
 }
 .item:last-child { border-bottom: none; }
 .item small { color: var(--muted); display: block; }
+
+/* ---------- Carrito (Vender): nombre siempre a la izquierda, precio a la
+   derecha, nunca se pasa a otra fila - el nombre se trunca con "..." si es
+   muy largo en vez de empujar los controles hacia abajo. ---------- */
+.item-carrito { flex-wrap: nowrap; }
+.item-carrito-info { flex: 1 1 auto; min-width: 0; }
+.item-carrito-nombre {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.item-carrito-controles {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.btn-cantidad {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1;
+  margin-bottom: 0;
+}
+.cantidad-valor {
+  min-width: 20px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 14px;
+}
+.item-carrito-subtotal {
+  min-width: 55px;
+  text-align: right;
+  font-size: 14px;
+}
 .hora-venta { color: #15803d; font-weight: 700; }
 .total-general { color: #e40000; font-size: 20px; }
 @media (max-width: 480px) {

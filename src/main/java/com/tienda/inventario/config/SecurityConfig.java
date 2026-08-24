@@ -82,8 +82,12 @@ public class SecurityConfig {
                         .requestMatchers("/api/ventas/**").hasAnyRole("ADMIN", "VENDEDOR")
                         // fiar/abonar: admin y vendedor (se hace en el mostrador, como una venta)
                         .requestMatchers("/api/deudores/**").hasAnyRole("ADMIN", "VENDEDOR")
-                        // todo lo de inventario/compras/reportes/admin solo admin
-                        .requestMatchers("/api/inventario/**", "/api/compras/**",
+                        // agregar stock: admin y vendedor pueden sumar stock (ajuste positivo);
+                        // las bajas (caducados/mermas) se restringen a ADMIN dentro del controller,
+                        // porque comparten el mismo endpoint y aca no se puede distinguir por URL
+                        .requestMatchers("/api/inventario/**").hasAnyRole("ADMIN", "VENDEDOR")
+                        // todo lo demas de compras/reportes/admin solo admin
+                        .requestMatchers("/api/compras/**",
                                 "/api/reportes/**", "/api/proveedores/**", "/api/categorias/**",
                                 "/api/admin/**", "/api/usuarios/**", "/api/gastos/**")
                         .hasRole("ADMIN")

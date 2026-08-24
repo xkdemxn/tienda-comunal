@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,14 +28,24 @@ public class InventarioController {
     /**
      * Ajuste manual de stock: mermas, productos danados, correcciones de conteo fisico, etc.
      * Todo ajuste queda registrado en el kardex con el motivo indicado.
+     *
+     * Este endpoint es ADMIN+VENDEDOR (agregar stock lo usa un vendedor en el
+     * mostrador), pero las bajas (esPositivo=false, ej: caducados) quedan
+     * restringidas a ADMIN aca adentro, porque comparten la misma URL y no se
+     * puede distinguir el permiso solo con la ruta.
      */
     @PostMapping("/ajuste")
     public ResponseEntity<Producto> ajustar(@Valid @RequestBody AjusteInventarioRequest request,
                                              @AuthenticationPrincipal UsuarioPrincipal principal) {
+        boolean esPositivo = Boolean.TRUE.equals(request.getEsPositivo());
+        if (!esPositivo && !esAdmin(principal)) {
+            throw new AccessDeniedException("Solo un administrador puede registrar bajas de stock (caducados/mermas)");
+        }
+
         Usuario usuario = principal.getUsuario();
         Producto producto;
 
-        if (Boolean.TRUE.equals(request.getEsPositivo())) {
+        if (esPositivo) {
             producto = inventarioService.aumentarStock(request.getCodigoBarras(), request.getCantidad(),
                     TipoMovimiento.AJUSTE_POSITIVO, usuario, request.getMotivo());
         } else {
@@ -46,10 +57,20 @@ public class InventarioController {
     }
 
     // Historial de caducados/mermas (AJUSTE_NEGATIVO) en un rango de fechas.
+    // Solo ADMIN (es la pantalla de Caducados, que el vendedor no debe ver).
     @GetMapping("/ajustes")
     public ResponseEntity<List<MovimientoInventarioResponse>> listarAjustesNegativos(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime desde,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime hasta) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime hasta,
+            @AuthenticationPrincipal UsuarioPrincipal principal) {
+        if (!esAdmin(principal)) {
+            throw new AccessDeniedException("Solo un administrador puede ver el historial de caducados/mermas");
+        }
         return ResponseEntity.ok(inventarioService.listarPorTipo(TipoMovimiento.AJUSTE_NEGATIVO, desde, hasta));
+    }
+
+    private boolean esAdmin(UsuarioPrincipal principal) {
+        return principal.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }
 }

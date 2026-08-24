@@ -37,8 +37,9 @@
     <nav class="sidebar-nav">
       <a href="dashboard" data-pagina="inicio">Inicio</a>
       <a href="venta" data-pagina="venta">Vender</a>
-      <a href="agregar-stock" data-pagina="agregar-stock" data-solo-admin="1">Agregar stock</a>
+      <a href="agregar-stock" data-pagina="agregar-stock">Agregar stock</a>
       <a href="deudores" data-pagina="deudores">Fiar</a>
+      <a href="historial-ventas" data-pagina="historial-ventas">Historial de ventas</a>
 
       <button class="grupo-toggle" data-grupo="catalogo" data-solo-admin="1" onclick="toggleGrupo('catalogo')">
         <span>Catalogo</span><span class="grupo-flecha">▾</span>
@@ -61,7 +62,6 @@
         <span>Reportes</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-reportes" data-grupo="reportes">
-        <a href="historial-ventas" data-pagina="historial-ventas" data-solo-admin="1">Historial de ventas</a>
         <a href="estadisticas" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
         <a href="fiscalizacion" data-pagina="fiscalizacion" data-solo-admin="1">Fiscalizacion</a>
       </div>
@@ -231,15 +231,14 @@ function renderCarrito() {
       total += subtotal;
       unidades += 1;
       div.innerHTML += `
-        <div class="item">
-          <div>
-            ${item.nombre}
+        <div class="item item-carrito">
+          <div class="item-carrito-info">
+            <div class="item-carrito-nombre">${item.nombre}</div>
             <small>${item.peso} lb x $${item.precio.toFixed(2)}/lb</small>
           </div>
-          <div style="display:flex; align-items:center; gap:8px">
-            <span>$${subtotal.toFixed(2)}</span>
-            <button class="secundario" style="width:auto; padding:4px 8px"
-                    onclick="quitarDelCarrito(${idx})"><i class="bi bi-x-lg"></i></button>
+          <div class="item-carrito-controles">
+            <span class="item-carrito-subtotal">$${subtotal.toFixed(2)}</span>
+            <button class="secundario btn-cantidad" onclick="quitarDelCarrito(${idx})"><i class="bi bi-x-lg"></i></button>
           </div>
         </div>`;
       return;
@@ -249,17 +248,16 @@ function renderCarrito() {
     total += subtotal;
     unidades += item.cantidad;
     div.innerHTML += `
-      <div class="item">
-        <div>
-          ${item.nombre}
+      <div class="item item-carrito">
+        <div class="item-carrito-info">
+          <div class="item-carrito-nombre">${item.nombre}</div>
           <small>$${item.precio.toFixed(2)} c/u</small>
         </div>
-        <div style="display:flex; align-items:center; gap:8px">
-          <input type="number" min="1" value="${item.cantidad}" style="width:60px; margin-bottom:0"
-                 onchange="actualizarCantidadCarrito(${idx}, this.value)">
-          <span>$${subtotal.toFixed(2)}</span>
-          <button class="secundario" style="width:auto; padding:4px 8px"
-                  onclick="quitarDelCarrito(${idx})"><i class="bi bi-x-lg"></i></button>
+        <div class="item-carrito-controles">
+          <button class="secundario btn-cantidad" onclick="cambiarCantidadCarrito(${idx}, -1)">−</button>
+          <span class="cantidad-valor">${item.cantidad}</span>
+          <button class="secundario btn-cantidad" onclick="cambiarCantidadCarrito(${idx}, 1)">+</button>
+          <span class="item-carrito-subtotal">$${subtotal.toFixed(2)}</span>
         </div>
       </div>`;
   });
@@ -269,13 +267,13 @@ function renderCarrito() {
     `${unidades} producto${unidades === 1 ? "" : "s"}`;
 }
 
-function actualizarCantidadCarrito(idx, valor) {
-  const cantidad = parseInt(valor, 10);
-  if (!cantidad || cantidad < 1) {
-    renderCarrito(); // revierte el input a su valor anterior
-    return;
+function cambiarCantidadCarrito(idx, delta) {
+  const nuevaCantidad = carrito[idx].cantidad + delta;
+  if (nuevaCantidad < 1) {
+    carrito.splice(idx, 1); // llego a 0: se quita del carrito
+  } else {
+    carrito[idx].cantidad = nuevaCantidad;
   }
-  carrito[idx].cantidad = cantidad;
   renderCarrito();
 }
 
