@@ -49,6 +49,15 @@ if (getToken()) {
   window.location.href = "dashboard";
 }
 
+// Si llegamos aca porque cerrarSesionPorTokenInvalido() nos mando (token
+// vencido/invalido a mitad de uso), mostramos el porque en vez de dejar
+// que parezca un login normal sin explicacion.
+const mensajePendiente = localStorage.getItem("mensajeLogin");
+if (mensajePendiente) {
+  document.getElementById("loginMsg").innerHTML = `<div class="msg error">${mensajePendiente}</div>`;
+  localStorage.removeItem("mensajeLogin");
+}
+
 async function login() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;

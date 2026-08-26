@@ -23,6 +23,70 @@ function fechaLocalISO(date) {
   return `${y}-${m}-${d}`;
 }
 
+// ---------- GRAFICO DE PASTEL (canvas puro, sin librerias externas) ----------
+const PALETA_GRAFICO = [
+  "#0d7730", "#1d709d", "#e6a83c", "#a1330f", "#7c3aed",
+  "#0891b2", "#be185d", "#65a30d", "#c2410c", "#4338ca"
+];
+
+// datos: [{ label, valor }]. Dibuja el pastel dentro del <canvas> y, si se
+// pasa idLeyenda, arma debajo una leyenda con color + nombre + valor + %.
+function dibujarGraficoPastel(idCanvas, datos, idLeyenda, formatoValor) {
+  const canvas = document.getElementById(idCanvas);
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const total = datos.reduce((acc, d) => acc + Number(d.valor), 0);
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  const radio = Math.min(cx, cy) - 6;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (total <= 0 || datos.length === 0) {
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "13px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("Sin datos", cx, cy);
+    if (idLeyenda) document.getElementById(idLeyenda).innerHTML = "";
+    return;
+  }
+
+  let anguloInicio = -Math.PI / 2;
+  datos.forEach((d, i) => {
+    const porcion = Number(d.valor) / total;
+    const anguloFin = anguloInicio + porcion * Math.PI * 2;
+    const color = d.color || PALETA_GRAFICO[i % PALETA_GRAFICO.length];
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, radio, anguloInicio, anguloFin);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    anguloInicio = anguloFin;
+  });
+
+  if (idLeyenda) {
+    const div = document.getElementById(idLeyenda);
+    div.innerHTML = datos.map((d, i) => {
+      const color = d.color || PALETA_GRAFICO[i % PALETA_GRAFICO.length];
+      const pct = ((Number(d.valor) / total) * 100).toFixed(1);
+      const valorTexto = formatoValor ? formatoValor(d.valor) : d.valor;
+      return `
+        <div style="display:flex; align-items:center; gap:8px; padding:4px 0; font-size:13px">
+          <span style="width:10px; height:10px; border-radius:50%; background:${color}; flex-shrink:0; display:inline-block"></span>
+          <span style="flex:1">${d.label}</span>
+          <span style="color:var(--muted)">${valorTexto} · ${pct}%</span>
+        </div>`;
+    }).join("");
+  }
+}
+
 function getToken() {
   return localStorage.getItem("token") || "";
 }
@@ -40,6 +104,20 @@ function logout() {
   window.location.href = "login";
 }
 
+// Se llama sola cuando una peticion da 401 (token invalido/vencido).
+// Evita que se dispare mas de una vez si varias peticiones fallan a la vez
+// (ej: una pagina que carga 3 cosas en paralelo al abrir).
+let cerrandoSesionPorError = false;
+function cerrarSesionPorTokenInvalido() {
+  if (cerrandoSesionPorError) return;
+  cerrandoSesionPorError = true;
+  localStorage.removeItem("token");
+  localStorage.removeItem("nombre");
+  localStorage.removeItem("roles");
+  localStorage.setItem("mensajeLogin", "Tu sesion vencio o hubo un problema cargando datos. Inicia sesion de nuevo.");
+  window.location.href = "login";
+}
+
 function esAdmin() {
   const roles = JSON.parse(localStorage.getItem("roles") || "[]");
   return roles.includes("ROLE_ADMIN");
@@ -54,6 +132,17 @@ async function apiFetch(path, options = {}) {
     options.headers || {}
   );
   const res = await fetch(`${API_BASE}${path}`, Object.assign({}, options, { headers }));
+
+  // 401 = el token no es valido (vencio, se cerro sesion en otro lado, etc).
+  // No tiene sentido seguir mostrando pantallas a medias con datos que no
+  // cargaron: se cierra la sesion y se manda a loguear de nuevo, asi al
+  // volver a entrar todo carga limpio y sin inconsistencias. Los demas
+  // errores (400, 403, 409, 500...) siguen mostrandose donde ya se mostraban,
+  // porque cerrar sesion ahi no arreglaria nada (ej: "falta el nombre").
+  if (res.status === 401) {
+    cerrarSesionPorTokenInvalido();
+    throw new Error("Tu sesion vencio, iniciando sesion de nuevo...");
+  }
 
   if (!res.ok) {
     let mensaje = "Error en la peticion";

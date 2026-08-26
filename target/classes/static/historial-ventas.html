@@ -98,6 +98,10 @@ function formatoHora(fechaIso) {
   return new Date(fechaIso).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" });
 }
 
+function formatoFechaCorta(fechaIso) {
+  return new Date(fechaIso + "T00:00:00").toLocaleDateString("es", { day: "2-digit", month: "short" });
+}
+
 async function cargarHistorial() {
   prepararFechasHistorial();
   const desde = `${document.getElementById("histDesde").value}T00:00:00`;
@@ -131,6 +135,18 @@ async function cargarHistorial() {
           <strong class="total-general">$${totalGeneral.toFixed(2)}</strong>
         </div>
       </div>`;
+
+    if (porDia.size > 1) {
+      html += `
+        <div class="card">
+          <h2>Ventas por dia</h2>
+          <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:center">
+            <canvas id="graficoPorDia" width="200" height="200" style="flex-shrink:0"></canvas>
+            <div id="leyendaPorDia" style="flex:1; min-width:180px"></div>
+          </div>
+        </div>`;
+    }
+
     porDia.forEach((ventasDelDia, dia) => {
       const totalDia = ventasDelDia.reduce((acc, v) => acc + Number(v.totalMonedaLocal), 0);
       html += `
@@ -160,6 +176,15 @@ async function cargarHistorial() {
     });
 
     div.innerHTML = html;
+
+    if (porDia.size > 1) {
+      const datosGrafico = Array.from(porDia.entries()).map(([dia, ventasDelDia]) => ({
+        label: formatoFechaCorta(dia),
+        valor: ventasDelDia.reduce((acc, v) => acc + Number(v.totalMonedaLocal), 0)
+      }));
+      dibujarGraficoPastel("graficoPorDia", datosGrafico, "leyendaPorDia",
+        v => `$${Number(v).toFixed(2)}`);
+    }
   } catch (e) {
     div.innerHTML = `<div class="msg error">${e.message}</div>`;
   }

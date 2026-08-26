@@ -114,9 +114,11 @@ async function cargarEstadisticas() {
     if (masVendidos.length === 0) {
       html += `<p style="color:var(--muted)">Sin ventas en este rango</p>`;
     } else {
-      masVendidos.forEach(([nombre, cantidad]) => {
-        html += `<div class="item"><div>${nombre}</div><strong>${cantidad}</strong></div>`;
-      });
+      html += `
+        <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:center">
+          <canvas id="graficoMasVendidos" width="200" height="200" style="flex-shrink:0"></canvas>
+          <div id="leyendaMasVendidos" style="flex:1; min-width:180px"></div>
+        </div>`;
     }
     html += `</div><div class="card"><h2>Stock bajo</h2>`;
 
@@ -134,6 +136,12 @@ async function cargarEstadisticas() {
     html += `</div>`;
 
     div.innerHTML = html;
+
+    if (masVendidos.length > 0) {
+      const datosGrafico = masVendidos.map(([nombre, cantidad]) => ({ label: nombre, valor: cantidad }));
+      dibujarGraficoPastel("graficoMasVendidos", datosGrafico, "leyendaMasVendidos",
+        v => `${v} unid.`);
+    }
   } catch (e) {
     div.innerHTML = `<div class="msg error">${e.message}</div>`;
   }
