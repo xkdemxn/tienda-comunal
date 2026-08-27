@@ -28,7 +28,10 @@ C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventari
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\DeudorResponse.java
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\EscaneoRequest.java
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\FiadoRequest.java
+C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\FiscalizacionAnualResponse.java
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\FiscalizacionItemDto.java
+C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\FiscalizacionMesDto.java
+C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\FiscalizacionPorPesoDto.java
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\FiscalizacionResponse.java
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\GastoRequest.java
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\GastoResponse.java
@@ -38,6 +41,7 @@ C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventari
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\LoginRequest.java
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\MovimientoDeudaRequest.java
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\MovimientoDeudaResponse.java
+C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\MovimientoInventarioResponse.java
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\NuevaPasswordRequest.java
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\ProductoEscaneadoResponse.java
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\ProductoStockBajoDto.java
@@ -71,6 +75,7 @@ C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventari
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\repository\CategoriaRepository.java
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\repository\CompraRepository.java
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\repository\ConfiguracionSistemaRepository.java
+C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\repository\DetalleVentaRepository.java
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\repository\DeudorRepository.java
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\repository\GastoRepository.java
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\repository\MovimientoDeudaRepository.java

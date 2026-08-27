@@ -72,7 +72,18 @@
       <div id="fiscalResultado">
 
         <h1>DATOS DE FISCALIZACION</h1>
-        
+
+      </div>
+
+      <div class="seccion-titulo">Progreso anual</div>
+      <div class="card">
+        <label class="campo">Año</label>
+        <select id="anualAnio" onchange="cargarProgresoAnual()"></select>
+        <p style="color:var(--muted); font-size:13px; margin:8px 0 12px">
+          Ganancia mes a mes de Enero a Diciembre. No se incluye en el Excel descargado arriba.
+        </p>
+        <canvas id="graficoAnual" width="760" height="260" style="max-width:100%; width:100%"></canvas>
+        <div id="leyendaAnual" style="margin-top:12px"></div>
       </div>
 
     </div>
@@ -89,7 +100,7 @@ let ultimasFechas = { desde: "", hasta: "" };
 
 const ENCABEZADOS_FISCALIZACION = [
   "Producto", "Codigo", "Saldo anterior", "Entrada del mes", "Total",
-  "Existencia actual", "Valor existencia", "Cant. vendida", "Salida c/ganancia",
+  "Existencia actual", "Valor existencia", "Cant. vendida", "Cant. caducada", "Salida c/ganancia",
   "Salida p/mercado", "Prod. neto existente", "Ganancia"
 ];
 
@@ -222,6 +233,7 @@ async function cargarFiscalizacion() {
                   <th><span class="chip col-verde">Existencia actual</span></th>
                   <th><span class="chip col-verde">Valor existencia</span></th>
                   <th><span class="chip col-tomate">Cant. vendida</span></th>
+                  <th>Cant. caducada</th>
                   <th><span class="chip col-tomate">Salida c/ganancia</span></th>
                   <th><span class="chip col-tomate">Salida p/mercado</span></th>
                   <th><span class="chip col-azul">Prod. neto existente</span></th>
@@ -243,6 +255,7 @@ async function cargarFiscalizacion() {
             <td>${it.existenciaActual}</td>
             <td>$${formatoNumero(it.valorExistencia)}</td>
             <td>${it.cantidadVendida}</td>
+            <td style="color:var(--danger)">${it.cantidadCaducada}</td>
             <td>$${formatoNumero(it.salidaConGanancia)}</td>
             <td>$${formatoNumero(it.salidaPrecioMercado)}</td>
             <td>$${formatoNumero(it.productoNetoExistentes)}</td>
@@ -254,7 +267,7 @@ async function cargarFiscalizacion() {
               </tbody>
               <tfoot>
                 <tr>
-                  <td colspan="11">Subtotal ganancia — ${categoria}</td>
+                  <td colspan="12">Subtotal ganancia — ${categoria}</td>
                   <td>$${formatoNumero(subtotalGanancia)}</td>
                 </tr>
               </tfoot>
@@ -416,9 +429,10 @@ function aplicarEstiloFila(hoja, filaIndex, estilo) {
 
 // Columnas del bloque de datos (0=Categoria, 1=Producto, 2=Codigo quedan en
 // blanco a proposito, son nombres/identificadores, no numeros destacables).
-const COLUMNAS_AZUL = [3, 4, 5, 11];    // Saldo anterior, Entrada del mes, Total, Prod. neto existente
-const COLUMNAS_VERDE = [6, 7, 12];      // Existencia actual, Valor existencia, Ganancia
-const COLUMNAS_TOMATE = [8, 9, 10];     // Cant. vendida, Salida c/ganancia, Salida p/mercado
+// 9=Cant. caducada tambien queda sin color: no es parte del flujo de venta.
+const COLUMNAS_AZUL = [3, 4, 5, 12];    // Saldo anterior, Entrada del mes, Total, Prod. neto existente
+const COLUMNAS_VERDE = [6, 7, 13];      // Existencia actual, Valor existencia, Ganancia
+const COLUMNAS_TOMATE = [8, 10, 11];    // Cant. vendida, Salida c/ganancia, Salida p/mercado
 
 function aplicarColorColumnas(hoja, filaIndex, columnas, colorHex) {
   columnas.forEach(c => {
@@ -448,6 +462,25 @@ function descargarExcel() {
     ["Ganancia total del periodo", ultimoReporte.totalGeneralGanancia]
   ];
   const filasResumenGeneral = [3, 4, 5, 6, 7, 8];
+
+  // Cierre de caja: mismo bloque que se ve en pantalla (gastos, q, deudas e
+  // ingreso en efectivo). El ingreso en efectivo es un dato manual que no se
+  // guarda en el backend, se lee del input tal como esta en el momento de
+  // exportar.
+  const ingresoEfectivo = Number(document.getElementById("cierreIngresoEfectivo").value) || 0;
+  const siguienteMes = Number(ultimoReporte.q) + ingresoEfectivo + Number(ultimoReporte.deudasPendientes);
+
+  filas.push([]);
+  filas.push(["CIERRE DE CAJA"]);
+  const filaCierreTitulo = filas.length - 1;
+  filas.push(["Ganancia del periodo", ultimoReporte.totalGeneralGanancia]);
+  filas.push(["Total de gastos", -Number(ultimoReporte.totalGastos)]);
+  filas.push(["q (ganancia - gastos)", ultimoReporte.q]);
+  filas.push(["Deudas pendientes (todos los deudores)", ultimoReporte.deudasPendientes]);
+  filas.push(["Ingreso en efectivo (conteo fisico)", ingresoEfectivo]);
+  filas.push(["Ingresa al siguiente mes", siguienteMes]);
+  const filaCierreSiguienteMes = filas.length - 1;
+  const filasCierreDatos = [filaCierreTitulo + 1, filaCierreTitulo + 2, filaCierreTitulo + 3, filaCierreTitulo + 4, filaCierreTitulo + 5];
 
   // Productos por peso (ej: carnes): mismo bloque que se ve en pantalla,
   // aparte del informe por categoria porque no tienen kardex.
@@ -482,19 +515,19 @@ function descargarExcel() {
       subtotalGanancia += it.sumaGanancia;
       filas.push([
         categoria, it.nombre, it.codigoBarras, it.saldoAnterior, it.entradaDelMes, it.total,
-        it.existenciaActual, it.valorExistencia, it.cantidadVendida,
+        it.existenciaActual, it.valorExistencia, it.cantidadVendida, it.cantidadCaducada,
         it.salidaConGanancia, it.salidaPrecioMercado, it.productoNetoExistentes, it.sumaGanancia
       ]);
       filasDatos.push(filas.length - 1);
     });
 
-    filas.push(["", `Subtotal ganancia — ${categoria}`, "", "", "", "", "", "", "", "", "", "", subtotalGanancia]);
+    filas.push(["", `Subtotal ganancia — ${categoria}`, "", "", "", "", "", "", "", "", "", "", "", subtotalGanancia]);
     filasSubtotal.push(filas.length - 1);
     filasSubtotal.push(filaResumenCategoria);
   });
 
   filas.push([]);
-  filas.push(["", "GANANCIA TOTAL DEL PERIODO", "", "", "", "", "", "", "", "", "", "", ultimoReporte.totalGeneralGanancia]);
+  filas.push(["", "GANANCIA TOTAL DEL PERIODO", "", "", "", "", "", "", "", "", "", "", "", ultimoReporte.totalGeneralGanancia]);
   const filaTotalGeneral = filas.length - 1;
 
   const hoja = XLSX.utils.aoa_to_sheet(filas);
@@ -511,6 +544,7 @@ function descargarExcel() {
     { wch: 16 }, // Existencia actual
     { wch: 15 }, // Valor existencia
     { wch: 13 }, // Cant. vendida
+    { wch: 14 }, // Cant. caducada
     { wch: 17 }, // Salida c/ganancia
     { wch: 16 }, // Salida p/mercado
     { wch: 19 }, // Prod. neto existente
@@ -549,6 +583,11 @@ function descargarExcel() {
     aplicarEstiloFila(hoja, fila, { font: { bold: true, color: { rgb: "1D1D1F" } }, fill: { fgColor: { rgb: CREMA_PALIDO } } })
   );
   aplicarEstiloFila(hoja, filaTotalGeneral, { font: { bold: true, sz: 12, color: { rgb: "1D1D1F" } }, fill: { fgColor: { rgb: VERDE_PALIDO } } });
+  aplicarEstiloFila(hoja, filaCierreTitulo, { font: { bold: true, sz: 12, color: { rgb: "1D1D1F" } } });
+  filasCierreDatos.forEach(fila =>
+    aplicarEstiloFila(hoja, fila, { fill: { fgColor: { rgb: CREMA_PALIDO } } })
+  );
+  aplicarEstiloFila(hoja, filaCierreSiguienteMes, { font: { bold: true, color: { rgb: "1D1D1F" } }, fill: { fgColor: { rgb: VERDE_PALIDO } } });
   filasPorPeso.forEach(fila =>
     aplicarEstiloFila(hoja, fila, { font: { bold: true, color: { rgb: "1D1D1F" } }, fill: { fgColor: { rgb: TOMATE_DATOS } } })
   );
@@ -559,6 +598,36 @@ function descargarExcel() {
   XLSX.writeFile(wb, `fiscalizacion_${ultimasFechas.desde}_a_${ultimasFechas.hasta}.xlsx`);
 }
 
+// ---------- PROGRESO ANUAL (grafico de lineas, Enero a Diciembre) ----------
+// Independiente del filtro Desde/Hasta de arriba: siempre muestra el anio
+// completo elegido. Los anios anteriores quedan fijos (ya sucedieron); el
+// anio en curso se sigue completando solo a medida que pasan los meses.
+function poblarSelectorAnios() {
+  const sel = document.getElementById("anualAnio");
+  const anioActual = new Date().getFullYear();
+  let html = "";
+  for (let a = anioActual; a >= anioActual - 4; a--) {
+    html += `<option value="${a}">${a}</option>`;
+  }
+  sel.innerHTML = html;
+}
+
+async function cargarProgresoAnual() {
+  const anio = document.getElementById("anualAnio").value;
+  try {
+    const r = await apiFetch(`/reportes/fiscalizacion/anual?anio=${anio}`);
+    const etiquetas = r.meses.map(m => m.nombreMes.slice(0, 3));
+    const valores = r.meses.map(m => m.ganancia !== null && m.ganancia !== undefined ? Number(m.ganancia) : null);
+    dibujarGraficoLineas("graficoAnual", etiquetas,
+      [{ label: `Ganancia mensual ${anio}`, valores, color: "#0d7730" }],
+      "leyendaAnual", v => `$${formatoNumero(v)}`);
+  } catch (e) {
+    document.getElementById("leyendaAnual").innerHTML = `<div class="msg error">${e.message}</div>`;
+  }
+}
+
+poblarSelectorAnios();
+cargarProgresoAnual();
 cargarFiscalizacion();
 </script>
 

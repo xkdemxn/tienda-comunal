@@ -19,6 +19,11 @@ public class FiscalizacionItemDto {
     private Integer existenciaActual;
     private BigDecimal valorExistencia;
     private Integer cantidadVendida;
+    // Unidades que salieron por AJUSTE_NEGATIVO (caducado/merma) en el
+    // periodo. Se muestra aparte de cantidadVendida a proposito: antes se
+    // mezclaban y la ganancia reportada quedaba inflada con el margen de
+    // unidades que en realidad se perdieron, no se vendieron.
+    private Integer cantidadCaducada;
     private BigDecimal salidaConGanancia;
     private BigDecimal salidaPrecioMercado;
     private BigDecimal productoNetoExistentes;

@@ -1,5 +1,6 @@
 package com.tienda.inventario.controller;
 
+import com.tienda.inventario.dto.FiscalizacionAnualResponse;
 import com.tienda.inventario.dto.FiscalizacionResponse;
 import com.tienda.inventario.dto.ReporteVentasResponse;
 import com.tienda.inventario.service.ReporteService;
@@ -32,5 +33,10 @@ public class ReporteController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime desde,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime hasta) {
         return ResponseEntity.ok(reporteService.generarReporteFiscalizacion(desde, hasta));
+    }
+
+    @GetMapping("/fiscalizacion/anual")
+    public ResponseEntity<FiscalizacionAnualResponse> reporteFiscalizacionAnual(@RequestParam int anio) {
+        return ResponseEntity.ok(reporteService.generarReporteFiscalizacionAnual(anio));
     }
 }

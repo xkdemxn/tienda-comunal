@@ -185,8 +185,8 @@ button.grupo-toggle.abierto .grupo-flecha { transform: rotate(180deg); }
   padding: 18px;
 }
 .stat-card .valor { font-size: 26px; font-weight: 700; margin: 6px 0 2px; }
-.stat-card .valor.valor-alerta { color: var(--danger); }
-.stat-card .valor.valor-positivo { color: #307823; }
+.stat-card .valor.valor-alerta { color: #cf3232; }
+.stat-card .valor.valor-positivo { color: #1e5c13; }
 .stat-card .valor.valor-azul { color: #000000; }
 .stat-card .etiqueta { font-size: 13px; color: var(--muted); }
 

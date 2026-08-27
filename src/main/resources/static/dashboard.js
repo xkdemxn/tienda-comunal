@@ -87,6 +87,125 @@ function dibujarGraficoPastel(idCanvas, datos, idLeyenda, formatoValor) {
   }
 }
 
+// ---------- GRAFICO DE LINEAS (canvas puro, sin librerias externas) ----------
+// series: [{ label, valores: [12 numeros o null], color }]. Un valor null
+// (ej: un mes que todavia no llega en el anio en curso) corta la linea en
+// ese punto en vez de dibujarlo como si fuera un dato real.
+function dibujarGraficoLineas(idCanvas, etiquetas, series, idLeyenda, formatoValor) {
+  const canvas = document.getElementById(idCanvas);
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  const pad = { top: 16, right: 16, bottom: 28, left: 56 };
+  const areaW = w - pad.left - pad.right;
+  const areaH = h - pad.top - pad.bottom;
+
+  const todosLosValores = series.flatMap(s => s.valores).filter(v => v !== null && v !== undefined);
+  if (todosLosValores.length === 0) {
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "13px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("Sin datos todavia", w / 2, h / 2);
+    if (idLeyenda) document.getElementById(idLeyenda).innerHTML = "";
+    return;
+  }
+
+  let min = Math.min(0, ...todosLosValores);
+  let max = Math.max(0, ...todosLosValores);
+  if (min === max) { min -= 1; max += 1; }
+  const margen = (max - min) * 0.1;
+  min -= margen;
+  max += margen;
+
+  const nPuntos = etiquetas.length;
+  const xDe = i => pad.left + (nPuntos === 1 ? areaW / 2 : (areaW * i) / (nPuntos - 1));
+  const yDe = v => pad.top + areaH - ((v - min) / (max - min)) * areaH;
+
+  // Grilla horizontal + etiquetas del eje Y
+  const DIVISIONES = 4;
+  ctx.strokeStyle = "#e5e5ea";
+  ctx.lineWidth = 1;
+  ctx.font = "11px sans-serif";
+  ctx.fillStyle = "#94a3b8";
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  for (let i = 0; i <= DIVISIONES; i++) {
+    const valor = min + ((max - min) * i) / DIVISIONES;
+    const y = yDe(valor);
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(w - pad.right, y);
+    ctx.stroke();
+    ctx.fillText(formatoValor ? formatoValor(valor) : valor.toFixed(0), pad.left - 8, y);
+  }
+
+  // Linea del cero (si el rango cruza valores negativos, ej un mes en perdida)
+  if (min < 0 && max > 0) {
+    ctx.strokeStyle = "#c7c7cc";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, yDe(0));
+    ctx.lineTo(w - pad.right, yDe(0));
+    ctx.stroke();
+  }
+
+  // Etiquetas del eje X (meses)
+  ctx.fillStyle = "#64748b";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  etiquetas.forEach((etq, i) => ctx.fillText(etq, xDe(i), h - pad.bottom + 8));
+
+  // Lineas de cada serie
+  series.forEach((serie, si) => {
+    const color = serie.color || PALETA_GRAFICO[si % PALETA_GRAFICO.length];
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = 2.5;
+
+    let trazando = false;
+    serie.valores.forEach((v, i) => {
+      if (v === null || v === undefined) { trazando = false; return; }
+      const x = xDe(i);
+      const y = yDe(v);
+      if (!trazando) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        trazando = true;
+      } else {
+        ctx.lineTo(x, y);
+      }
+    });
+    ctx.stroke();
+
+    serie.valores.forEach((v, i) => {
+      if (v === null || v === undefined) return;
+      ctx.beginPath();
+      ctx.arc(xDe(i), yDe(v), 3, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  });
+
+  if (idLeyenda) {
+    const div = document.getElementById(idLeyenda);
+    div.innerHTML = series.map((s, i) => {
+      const color = s.color || PALETA_GRAFICO[i % PALETA_GRAFICO.length];
+      const valoresConocidos = s.valores.filter(v => v !== null && v !== undefined);
+      const ultimo = valoresConocidos.length > 0 ? valoresConocidos[valoresConocidos.length - 1] : null;
+      const textoUltimo = ultimo !== null ? (formatoValor ? formatoValor(ultimo) : ultimo) : "sin datos";
+      return `
+        <div style="display:flex; align-items:center; gap:8px; padding:4px 0; font-size:13px">
+          <span style="width:10px; height:10px; border-radius:50%; background:${color}; flex-shrink:0; display:inline-block"></span>
+          <span style="flex:1">${s.label}</span>
+          <span style="color:var(--muted)">ultimo dato: ${textoUltimo}</span>
+        </div>`;
+    }).join("");
+  }
+}
+
 function getToken() {
   return localStorage.getItem("token") || "";
 }

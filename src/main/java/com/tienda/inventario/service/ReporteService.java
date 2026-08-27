@@ -1,6 +1,8 @@
 package com.tienda.inventario.service;
 
+import com.tienda.inventario.dto.FiscalizacionAnualResponse;
 import com.tienda.inventario.dto.FiscalizacionItemDto;
+import com.tienda.inventario.dto.FiscalizacionMesDto;
 import com.tienda.inventario.dto.FiscalizacionPorPesoDto;
 import com.tienda.inventario.dto.FiscalizacionResponse;
 import com.tienda.inventario.dto.ProductoStockBajoDto;
@@ -18,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -114,7 +117,22 @@ public class ReporteService {
                     .sum();
 
             int total = saldoAnterior + entradaDelMes;
-            int cantidadVendida = total - existenciaActual; // puede dar negativo: sobrante/discrepancia de inventario
+
+            // Antes "cantidadVendida" salia de total-existenciaActual, lo que
+            // mezclaba ventas reales con bajas por caducado/merma (ambas
+            // restan igual del stock) e inflaba la ganancia con el margen de
+            // unidades que en realidad se perdieron. Ahora se cuentan aparte,
+            // directo del kardex del periodo, por tipo de movimiento.
+            int cantidadVendida = movimientos.stream()
+                    .filter(m -> !m.getFecha().isBefore(desde) && !m.getFecha().isAfter(hasta))
+                    .filter(m -> m.getTipo() == TipoMovimiento.VENTA)
+                    .mapToInt(MovimientoInventario::getCantidad)
+                    .sum();
+            int cantidadCaducada = movimientos.stream()
+                    .filter(m -> !m.getFecha().isBefore(desde) && !m.getFecha().isAfter(hasta))
+                    .filter(m -> m.getTipo() == TipoMovimiento.AJUSTE_NEGATIVO)
+                    .mapToInt(MovimientoInventario::getCantidad)
+                    .sum();
 
             BigDecimal precioVenta = producto.getPrecioVenta();
             BigDecimal precioCompra = producto.getPrecioCompra() != null ? producto.getPrecioCompra() : BigDecimal.ZERO;
@@ -128,7 +146,7 @@ public class ReporteService {
             FiscalizacionItemDto item = new FiscalizacionItemDto(
                     producto.getNombre(), producto.getCodigoBarras(),
                     saldoAnterior, entradaDelMes, total, existenciaActual, valorExistencia,
-                    cantidadVendida, salidaConGanancia, salidaPrecioMercado,
+                    cantidadVendida, cantidadCaducada, salidaConGanancia, salidaPrecioMercado,
                     productoNetoExistentes, sumaGanancia
             );
 
@@ -158,6 +176,43 @@ public class ReporteService {
 
         return new FiscalizacionResponse(porCategoria, totalGeneralGanancia, totalVentasBruto, totalGastos, q,
                 deudasPendientes, productosPorPeso);
+    }
+
+    private static final String[] NOMBRES_MES = {
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    };
+
+    /**
+     * Progreso anual (Enero-Diciembre) para el grafico de lineas al final de
+     * Fiscalizacion. Reutiliza generarReporteFiscalizacion mes a mes: no hace
+     * falta guardar snapshots historicos por anio, el kardex ya permite
+     * reconstruir cualquier mes pasado bajo demanda. Los anios anteriores
+     * quedan "congelados" (los 12 meses ya sucedieron); el anio en curso solo
+     * trae datos hasta el mes actual, y sigue completandose mes a mes.
+     */
+    public FiscalizacionAnualResponse generarReporteFiscalizacionAnual(int anio) {
+        LocalDate hoy = LocalDate.now();
+        int mesLimite = (anio == hoy.getYear()) ? hoy.getMonthValue() : 12;
+
+        List<FiscalizacionMesDto> meses = new ArrayList<>();
+        for (int mes = 1; mes <= 12; mes++) {
+            if (mes > mesLimite) {
+                meses.add(new FiscalizacionMesDto(mes, NOMBRES_MES[mes - 1], null, null));
+                continue;
+            }
+
+            LocalDateTime desde = LocalDateTime.of(anio, mes, 1, 0, 0);
+            LocalDateTime hasta = (mes == mesLimite && anio == hoy.getYear())
+                    ? LocalDateTime.now()
+                    : desde.plusMonths(1).minusSeconds(1);
+
+            FiscalizacionResponse reporteMes = generarReporteFiscalizacion(desde, hasta);
+            meses.add(new FiscalizacionMesDto(mes, NOMBRES_MES[mes - 1],
+                    reporteMes.getTotalGeneralGanancia(), reporteMes.getTotalVentasBruto()));
+        }
+
+        return new FiscalizacionAnualResponse(anio, meses);
     }
 
     // Productos por peso (ej: carne) no tienen kardex, asi que se calculan
