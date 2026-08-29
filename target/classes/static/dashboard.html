@@ -131,7 +131,9 @@ async function suscripcionActiva() {
   }
 }
 
-async function cargarInicio() {
+async function cargarInicio(intento) {
+  intento = intento || 1;
+
   if (!(await suscripcionActiva())) {
     document.getElementById("statGrid").innerHTML = "";
     document.getElementById("cardAccesosDirectos").classList.add("oculto");
@@ -168,7 +170,17 @@ async function cargarInicio() {
   }
 
   if (tarjetas.length === 0) {
-    mostrarMensajeEn("mensajeInicio", "No se pudieron cargar las estadisticas", "error");
+    // Render (plan gratuito) "duerme" el servidor tras un rato sin uso: el
+    // primer request al reactivarlo puede tardar bastante y fallar por
+    // timeout antes de que el servidor termine de arrancar. En vez de
+    // rendirnos con el primer fallo, reintentamos unas veces.
+    const MAX_INTENTOS = 6;
+    if (intento < MAX_INTENTOS) {
+      grid.innerHTML = `<p style="color:var(--muted)"><i class="bi bi-arrow-repeat spin"></i> El servidor puede estar iniciando tras un rato sin uso (puede tardar hasta un minuto). Reintentando (${intento}/${MAX_INTENTOS - 1})...</p>`;
+      setTimeout(() => cargarInicio(intento + 1), 8000);
+      return;
+    }
+    mostrarMensajeEn("mensajeInicio", "No se pudieron cargar las estadisticas. Si el servidor estaba dormido, recarga la pagina en unos segundos.", "error");
     grid.innerHTML = "";
     return;
   }
