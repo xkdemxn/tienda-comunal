@@ -23,33 +23,52 @@
 <body>
 
 <div class="login-page">
-  <div class="login-fondo"></div>
-  <div class="login-wrap">
-    <div class="login-box">
-      <img class="login-logo" src="img/logoL.png" alt="Logo de la tienda">
+  <div class="login-fondo" aria-hidden="true">
+    <span class="orbe orbe-1"></span>
+    <span class="orbe orbe-2"></span>
+  </div>
 
-      <h1>Bienvenido<small>Inicia sesion para continuar</small></h1>
+  <div class="login-fila">
 
-      <div class="card" id="loginCard">
-        <div class="campo-icono">
-          <i class="bi bi-envelope"></i>
-          <input type="email" id="email" placeholder="Email" onkeydown="if(event.key==='Enter') login()">
+    <div class="login-marca">
+      <div class="login-marca-header">
+        <!-- <img src="img/logoL.png" alt="Logo de la tienda"> -->
+        <span>Olaaa</span>
+      </div>
+      <div class="login-marca-wordmark">
+        <h1>TIENDAAA</h1>
+        <p>Sistema de inventario y ventas<br>o 2026</p>
+      </div>
+    </div>
+
+    <div class="login-wrap">
+      <div class="login-box">
+        <img class="login-logo" src="img/logoL.png" alt="Logo de la tienda">
+
+        <h1 class="login-box-titulo">Bienvenido<small>Inicia sesion para continuar</small></h1>
+
+        <div class="card" id="loginCard">
+          <h2 class="login-card-titulo">Iniciar sesion</h2>
+          <div class="campo-icono">
+            <i class="bi bi-envelope"></i>
+            <input type="email" id="email" placeholder="Email" onkeydown="if(event.key==='Enter') login()">
+          </div>
+          <div class="campo-icono">
+            <i class="bi bi-lock"></i>
+            <input type="password" id="password" class="input-password" placeholder="Contrasena"
+                   onkeydown="if(event.key==='Enter') login()">
+            <button type="button" class="toggle-password" onclick="togglePassword()" tabindex="-1" title="Mostrar/ocultar contrasena">
+              <i class="bi bi-eye" id="iconoTogglePassword"></i>
+            </button>
+          </div>
+          <button id="btnLogin" onclick="login()">Iniciar sesion</button>
+          <div id="loginMsg"></div>
         </div>
-        <div class="campo-icono">
-          <i class="bi bi-lock"></i>
-          <input type="password" id="password" class="input-password" placeholder="Contrasena"
-                 onkeydown="if(event.key==='Enter') login()">
-          <button type="button" class="toggle-password" onclick="togglePassword()" tabindex="-1" title="Mostrar/ocultar contrasena">
-            <i class="bi bi-eye" id="iconoTogglePassword"></i>
-          </button>
-        </div>
-        <button class="btn btn-primary" id="btnLogin" onclick="login()">Iniciar sesion</button>
-        <div id="loginMsg"></div>
       </div>
     </div>
   </div>
   <footer class="login-footer">
-    <span>Gobierno Comunitario 2026</span>
+    <!-- <span>MAAARKET 2026</span> -->
     <a href="https://ceroxnueve.com/" target="_blank">Powered By: <strong>CERO NUEVE</strong></a>
   </footer>
 </div>

@@ -313,10 +313,17 @@ function initSidebar(paginaActiva) {
 
   const sidebar = document.getElementById("sidebar");
   const fondoMovil = document.getElementById("fondoSidebarMovil");
+  const barraInferior = document.querySelector(".barra-inferior");
+  // Se oculta del todo (no solo con z-index) mientras el cajon esta abierto:
+  // en varios navegadores moviles, los elementos "position: fixed" con
+  // transiciones no respetan el orden de z-index de forma confiable durante
+  // el scroll, y la barra de abajo terminaba pintandose encima del sidebar.
   const abrirCerrarSidebarMovil = () => {
     if (!sidebar || !fondoMovil) return;
+    const abriendo = !sidebar.classList.contains("abierta");
     sidebar.classList.toggle("abierta");
     fondoMovil.classList.toggle("abierta");
+    if (barraInferior) barraInferior.classList.toggle("oculto", abriendo);
   };
 
   const btnHamburguesa = document.getElementById("btnHamburguesa");
@@ -327,6 +334,7 @@ function initSidebar(paginaActiva) {
     fondoMovil.addEventListener("click", () => {
       sidebar.classList.remove("abierta");
       fondoMovil.classList.remove("abierta");
+      if (barraInferior) barraInferior.classList.remove("oculto");
     });
   }
 }
