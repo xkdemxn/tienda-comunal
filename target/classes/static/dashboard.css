@@ -633,7 +633,7 @@ button.grupo-toggle.abierto .grupo-flecha { transform: rotate(180deg); }
 h2 { font-size: 15px; margin: 0 0 12px; }
 #reader { width: 100%; border-radius: 10px; overflow: hidden; }
 .controles-camara { display: flex; gap: 8px; }
-.controles-camara button { margin-bottom: 8px; }
+.controles-camara button { flex: 1; margin-bottom: 8px; }
 input, select {
   width: 100%;
   padding: 10px 12px;
@@ -679,7 +679,7 @@ button.secundario {
   color: var(--text);
   box-shadow: none;
 }
-button.secundario:hover { background: rgb(2, 78, 255); box-shadow: none; }
+button.secundario:hover { background: rgba(0, 0, 0, 0.106); box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.08); }
 button.secundario.activo {
   background: linear-gradient(135deg, var(--accent), var(--accent-dark));
   color: #ffffff;
@@ -828,10 +828,30 @@ button.secundario.activo {
 }
 .badge.ok { background: #dcfce7; color: #166534; }
 .badge.bajo { background: #fee2e2; color: #991b1b; }
-.msg { padding: 10px; border-radius: 8px; font-size: 14px; margin-bottom: 10px; }
-.msg.ok { background: #dcfce7; color: #166534; }
-.msg.error { background: #fee2e2; color: #991b1b; }
-.msg.info { background: #e0f2fe; color: #075985; }
+/* ---------- Notificaciones/mensajes (.msg): icono + acento de color a la
+   izquierda + sombra suave, en vez de un bloque de color plano. Aparecen
+   con una pequena animacion en vez de aparecer de golpe. ---------- */
+.msg {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 10px;
+  border-left: 3px solid transparent;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.05);
+  animation: aparecerMsg 0.2s ease;
+}
+.msg .bi { font-size: 16px; margin-right: 0; flex-shrink: 0; }
+.msg.ok { background: #dcfce7; color: #166534; border-left-color: #16a34a; }
+.msg.error { background: #fee2e2; color: #991b1b; border-left-color: #dc2626; }
+.msg.info { background: #e0f2fe; color: #075985; border-left-color: #0891b2; }
+@keyframes aparecerMsg {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 /* !important a proposito: .oculto es una clase utilitaria de "ocultar" que
    debe ganarle siempre a cualquier "display" que defina un componente, sin
    importar el orden en que se declaren en el archivo (esto es justo lo que

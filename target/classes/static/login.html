@@ -54,7 +54,7 @@ if (getToken()) {
 // que parezca un login normal sin explicacion.
 const mensajePendiente = localStorage.getItem("mensajeLogin");
 if (mensajePendiente) {
-  document.getElementById("loginMsg").innerHTML = `<div class="msg error">${mensajePendiente}</div>`;
+  document.getElementById("loginMsg").innerHTML = `<div class="msg error"><i class="bi bi-exclamation-circle-fill"></i><span>${mensajePendiente}</span></div>`;
   localStorage.removeItem("mensajeLogin");
 }
 
@@ -82,7 +82,7 @@ async function login() {
     localStorage.setItem("roles", JSON.stringify(data.roles || []));
     window.location.href = "dashboard";
   } catch (e) {
-    msgDiv.innerHTML = `<div class="msg error">${e.message}</div>`;
+    msgDiv.innerHTML = `<div class="msg error"><i class="bi bi-exclamation-circle-fill"></i><span>${e.message}</span></div>`;
     btn.disabled = false;
     btn.innerHTML = textoOriginal;
   }

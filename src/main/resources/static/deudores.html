@@ -172,7 +172,7 @@ async function cargarDeudores() {
     deudores = await apiFetch("/deudores");
     renderDeudores();
   } catch (e) {
-    div.innerHTML = `<div class="msg error">${e.message}</div>`;
+    div.innerHTML = `<div class="msg error"><i class="bi bi-exclamation-circle-fill"></i><span>${e.message}</span></div>`;
   }
 }
 
@@ -307,7 +307,7 @@ function buscarProductoParaFiar() {
       });
       window.__resultadosBusquedaFiar = productos;
     } catch (e) {
-      div.innerHTML = `<div class="msg error">${e.message}</div>`;
+      div.innerHTML = `<div class="msg error"><i class="bi bi-exclamation-circle-fill"></i><span>${e.message}</span></div>`;
     }
   }, 300);
 }
@@ -497,7 +497,7 @@ async function abrirHistorial(deudorId) {
         </div>`;
     });
   } catch (e) {
-    div.innerHTML = `<div class="msg error">${e.message}</div>`;
+    div.innerHTML = `<div class="msg error"><i class="bi bi-exclamation-circle-fill"></i><span>${e.message}</span></div>`;
   }
 }
 

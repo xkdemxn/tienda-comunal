@@ -102,7 +102,7 @@ async function cargarProveedores() {
     proveedores = await apiFetch("/proveedores");
     renderProveedores();
   } catch (e) {
-    div.innerHTML = `<div class="msg error">${e.message}</div>`;
+    div.innerHTML = `<div class="msg error"><i class="bi bi-exclamation-circle-fill"></i><span>${e.message}</span></div>`;
   }
 }
 

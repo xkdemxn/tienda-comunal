@@ -295,7 +295,7 @@ async function cargarFiscalizacion() {
 
     div.innerHTML = html;
   } catch (e) {
-    div.innerHTML = `<div class="msg error">${e.message}</div>`;
+    div.innerHTML = `<div class="msg error"><i class="bi bi-exclamation-circle-fill"></i><span>${e.message}</span></div>`;
   }
 }
 
@@ -639,7 +639,7 @@ async function cargarProgresoAnual() {
       [{ label: `Ganancia mensual ${anio}`, valores, color: "#0d7730" }],
       "leyendaAnual", v => `$${formatoNumero(v)}`);
   } catch (e) {
-    document.getElementById("leyendaAnual").innerHTML = `<div class="msg error">${e.message}</div>`;
+    document.getElementById("leyendaAnual").innerHTML = `<div class="msg error"><i class="bi bi-exclamation-circle-fill"></i><span>${e.message}</span></div>`;
   }
 }
 

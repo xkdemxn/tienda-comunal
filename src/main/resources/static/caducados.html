@@ -159,7 +159,7 @@ function buscarProductoCaducado() {
       });
       window.__resultadosBusquedaCaducado = productos;
     } catch (e) {
-      div.innerHTML = `<div class="msg error">${e.message}</div>`;
+      div.innerHTML = `<div class="msg error"><i class="bi bi-exclamation-circle-fill"></i><span>${e.message}</span></div>`;
     }
   }, 300);
 }
@@ -271,7 +271,7 @@ async function cargarCaducados() {
         </div>`;
     });
   } catch (e) {
-    div.innerHTML = `<div class="msg error">${e.message}</div>`;
+    div.innerHTML = `<div class="msg error"><i class="bi bi-exclamation-circle-fill"></i><span>${e.message}</span></div>`;
   }
 }
 

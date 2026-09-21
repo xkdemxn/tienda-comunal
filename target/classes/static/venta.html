@@ -125,16 +125,19 @@
           <div class="card">
             <div id="reader"></div>
             <div class="controles-camara">
-              <button class="secundario" onclick="reiniciarCamara()">Reiniciar</button>
-              <button class="secundario" id="btnFlash" onclick="toggleFlash()"><i class="bi bi-lightning-charge-fill"></i> Flash</button>
-              <button class="secundario" onclick="enfocarCamara()"><i class="bi bi-crosshair"></i> Enfocar</button>
+              <button class="secundario" onclick="reiniciarCamara()" title="Reiniciar la camara si se congela o no enfoca">
+                <i class="bi bi-arrow-clockwise"></i> Reiniciar
+              </button>
+              <button class="secundario" id="btnFlash" onclick="toggleFlash()" title="Encender/apagar el flash">
+                <i class="bi bi-lightning-charge-fill"></i> Flash
+              </button>
             </div>
           </div>
 
           <div id="mensaje"></div>
 
           <div class="card">
-            <label class="campo">Producto sin codigo de barras (ej: pan)</label>
+            <label class="campo">Producto sin codigo de barras</label>
             <input type="text" id="buscarProductoVenta" placeholder="Buscar por nombre..." oninput="buscarProductoParaVenta()">
             <div id="resultadosBusquedaVenta" class="resultados-busqueda"></div>
           </div>
@@ -148,11 +151,18 @@
               <span>Total <small id="unidadesCarrito">0 productos</small></span>
               <span id="totalCarrito">$0.00</span>
             </div>
+
+            <label class="campo" style="margin-top:10px">Recibido del cliente (opcional)</label>
+            <input type="number" min="0" step="0.01" id="montoRecibido" placeholder="Ej: 20.00" oninput="calcularVuelto()">
+            <div class="total oculto" id="filaVuelto">
+              <span id="etiquetaVuelto">Vuelto</span>
+              <span id="montoVuelto">$0.00</span>
+            </div>
           </div>
 
           <div class="card">
             <button onclick="confirmarVenta()">Confirmar venta</button>
-            <button class="secundario" onclick="vaciarCarrito()">Vaciar carrito</button>
+            <button class="secundario" style="margin-top: 10px;" onclick="vaciarCarrito()">Vaciar carrito</button>
           </div>
         </div>
       </div>
@@ -182,6 +192,7 @@
 initSidebar("venta");
 
 let carrito = []; // { codigoBarras, nombre, precio, cantidad }
+let totalCarritoActual = 0;
 let html5QrCode;
 let escaneando = false;
 let flashActivo = false;
@@ -231,16 +242,6 @@ async function toggleFlash() {
     document.getElementById("btnFlash").classList.toggle("activo", flashActivo);
   } catch (e) {
     mostrarMensajeEn("mensaje", "Tu camara no permite controlar el flash desde el navegador", "error");
-  }
-}
-
-async function enfocarCamara() {
-  if (!html5QrCode || !escaneando) return;
-  try {
-    await html5QrCode.applyVideoConstraints({ advanced: [{ focusMode: "continuous" }] });
-    mostrarMensajeEn("mensaje", "Enfoque ajustado", "ok");
-  } catch (e) {
-    mostrarMensajeEn("mensaje", "Tu camara no permite ajustar el enfoque manualmente", "error");
   }
 }
 
@@ -337,6 +338,31 @@ function renderCarrito() {
   document.getElementById("barraFijaTotal").innerText = `$${total.toFixed(2)}`;
   document.getElementById("barraFijaUnidades").innerText =
     `${unidades} producto${unidades === 1 ? "" : "s"}`;
+
+  totalCarritoActual = total;
+  calcularVuelto();
+}
+
+// Vuelto: campo opcional, no bloquea "Confirmar venta" si el cajero no lo
+// usa (muchas ventas son con monto exacto o tarjeta). Si lo recibido no
+// alcanza, se avisa como "Falta" en vez de un vuelto negativo confuso.
+function calcularVuelto() {
+  const recibidoTexto = document.getElementById("montoRecibido").value;
+  const filaVuelto = document.getElementById("filaVuelto");
+
+  if (!recibidoTexto || isNaN(parseFloat(recibidoTexto))) {
+    filaVuelto.classList.add("oculto");
+    return;
+  }
+
+  const recibido = parseFloat(recibidoTexto);
+  const diferencia = recibido - totalCarritoActual;
+  const montoVueltoEl = document.getElementById("montoVuelto");
+
+  filaVuelto.classList.remove("oculto");
+  document.getElementById("etiquetaVuelto").innerText = diferencia < 0 ? "Falta" : "Vuelto";
+  montoVueltoEl.innerText = `$${Math.abs(diferencia).toFixed(2)}`;
+  montoVueltoEl.style.color = diferencia < 0 ? "var(--danger)" : "var(--accent)";
 }
 
 function cambiarCantidadCarrito(idx, delta) {
@@ -356,6 +382,7 @@ function quitarDelCarrito(idx) {
 
 function vaciarCarrito() {
   carrito = [];
+  document.getElementById("montoRecibido").value = "";
   renderCarrito();
 }
 
@@ -402,7 +429,7 @@ function buscarProductoParaVenta() {
       });
       window.__resultadosBusqueda = productos;
     } catch (e) {
-      div.innerHTML = `<div class="msg error">${e.message}</div>`;
+      div.innerHTML = `<div class="msg error"><i class="bi bi-exclamation-circle-fill"></i><span>${e.message}</span></div>`;
     }
   }, 300);
 }

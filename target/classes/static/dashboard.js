@@ -339,10 +339,13 @@ function toggleGrupo(nombre) {
   if (toggle) toggle.classList.toggle("abierto");
 }
 
+const ICONOS_MSG = { ok: "bi-check-circle-fill", error: "bi-exclamation-circle-fill", info: "bi-info-circle-fill" };
+
 function mostrarMensajeEn(divId, texto, tipo) {
   const div = document.getElementById(divId);
   if (!div) return;
-  div.innerHTML = `<div class="msg ${tipo}">${texto}</div>`;
+  const icono = ICONOS_MSG[tipo] || ICONOS_MSG.info;
+  div.innerHTML = `<div class="msg ${tipo}"><i class="bi ${icono}"></i><span>${texto}</span></div>`;
   setTimeout(() => { div.innerHTML = ""; }, 2500);
 }
 
