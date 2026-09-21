@@ -14,41 +14,46 @@
   <aside id="sidebar" class="sidebar">
     <div class="sidebar-header"><i class="bi bi-shop"></i> Tienda</div>
     <nav class="sidebar-nav">
-      <a href="dashboard" data-pagina="inicio">Inicio</a>
-      <a href="venta" data-pagina="venta">Vender</a>
-      <a href="agregar-stock" data-pagina="agregar-stock">Agregar stock</a>
-      <a href="deudores" data-pagina="deudores">Fiar</a>
-      <a href="historial-ventas" data-pagina="historial-ventas">Historial de ventas</a>
+      <a href="dashboard" data-pagina="inicio"><span class="nav-icono g-azul"><i class="bi bi-house-door"></i></span><span class="nav-texto">Inicio</span></a>
+      <a href="venta" data-pagina="venta"><span class="nav-icono g-verde"><i class="bi bi-cart3"></i></span><span class="nav-texto">Vender</span></a>
+      <a href="agregar-stock" data-pagina="agregar-stock"><span class="nav-icono g-cian"><i class="bi bi-plus-circle"></i></span><span class="nav-texto">Agregar stock</span></a>
+      <a href="deudores" data-pagina="deudores"><span class="nav-icono g-rosa"><i class="bi bi-people"></i></span><span class="nav-texto">Fiar</span></a>
+      <a href="historial-ventas" data-pagina="historial-ventas"><span class="nav-icono g-naranja"><i class="bi bi-clock-history"></i></span><span class="nav-texto">Historial de ventas</span></a>
 
       <button class="grupo-toggle" data-grupo="catalogo" data-solo-admin="1" onclick="toggleGrupo('catalogo')">
-        <span>Catalogo</span><span class="grupo-flecha">▾</span>
+        <span class="nav-icono g-morado"><i class="bi bi-grid"></i></span><span class="nav-texto">Catalogo</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-catalogo" data-grupo="catalogo">
-        <a href="categorias" data-pagina="categorias" data-solo-admin="1">Categorias</a>
-        <a href="productos" data-pagina="productos" data-solo-admin="1">Productos</a>
+        <a href="categorias" data-pagina="categorias" data-solo-admin="1"><span class="nav-icono g-morado"><i class="bi bi-tags"></i></span><span class="nav-texto">Categorias</span></a>
+        <a href="productos" data-pagina="productos" data-solo-admin="1"><span class="nav-icono g-teal"><i class="bi bi-box-seam"></i></span><span class="nav-texto">Productos</span></a>
       </div>
 
       <button class="grupo-toggle" data-grupo="abastecimiento" data-solo-admin="1" onclick="toggleGrupo('abastecimiento')">
-        <span>Abastecimiento</span><span class="grupo-flecha">▾</span>
+        <span class="nav-icono g-indigo"><i class="bi bi-truck"></i></span><span class="nav-texto">Abastecimiento</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-abastecimiento" data-grupo="abastecimiento">
-        <a href="proveedores" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
-        <a href="compras" data-pagina="compras" data-solo-admin="1">Compras</a>
-        <a href="caducados" data-pagina="caducados" data-solo-admin="1">Caducados</a>
+        <a href="proveedores" data-pagina="proveedores" data-solo-admin="1"><span class="nav-icono g-indigo"><i class="bi bi-truck"></i></span><span class="nav-texto">Proveedores</span></a>
+        <a href="compras" data-pagina="compras" data-solo-admin="1"><span class="nav-icono g-ambar"><i class="bi bi-receipt"></i></span><span class="nav-texto">Compras</span></a>
+        <a href="caducados" data-pagina="caducados" data-solo-admin="1"><span class="nav-icono g-rojo"><i class="bi bi-exclamation-triangle"></i></span><span class="nav-texto">Caducados</span></a>
       </div>
 
       <button class="grupo-toggle" data-grupo="reportes" data-solo-admin="1" onclick="toggleGrupo('reportes')">
-        <span>Reportes</span><span class="grupo-flecha">▾</span>
+        <span class="nav-icono g-azul"><i class="bi bi-graph-up"></i></span><span class="nav-texto">Reportes</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-reportes" data-grupo="reportes">
-        <a href="estadisticas" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
-        <a href="fiscalizacion" data-pagina="fiscalizacion" data-solo-admin="1">Fiscalizacion</a>
+        <a href="estadisticas" data-pagina="estadisticas" data-solo-admin="1"><span class="nav-icono g-azul"><i class="bi bi-bar-chart-line"></i></span><span class="nav-texto">Estadisticas</span></a>
+        <a href="fiscalizacion" data-pagina="fiscalizacion" data-solo-admin="1"><span class="nav-icono g-violeta"><i class="bi bi-clipboard-data"></i></span><span class="nav-texto">Fiscalizacion</span></a>
       </div>
     </nav>
     <div class="sidebar-footer">
-      <div class="nombre" id="sidebarNombre"></div>
-      <div class="rol" id="sidebarRol"></div>
-      <button onclick="logout()">Cerrar sesion</button>
+      <div class="perfil-mini">
+        <span class="avatar-mini" id="sidebarAvatar">?</span>
+        <div class="perfil-mini-textos">
+          <div class="nombre" id="sidebarNombre"></div>
+          <div class="rol" id="sidebarRol"></div>
+        </div>
+      </div>
+      <button onclick="logout()"><i class="bi bi-box-arrow-right"></i> Cerrar sesion</button>
     </div>
   </aside>
 
@@ -103,16 +108,24 @@ async function cargarEstadisticas() {
     const r = await apiFetch(`/reportes/ventas?desde=${desde}&hasta=${hasta}`);
 
     let html = `
-      <div class="card">
-        <div class="item"><div>Total vendido</div><strong>$${Number(r.totalVendido).toFixed(2)}</strong></div>
-        <div class="item"><div>Cantidad de ventas</div><strong>${r.cantidadVentas}</strong></div>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-icono color-verde"><i class="bi bi-cash-coin"></i></div>
+          <div class="etiqueta">Total vendido</div>
+          <div class="valor valor-positivo">$${Number(r.totalVendido).toFixed(2)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icono color-morado"><i class="bi bi-bar-chart-line"></i></div>
+          <div class="etiqueta">Cantidad de ventas</div>
+          <div class="valor valor-azul">${r.cantidadVentas}</div>
+        </div>
       </div>
       <div class="card">
-        <h2>Mas vendidos</h2>`;
+        <h2><i class="bi bi-trophy"></i> Mas vendidos</h2>`;
 
     const masVendidos = Object.entries(r.productosMasVendidos || {});
     if (masVendidos.length === 0) {
-      html += `<p style="color:var(--muted)">Sin ventas en este rango</p>`;
+      html += `<div class="estado-vacio"><i class="bi bi-graph-up"></i>Sin ventas en este rango</div>`;
     } else {
       html += `
         <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:center">
@@ -120,10 +133,10 @@ async function cargarEstadisticas() {
           <div id="leyendaMasVendidos" style="flex:1; min-width:180px"></div>
         </div>`;
     }
-    html += `</div><div class="card"><h2>Stock bajo</h2>`;
+    html += `</div><div class="card"><h2><i class="bi bi-exclamation-triangle"></i> Stock bajo</h2>`;
 
     if (!r.productosStockBajo || r.productosStockBajo.length === 0) {
-      html += `<p style="color:var(--muted)">Ningun producto con stock bajo</p>`;
+      html += `<div class="estado-vacio"><i class="bi bi-check-circle"></i>Ningun producto con stock bajo</div>`;
     } else {
       r.productosStockBajo.forEach(p => {
         html += `

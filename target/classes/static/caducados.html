@@ -14,41 +14,46 @@
   <aside id="sidebar" class="sidebar">
     <div class="sidebar-header"><i class="bi bi-shop"></i> Tienda</div>
     <nav class="sidebar-nav">
-      <a href="dashboard" data-pagina="inicio">Inicio</a>
-      <a href="venta" data-pagina="venta">Vender</a>
-      <a href="agregar-stock" data-pagina="agregar-stock">Agregar stock</a>
-      <a href="deudores" data-pagina="deudores">Fiar</a>
-      <a href="historial-ventas" data-pagina="historial-ventas">Historial de ventas</a>
+      <a href="dashboard" data-pagina="inicio"><span class="nav-icono g-azul"><i class="bi bi-house-door"></i></span><span class="nav-texto">Inicio</span></a>
+      <a href="venta" data-pagina="venta"><span class="nav-icono g-verde"><i class="bi bi-cart3"></i></span><span class="nav-texto">Vender</span></a>
+      <a href="agregar-stock" data-pagina="agregar-stock"><span class="nav-icono g-cian"><i class="bi bi-plus-circle"></i></span><span class="nav-texto">Agregar stock</span></a>
+      <a href="deudores" data-pagina="deudores"><span class="nav-icono g-rosa"><i class="bi bi-people"></i></span><span class="nav-texto">Fiar</span></a>
+      <a href="historial-ventas" data-pagina="historial-ventas"><span class="nav-icono g-naranja"><i class="bi bi-clock-history"></i></span><span class="nav-texto">Historial de ventas</span></a>
 
       <button class="grupo-toggle" data-grupo="catalogo" data-solo-admin="1" onclick="toggleGrupo('catalogo')">
-        <span>Catalogo</span><span class="grupo-flecha">▾</span>
+        <span class="nav-icono g-morado"><i class="bi bi-grid"></i></span><span class="nav-texto">Catalogo</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-catalogo" data-grupo="catalogo">
-        <a href="categorias" data-pagina="categorias" data-solo-admin="1">Categorias</a>
-        <a href="productos" data-pagina="productos" data-solo-admin="1">Productos</a>
+        <a href="categorias" data-pagina="categorias" data-solo-admin="1"><span class="nav-icono g-morado"><i class="bi bi-tags"></i></span><span class="nav-texto">Categorias</span></a>
+        <a href="productos" data-pagina="productos" data-solo-admin="1"><span class="nav-icono g-teal"><i class="bi bi-box-seam"></i></span><span class="nav-texto">Productos</span></a>
       </div>
 
       <button class="grupo-toggle" data-grupo="abastecimiento" data-solo-admin="1" onclick="toggleGrupo('abastecimiento')">
-        <span>Abastecimiento</span><span class="grupo-flecha">▾</span>
+        <span class="nav-icono g-indigo"><i class="bi bi-truck"></i></span><span class="nav-texto">Abastecimiento</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-abastecimiento" data-grupo="abastecimiento">
-        <a href="proveedores" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
-        <a href="compras" data-pagina="compras" data-solo-admin="1">Compras</a>
-        <a href="caducados" data-pagina="caducados" data-solo-admin="1">Caducados</a>
+        <a href="proveedores" data-pagina="proveedores" data-solo-admin="1"><span class="nav-icono g-indigo"><i class="bi bi-truck"></i></span><span class="nav-texto">Proveedores</span></a>
+        <a href="compras" data-pagina="compras" data-solo-admin="1"><span class="nav-icono g-ambar"><i class="bi bi-receipt"></i></span><span class="nav-texto">Compras</span></a>
+        <a href="caducados" data-pagina="caducados" data-solo-admin="1"><span class="nav-icono g-rojo"><i class="bi bi-exclamation-triangle"></i></span><span class="nav-texto">Caducados</span></a>
       </div>
 
       <button class="grupo-toggle" data-grupo="reportes" data-solo-admin="1" onclick="toggleGrupo('reportes')">
-        <span>Reportes</span><span class="grupo-flecha">▾</span>
+        <span class="nav-icono g-azul"><i class="bi bi-graph-up"></i></span><span class="nav-texto">Reportes</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-reportes" data-grupo="reportes">
-        <a href="estadisticas" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
-        <a href="fiscalizacion" data-pagina="fiscalizacion" data-solo-admin="1">Fiscalizacion</a>
+        <a href="estadisticas" data-pagina="estadisticas" data-solo-admin="1"><span class="nav-icono g-azul"><i class="bi bi-bar-chart-line"></i></span><span class="nav-texto">Estadisticas</span></a>
+        <a href="fiscalizacion" data-pagina="fiscalizacion" data-solo-admin="1"><span class="nav-icono g-violeta"><i class="bi bi-clipboard-data"></i></span><span class="nav-texto">Fiscalizacion</span></a>
       </div>
     </nav>
     <div class="sidebar-footer">
-      <div class="nombre" id="sidebarNombre"></div>
-      <div class="rol" id="sidebarRol"></div>
-      <button onclick="logout()">Cerrar sesion</button>
+      <div class="perfil-mini">
+        <span class="avatar-mini" id="sidebarAvatar">?</span>
+        <div class="perfil-mini-textos">
+          <div class="nombre" id="sidebarNombre"></div>
+          <div class="rol" id="sidebarRol"></div>
+        </div>
+      </div>
+      <button onclick="logout()"><i class="bi bi-box-arrow-right"></i> Cerrar sesion</button>
     </div>
   </aside>
 
@@ -69,10 +74,14 @@
         <div id="resultadosBusquedaCaducado" class="resultados-busqueda"></div>
       </div>
 
-      <div class="card oculto" id="cardConfirmarCaducado">
-        <h2 id="tituloConfirmarCaducado">Registrar caducado</h2>
+      <div class="card card-accion oculto" id="cardConfirmarCaducado">
+        <h2><i class="bi bi-exclamation-triangle"></i> <span id="tituloConfirmarCaducado">Registrar caducado</span></h2>
         <label class="campo">Cantidad</label>
-        <input type="number" id="cantidadCaducado" min="1" value="1">
+        <div class="stepper">
+          <button type="button" class="secundario btn-cantidad" onclick="cambiarCantidadCaducado(-1)">−</button>
+          <input type="number" id="cantidadCaducado" min="1" value="1" class="stepper-input">
+          <button type="button" class="secundario btn-cantidad" onclick="cambiarCantidadCaducado(1)">+</button>
+        </div>
         <label class="campo">Detalle (opcional)</label>
         <input type="text" id="detalleCaducado" placeholder="Ej: vencio la fecha, se dano en bodega...">
         <button onclick="confirmarCaducado()">Registrar como caducado</button>
@@ -89,15 +98,18 @@
         <button onclick="cargarCaducados()">Consultar</button>
       </div>
 
-      <div class="card">
-        <div class="item" style="border-bottom:none">
-          <div>Total registrado como caducado en el rango</div>
-          <strong id="totalCaducados" class="total-general">0 unidades</strong>
+      <div class="card" style="display:flex; align-items:center; gap:14px">
+        <div class="nav-icono g-rojo" style="width:46px; height:46px; font-size:20px; border-radius:14px">
+          <i class="bi bi-trash3"></i>
+        </div>
+        <div>
+          <div style="font-size:12px; color:var(--muted)">Total registrado como caducado en el rango</div>
+          <strong id="totalCaducados" style="font-size:26px; color:var(--danger)">0 unidades</strong>
         </div>
       </div>
 
       <div class="card">
-        <h2>Historial</h2>
+        <h2><i class="bi bi-clock-history"></i> Historial</h2>
         <div id="listaCaducados">Cargando...</div>
       </div>
 
@@ -155,6 +167,11 @@ function seleccionarProductoCaducado(id) {
   document.getElementById("cardConfirmarCaducado").classList.remove("oculto");
   document.getElementById("buscarProductoCaducado").value = "";
   document.getElementById("resultadosBusquedaCaducado").innerHTML = "";
+}
+
+function cambiarCantidadCaducado(delta) {
+  const input = document.getElementById("cantidadCaducado");
+  input.value = Math.max(1, (parseInt(input.value, 10) || 1) + delta);
 }
 
 function cancelarCaducado() {
@@ -226,7 +243,7 @@ async function cargarCaducados() {
     document.getElementById("totalCaducados").innerText = `${totalUnidades} unidades`;
 
     if (movimientos.length === 0) {
-      div.innerHTML = `<p style="color:var(--muted)">Sin productos caducados registrados en este rango</p>`;
+      div.innerHTML = `<div class="estado-vacio"><i class="bi bi-emoji-smile"></i>Sin productos caducados registrados en este rango</div>`;
       return;
     }
 
@@ -236,12 +253,13 @@ async function cargarCaducados() {
         day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
       });
       div.innerHTML += `
-        <div class="item">
-          <div>
-            ${m.producto}
+        <div class="transaccion">
+          <div class="transaccion-icono" style="background:#fee2e2; color:var(--danger)"><i class="bi bi-trash3"></i></div>
+          <div class="transaccion-info">
+            <strong>${m.producto}</strong>
             <small>${m.motivo || ""} · ${fecha}</small>
           </div>
-          <strong style="color:var(--danger)">-${m.cantidad}</strong>
+          <div class="transaccion-monto" style="color:var(--danger)">-${m.cantidad}</div>
         </div>`;
     });
   } catch (e) {

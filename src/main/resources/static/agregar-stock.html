@@ -7,6 +7,17 @@
 <link rel="stylesheet" href="dashboard.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+  .stock-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  @media (max-width: 860px) {
+    .stock-layout { grid-template-columns: 1fr; }
+  }
+</style>
 </head>
 <body>
 
@@ -15,41 +26,46 @@
   <aside id="sidebar" class="sidebar">
     <div class="sidebar-header"><i class="bi bi-shop"></i> Tienda</div>
     <nav class="sidebar-nav">
-      <a href="dashboard" data-pagina="inicio">Inicio</a>
-      <a href="venta" data-pagina="venta">Vender</a>
-      <a href="agregar-stock" data-pagina="agregar-stock">Agregar stock</a>
-      <a href="deudores" data-pagina="deudores">Fiar</a>
-      <a href="historial-ventas" data-pagina="historial-ventas">Historial de ventas</a>
+      <a href="dashboard" data-pagina="inicio"><span class="nav-icono g-azul"><i class="bi bi-house-door"></i></span><span class="nav-texto">Inicio</span></a>
+      <a href="venta" data-pagina="venta"><span class="nav-icono g-verde"><i class="bi bi-cart3"></i></span><span class="nav-texto">Vender</span></a>
+      <a href="agregar-stock" data-pagina="agregar-stock"><span class="nav-icono g-cian"><i class="bi bi-plus-circle"></i></span><span class="nav-texto">Agregar stock</span></a>
+      <a href="deudores" data-pagina="deudores"><span class="nav-icono g-rosa"><i class="bi bi-people"></i></span><span class="nav-texto">Fiar</span></a>
+      <a href="historial-ventas" data-pagina="historial-ventas"><span class="nav-icono g-naranja"><i class="bi bi-clock-history"></i></span><span class="nav-texto">Historial de ventas</span></a>
 
       <button class="grupo-toggle" data-grupo="catalogo" data-solo-admin="1" onclick="toggleGrupo('catalogo')">
-        <span>Catalogo</span><span class="grupo-flecha">▾</span>
+        <span class="nav-icono g-morado"><i class="bi bi-grid"></i></span><span class="nav-texto">Catalogo</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-catalogo" data-grupo="catalogo">
-        <a href="categorias" data-pagina="categorias" data-solo-admin="1">Categorias</a>
-        <a href="productos" data-pagina="productos" data-solo-admin="1">Productos</a>
+        <a href="categorias" data-pagina="categorias" data-solo-admin="1"><span class="nav-icono g-morado"><i class="bi bi-tags"></i></span><span class="nav-texto">Categorias</span></a>
+        <a href="productos" data-pagina="productos" data-solo-admin="1"><span class="nav-icono g-teal"><i class="bi bi-box-seam"></i></span><span class="nav-texto">Productos</span></a>
       </div>
 
       <button class="grupo-toggle" data-grupo="abastecimiento" data-solo-admin="1" onclick="toggleGrupo('abastecimiento')">
-        <span>Abastecimiento</span><span class="grupo-flecha">▾</span>
+        <span class="nav-icono g-indigo"><i class="bi bi-truck"></i></span><span class="nav-texto">Abastecimiento</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-abastecimiento" data-grupo="abastecimiento">
-        <a href="proveedores" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
-        <a href="compras" data-pagina="compras" data-solo-admin="1">Compras</a>
-        <a href="caducados" data-pagina="caducados" data-solo-admin="1">Caducados</a>
+        <a href="proveedores" data-pagina="proveedores" data-solo-admin="1"><span class="nav-icono g-indigo"><i class="bi bi-truck"></i></span><span class="nav-texto">Proveedores</span></a>
+        <a href="compras" data-pagina="compras" data-solo-admin="1"><span class="nav-icono g-ambar"><i class="bi bi-receipt"></i></span><span class="nav-texto">Compras</span></a>
+        <a href="caducados" data-pagina="caducados" data-solo-admin="1"><span class="nav-icono g-rojo"><i class="bi bi-exclamation-triangle"></i></span><span class="nav-texto">Caducados</span></a>
       </div>
 
       <button class="grupo-toggle" data-grupo="reportes" data-solo-admin="1" onclick="toggleGrupo('reportes')">
-        <span>Reportes</span><span class="grupo-flecha">▾</span>
+        <span class="nav-icono g-azul"><i class="bi bi-graph-up"></i></span><span class="nav-texto">Reportes</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-reportes" data-grupo="reportes">
-        <a href="estadisticas" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
-        <a href="fiscalizacion" data-pagina="fiscalizacion" data-solo-admin="1">Fiscalizacion</a>
+        <a href="estadisticas" data-pagina="estadisticas" data-solo-admin="1"><span class="nav-icono g-azul"><i class="bi bi-bar-chart-line"></i></span><span class="nav-texto">Estadisticas</span></a>
+        <a href="fiscalizacion" data-pagina="fiscalizacion" data-solo-admin="1"><span class="nav-icono g-violeta"><i class="bi bi-clipboard-data"></i></span><span class="nav-texto">Fiscalizacion</span></a>
       </div>
     </nav>
     <div class="sidebar-footer">
-      <div class="nombre" id="sidebarNombre"></div>
-      <div class="rol" id="sidebarRol"></div>
-      <button onclick="logout()">Cerrar sesion</button>
+      <div class="perfil-mini">
+        <span class="avatar-mini" id="sidebarAvatar">?</span>
+        <div class="perfil-mini-textos">
+          <div class="nombre" id="sidebarNombre"></div>
+          <div class="rol" id="sidebarRol"></div>
+        </div>
+      </div>
+      <button onclick="logout()"><i class="bi bi-box-arrow-right"></i> Cerrar sesion</button>
     </div>
   </aside>
 
@@ -60,49 +76,59 @@
     </div>
     <div class="pagina">
 
-      <div class="card">
-        <label class="campo">Que estas guardando (opcional, ayuda a categorizar productos nuevos)</label>
-        <select id="categoriaSesion">
-          <option value="">Sin categoria</option>
-        </select>
-      </div>
+      <div class="stock-layout">
+        <div>
+          <div class="card">
+            <label class="campo">Que estas guardando (opcional, ayuda a categorizar productos nuevos)</label>
+            <select id="categoriaSesion">
+              <option value="">Sin categoria</option>
+            </select>
+          </div>
 
-      <div class="card">
-        <div id="reader"></div>
-        <div class="controles-camara">
-          <button class="secundario" onclick="reiniciarCamara()">Reiniciar</button>
-          <button class="secundario" id="btnFlash" onclick="toggleFlash()"><i class="bi bi-lightning-charge-fill"></i> Flash</button>
-          <button class="secundario" onclick="enfocarCamara()"><i class="bi bi-crosshair"></i> Enfocar</button>
+          <div class="card">
+            <div id="reader"></div>
+            <div class="controles-camara">
+              <button class="secundario" onclick="reiniciarCamara()">Reiniciar</button>
+              <button class="secundario" id="btnFlash" onclick="toggleFlash()"><i class="bi bi-lightning-charge-fill"></i> Flash</button>
+              <button class="secundario" onclick="enfocarCamara()"><i class="bi bi-crosshair"></i> Enfocar</button>
+            </div>
+            <button class="secundario" onclick="abrirFormularioManual()"><i class="bi bi-pencil-square"></i> Agregar producto sin codigo de barras</button>
+          </div>
         </div>
-        <button class="secundario" onclick="abrirFormularioManual()">Agregar producto sin codigo de barras</button>
-      </div>
 
-      <div class="card">
-        <label class="campo">
-          ¿Ya tienes este producto pero el codigo no coincide? (ej: cada unidad trae un codigo distinto)
-          Buscalo y sumale stock directo, sin escanear
-        </label>
-        <input type="text" id="buscarProductoExistente" placeholder="Buscar por nombre..." oninput="buscarProductoExistente()">
-        <div id="resultadosBusquedaExistente"></div>
+        <div>
+          <div class="card">
+            <label class="campo">
+              ¿Ya tienes este producto pero el codigo no coincide? (ej: cada unidad trae un codigo distinto)
+              Buscalo y sumale stock directo, sin escanear
+            </label>
+            <input type="text" id="buscarProductoExistente" placeholder="Buscar por nombre..." oninput="buscarProductoExistente()">
+            <div id="resultadosBusquedaExistente"></div>
+          </div>
+        </div>
       </div>
 
       <div id="mensaje"></div>
 
       <!-- Aparece al escanear un producto que ya existe: confirma cuanto sumar (por defecto 1) -->
-      <div class="card oculto" id="cardConfirmarCantidad">
-        <h2>Sumar stock</h2>
+      <div class="card card-accion oculto" id="cardConfirmarCantidad">
+        <h2><i class="bi bi-plus-circle"></i> Sumar stock</h2>
         <p id="confirmarCantidadInfo" style="margin:0 0 10px; color:var(--muted)"></p>
         <label class="campo">Cantidad a sumar</label>
-        <input type="number" id="confirmarCantidadInput" min="1" value="1"
-               onkeydown="if(event.key==='Enter') confirmarSumaCantidad()">
+        <div class="stepper">
+          <button type="button" class="secundario btn-cantidad" onclick="cambiarCantidadConfirmar(-1)">−</button>
+          <input type="number" id="confirmarCantidadInput" min="1" value="1" class="stepper-input"
+                 onkeydown="if(event.key==='Enter') confirmarSumaCantidad()">
+          <button type="button" class="secundario btn-cantidad" onclick="cambiarCantidadConfirmar(1)">+</button>
+        </div>
         <button onclick="confirmarSumaCantidad()">Sumar stock</button>
         <button class="secundario" onclick="cancelarSumaCantidad()">Cancelar</button>
       </div>
 
       <!-- Formulario de producto nuevo: aparece cuando se escanea un codigo que no existe,
            o al usar el boton de "sin codigo de barras" -->
-      <div class="card oculto" id="cardProductoNuevo">
-        <h2>Producto nuevo</h2>
+      <div class="card card-accion oculto" id="cardProductoNuevo">
+        <h2><i class="bi bi-box-seam"></i> Producto nuevo</h2>
 
         <label class="campo">Codigo de barras (unidad)</label>
         <input type="text" id="nuevoCodigoBarras" readonly>
@@ -296,6 +322,11 @@ function abrirConfirmarCantidad(producto) {
   input.select();
 }
 
+function cambiarCantidadConfirmar(delta) {
+  const input = document.getElementById("confirmarCantidadInput");
+  input.value = Math.max(1, (parseInt(input.value, 10) || 1) + delta);
+}
+
 function cancelarSumaCantidad() {
   document.getElementById("cardConfirmarCantidad").classList.add("oculto");
   productoParaConfirmar = null;
@@ -347,8 +378,12 @@ function buscarProductoExistente() {
               ${p.nombre}
               <small>Stock actual: ${p.stockActual}</small>
             </div>
-            <div style="display:flex; gap:6px; align-items:center">
-              <input type="number" min="1" value="1" id="cantidadExistente-${p.id}" style="width:70px; margin-bottom:0">
+            <div style="display:flex; gap:8px; align-items:center">
+              <div class="stepper" style="margin-bottom:0">
+                <button type="button" class="secundario btn-cantidad" onclick="cambiarCantidadExistente(${p.id}, -1)">−</button>
+                <input type="number" min="1" value="1" id="cantidadExistente-${p.id}" class="stepper-input">
+                <button type="button" class="secundario btn-cantidad" onclick="cambiarCantidadExistente(${p.id}, 1)">+</button>
+              </div>
               <button onclick="sumarStockExistente(${p.id})">Sumar</button>
             </div>
           </div>`;
@@ -357,6 +392,11 @@ function buscarProductoExistente() {
       div.innerHTML = `<div class="msg error">${e.message}</div>`;
     }
   }, 300);
+}
+
+function cambiarCantidadExistente(id, delta) {
+  const input = document.getElementById(`cantidadExistente-${id}`);
+  input.value = Math.max(1, (parseInt(input.value, 10) || 1) + delta);
 }
 
 async function sumarStockExistente(id) {

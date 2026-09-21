@@ -27,41 +27,46 @@
   <aside id="sidebar" class="sidebar">
     <div class="sidebar-header"><i class="bi bi-shop"></i> Tienda</div>
     <nav class="sidebar-nav">
-      <a href="dashboard" data-pagina="inicio">Inicio</a>
-      <a href="venta" data-pagina="venta">Vender</a>
-      <a href="agregar-stock" data-pagina="agregar-stock">Agregar stock</a>
-      <a href="deudores" data-pagina="deudores">Fiar</a>
-      <a href="historial-ventas" data-pagina="historial-ventas">Historial de ventas</a>
+      <a href="dashboard" data-pagina="inicio"><span class="nav-icono g-azul"><i class="bi bi-house-door"></i></span><span class="nav-texto">Inicio</span></a>
+      <a href="venta" data-pagina="venta"><span class="nav-icono g-verde"><i class="bi bi-cart3"></i></span><span class="nav-texto">Vender</span></a>
+      <a href="agregar-stock" data-pagina="agregar-stock"><span class="nav-icono g-cian"><i class="bi bi-plus-circle"></i></span><span class="nav-texto">Agregar stock</span></a>
+      <a href="deudores" data-pagina="deudores"><span class="nav-icono g-rosa"><i class="bi bi-people"></i></span><span class="nav-texto">Fiar</span></a>
+      <a href="historial-ventas" data-pagina="historial-ventas"><span class="nav-icono g-naranja"><i class="bi bi-clock-history"></i></span><span class="nav-texto">Historial de ventas</span></a>
 
       <button class="grupo-toggle" data-grupo="catalogo" data-solo-admin="1" onclick="toggleGrupo('catalogo')">
-        <span>Catalogo</span><span class="grupo-flecha">▾</span>
+        <span class="nav-icono g-morado"><i class="bi bi-grid"></i></span><span class="nav-texto">Catalogo</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-catalogo" data-grupo="catalogo">
-        <a href="categorias" data-pagina="categorias" data-solo-admin="1">Categorias</a>
-        <a href="productos" data-pagina="productos" data-solo-admin="1">Productos</a>
+        <a href="categorias" data-pagina="categorias" data-solo-admin="1"><span class="nav-icono g-morado"><i class="bi bi-tags"></i></span><span class="nav-texto">Categorias</span></a>
+        <a href="productos" data-pagina="productos" data-solo-admin="1"><span class="nav-icono g-teal"><i class="bi bi-box-seam"></i></span><span class="nav-texto">Productos</span></a>
       </div>
 
       <button class="grupo-toggle" data-grupo="abastecimiento" data-solo-admin="1" onclick="toggleGrupo('abastecimiento')">
-        <span>Abastecimiento</span><span class="grupo-flecha">▾</span>
+        <span class="nav-icono g-indigo"><i class="bi bi-truck"></i></span><span class="nav-texto">Abastecimiento</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-abastecimiento" data-grupo="abastecimiento">
-        <a href="proveedores" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
-        <a href="compras" data-pagina="compras" data-solo-admin="1">Compras</a>
-        <a href="caducados" data-pagina="caducados" data-solo-admin="1">Caducados</a>
+        <a href="proveedores" data-pagina="proveedores" data-solo-admin="1"><span class="nav-icono g-indigo"><i class="bi bi-truck"></i></span><span class="nav-texto">Proveedores</span></a>
+        <a href="compras" data-pagina="compras" data-solo-admin="1"><span class="nav-icono g-ambar"><i class="bi bi-receipt"></i></span><span class="nav-texto">Compras</span></a>
+        <a href="caducados" data-pagina="caducados" data-solo-admin="1"><span class="nav-icono g-rojo"><i class="bi bi-exclamation-triangle"></i></span><span class="nav-texto">Caducados</span></a>
       </div>
 
       <button class="grupo-toggle" data-grupo="reportes" data-solo-admin="1" onclick="toggleGrupo('reportes')">
-        <span>Reportes</span><span class="grupo-flecha">▾</span>
+        <span class="nav-icono g-azul"><i class="bi bi-graph-up"></i></span><span class="nav-texto">Reportes</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-reportes" data-grupo="reportes">
-        <a href="estadisticas" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
-        <a href="fiscalizacion" data-pagina="fiscalizacion" data-solo-admin="1">Fiscalizacion</a>
+        <a href="estadisticas" data-pagina="estadisticas" data-solo-admin="1"><span class="nav-icono g-azul"><i class="bi bi-bar-chart-line"></i></span><span class="nav-texto">Estadisticas</span></a>
+        <a href="fiscalizacion" data-pagina="fiscalizacion" data-solo-admin="1"><span class="nav-icono g-violeta"><i class="bi bi-clipboard-data"></i></span><span class="nav-texto">Fiscalizacion</span></a>
       </div>
     </nav>
     <div class="sidebar-footer">
-      <div class="nombre" id="sidebarNombre"></div>
-      <div class="rol" id="sidebarRol"></div>
-      <button onclick="logout()">Cerrar sesion</button>
+      <div class="perfil-mini">
+        <span class="avatar-mini" id="sidebarAvatar">?</span>
+        <div class="perfil-mini-textos">
+          <div class="nombre" id="sidebarNombre"></div>
+          <div class="rol" id="sidebarRol"></div>
+        </div>
+      </div>
+      <button onclick="logout()"><i class="bi bi-box-arrow-right"></i> Cerrar sesion</button>
     </div>
   </aside>
 
@@ -72,6 +77,14 @@
     </div>
     <div class="pagina">
 
+      <div class="inicio-saludo">
+        <div class="avatar" id="inicioAvatar">?</div>
+        <div class="textos">
+          <h2 id="inicioSaludo">Hola</h2>
+          <p id="inicioFecha"></p>
+        </div>
+      </div>
+
       <div id="bannerSuscripcion" class="banner-suscripcion oculto">
         <span class="icono"><i class="bi bi-exclamation-triangle-fill"></i></span>
         <span id="bannerSuscripcionTexto"></span>
@@ -80,23 +93,54 @@
       <div id="mensajeInicio"></div>
 
       <div class="stat-grid" id="statGrid">
-        <div class="stat-card">
-          <div class="etiqueta">Cargando...</div>
+        <div class="stat-card stat-card-skeleton">
+          <div class="skeleton icono"></div>
+          <div class="skeleton etiqueta"></div>
+          <div class="skeleton valor"></div>
         </div>
+        <div class="stat-card stat-card-skeleton">
+          <div class="skeleton icono"></div>
+          <div class="skeleton etiqueta"></div>
+          <div class="skeleton valor"></div>
+        </div>
+        <div class="stat-card stat-card-skeleton">
+          <div class="skeleton icono"></div>
+          <div class="skeleton etiqueta"></div>
+          <div class="skeleton valor"></div>
+        </div>
+      </div>
+
+      <div class="dash-fila" id="filaActividad" style="margin-bottom:16px">
+        <div class="card">
+          <h2>Ventas de los ultimos 7 dias</h2>
+          <canvas id="graficoVentasSemana" width="560" height="220" style="width:100%; height:220px"></canvas>
+        </div>
+        <div class="card">
+          <h2>Mas vendidos <small style="font-weight:400; color:var(--muted)">(7 dias)</small></h2>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px">
+            <canvas id="graficoTopProductos" width="160" height="160"></canvas>
+            <div id="leyendaTopProductos" style="width:100%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="cardVentasRecientes" style="margin-bottom:16px">
+        <h2>Ventas recientes</h2>
+        <div id="listaVentasRecientes"><p style="color:var(--muted); font-size:13px">Cargando...</p></div>
       </div>
 
       <div class="card" id="cardAccesosDirectos">
         <h2>Accesos directos</h2>
         <div class="tile-grid">
-          <a class="tile" href="venta"><i class="bi bi-cart3"></i> Vender<small>Escanear y cobrar</small></a>
-          <a class="tile" href="productos" data-solo-admin="1"><i class="bi bi-box-seam"></i> Productos<small>Ver, editar, stock</small></a>
-          <a class="tile" href="agregar-stock" data-solo-admin="1"><i class="bi bi-plus-circle"></i> Agregar stock<small>Escanear entradas</small></a>
-          <a class="tile" href="deudores"><i class="bi bi-people"></i> Deudores<small>Fiar y cobrar</small></a>
-          <a class="tile" href="compras" data-solo-admin="1"><i class="bi bi-receipt"></i> Compras<small>Registrar a proveedor</small></a>
-          <a class="tile" href="proveedores" data-solo-admin="1"><i class="bi bi-truck"></i> Proveedores<small>Gestionar</small></a>
-          <a class="tile" href="categorias" data-solo-admin="1"><i class="bi bi-folder2"></i> Categorias<small>Gestionar</small></a>
-          <a class="tile" href="estadisticas" data-solo-admin="1"><i class="bi bi-bar-chart-line"></i> Estadisticas<small>Reportes de venta</small></a>
-          <a class="tile" href="fiscalizacion" data-solo-admin="1"><i class="bi bi-clipboard-data"></i> Fiscalizacion<small>Informe mensual</small></a>
+          <a class="tile" href="venta"><span class="nav-icono g-verde"><i class="bi bi-cart3"></i></span>Vender<small>Escanear y cobrar</small></a>
+          <a class="tile" href="productos" data-solo-admin="1"><span class="nav-icono g-teal"><i class="bi bi-box-seam"></i></span>Productos<small>Ver, editar, stock</small></a>
+          <a class="tile" href="agregar-stock" data-solo-admin="1"><span class="nav-icono g-cian"><i class="bi bi-plus-circle"></i></span>Agregar stock<small>Escanear entradas</small></a>
+          <a class="tile" href="deudores"><span class="nav-icono g-rosa"><i class="bi bi-people"></i></span>Deudores<small>Fiar y cobrar</small></a>
+          <a class="tile" href="compras" data-solo-admin="1"><span class="nav-icono g-ambar"><i class="bi bi-receipt"></i></span>Compras<small>Registrar a proveedor</small></a>
+          <a class="tile" href="proveedores" data-solo-admin="1"><span class="nav-icono g-indigo"><i class="bi bi-truck"></i></span>Proveedores<small>Gestionar</small></a>
+          <a class="tile" href="categorias" data-solo-admin="1"><span class="nav-icono g-morado"><i class="bi bi-folder2"></i></span>Categorias<small>Gestionar</small></a>
+          <a class="tile" href="estadisticas" data-solo-admin="1"><span class="nav-icono g-azul"><i class="bi bi-bar-chart-line"></i></span>Estadisticas<small>Reportes de venta</small></a>
+          <a class="tile" href="fiscalizacion" data-solo-admin="1"><span class="nav-icono g-violeta"><i class="bi bi-clipboard-data"></i></span>Fiscalizacion<small>Informe mensual</small></a>
         </div>
       </div>
 
@@ -116,6 +160,22 @@ function fechaISO(date) {
   return fechaLocalISO(date);
 }
 
+// Saludo personalizado: "Buenos dias/tardes/noches, {nombre}" + la fecha de
+// hoy en español, para que la pantalla de Inicio se sienta menos generica.
+function mostrarSaludo() {
+  const nombre = localStorage.getItem("nombre") || "";
+  const primerNombre = nombre.trim().split(" ")[0] || "";
+  const hora = new Date().getHours();
+  const momento = hora < 12 ? "Buenos dias" : hora < 19 ? "Buenas tardes" : "Buenas noches";
+
+  document.getElementById("inicioSaludo").innerText = primerNombre ? `${momento}, ${primerNombre}` : momento;
+  document.getElementById("inicioAvatar").innerText = primerNombre ? primerNombre.charAt(0).toUpperCase() : "?";
+  document.getElementById("inicioFecha").innerText = new Date().toLocaleDateString("es-EC", {
+    weekday: "long", day: "numeric", month: "long"
+  });
+}
+mostrarSaludo();
+
 async function suscripcionActiva() {
   try {
     const estado = await apiFetch("/sistema/estado");
@@ -129,6 +189,21 @@ async function suscripcionActiva() {
     // si el chequeo mismo falla (ej. sin internet), no bloqueamos el resto de la pagina
     return true;
   }
+}
+
+// Compara hoy contra ayer y arma el texto/color/flecha de tendencia. Si no
+// hay dato de ayer (ej. tienda recien abierta) o ayer fue 0, no se calcula
+// un porcentaje enganoso (division por cero / infinito) - se muestra neutro.
+function calcularTendencia(hoy, ayer, formato) {
+  if (ayer === null || ayer === undefined || ayer === 0) {
+    return { texto: "sin datos de ayer", clase: "neutro", icono: "bi-dash" };
+  }
+  const diferencia = hoy - ayer;
+  const porcentaje = (diferencia / ayer) * 100;
+  const texto = `${porcentaje >= 0 ? "+" : ""}${porcentaje.toFixed(1)}% vs ayer (${formato(ayer)})`;
+  if (diferencia > 0) return { texto, clase: "sube", icono: "bi-arrow-up-short" };
+  if (diferencia < 0) return { texto, clase: "baja", icono: "bi-arrow-down-short" };
+  return { texto: `igual que ayer (${formato(ayer)})`, clase: "neutro", icono: "bi-dash" };
 }
 
 async function cargarInicio(intento) {
@@ -146,7 +221,7 @@ async function cargarInicio(intento) {
   try {
     const productos = await apiFetch("/productos");
     const activos = productos.filter(p => p.activo).length;
-    tarjetas.push({ etiqueta: "Productos activos", valor: activos });
+    tarjetas.push({ etiqueta: "Productos activos", valor: activos, icono: "bi-box-seam", color: "azul" });
   } catch (e) {
     // si falla, simplemente no se muestra esa tarjeta
   }
@@ -156,16 +231,34 @@ async function cargarInicio(intento) {
     tarjetas.push({
       etiqueta: "Con stock bajo",
       valor: stockBajo.length,
-      alerta: stockBajo.length > 0
+      alerta: stockBajo.length > 0,
+      icono: "bi-exclamation-triangle",
+      color: "rojo"
     });
   } catch (e) {}
 
   if (esAdmin()) {
     try {
       const hoy = fechaISO(new Date());
-      const reporte = await apiFetch(`/reportes/ventas?desde=${hoy}T00:00:00&hasta=${hoy}T23:59:59`);
-      tarjetas.push({ etiqueta: "Ventas de hoy", valor: `$${Number(reporte.totalVendido).toFixed(2)}`, positivo: true });
-      tarjetas.push({ etiqueta: "Cantidad de ventas hoy", valor: reporte.cantidadVentas, azul: true });
+      const ayerDate = new Date();
+      ayerDate.setDate(ayerDate.getDate() - 1);
+      const ayer = fechaISO(ayerDate);
+
+      const [reporte, reporteAyer] = await Promise.all([
+        apiFetch(`/reportes/ventas?desde=${hoy}T00:00:00&hasta=${hoy}T23:59:59`),
+        apiFetch(`/reportes/ventas?desde=${ayer}T00:00:00&hasta=${ayer}T23:59:59`).catch(() => null)
+      ]);
+
+      tarjetas.push({
+        etiqueta: "Ventas de hoy", valor: `$${Number(reporte.totalVendido).toFixed(2)}`,
+        positivo: true, icono: "bi-cash-coin", color: "verde",
+        tendencia: calcularTendencia(Number(reporte.totalVendido), reporteAyer ? Number(reporteAyer.totalVendido) : null, v => `$${v.toFixed(2)}`)
+      });
+      tarjetas.push({
+        etiqueta: "Cantidad de ventas hoy", valor: reporte.cantidadVentas,
+        azul: true, icono: "bi-bar-chart-line", color: "morado",
+        tendencia: calcularTendencia(reporte.cantidadVentas, reporteAyer ? reporteAyer.cantidadVentas : null, v => `${v}`)
+      });
     } catch (e) {}
   }
 
@@ -187,12 +280,93 @@ async function cargarInicio(intento) {
 
   grid.innerHTML = tarjetas.map(t => `
     <div class="stat-card">
+      <div class="nav-icono g-${t.color}"><i class="bi ${t.icono}"></i></div>
       <div class="etiqueta">${t.etiqueta}</div>
       <div class="valor${t.alerta ? " valor-alerta" : ""}${t.positivo ? " valor-positivo" : ""}${t.azul ? " valor-azul" : ""}">${t.valor}</div>
+      ${t.tendencia ? `<span class="tendencia ${t.tendencia.clase}"><i class="bi ${t.tendencia.icono}"></i>${t.tendencia.texto}</span>` : ""}
     </div>`).join("");
 }
 
+// Actividad reciente (grafico de ventas de la semana, mas vendidos y
+// ultimas ventas): usa /api/ventas, que ya esta permitido tanto para ADMIN
+// como para VENDEDOR (igual que Historial de ventas), asi que se muestra a
+// cualquiera que inicie sesion.
+async function cargarActividadReciente() {
+  const listaDiv = document.getElementById("listaVentasRecientes");
+
+  try {
+    const hoyDate = new Date();
+    const hace6Dias = new Date();
+    hace6Dias.setDate(hace6Dias.getDate() - 6);
+    const desde = `${fechaISO(hace6Dias)}T00:00:00`;
+    const hasta = `${fechaISO(hoyDate)}T23:59:59`;
+
+    const ventas = await apiFetch(`/ventas?desde=${desde}&hasta=${hasta}`);
+
+    // ---- Ventas por dia (mismo helper de grafico de lineas de Fiscalizacion) ----
+    const dias = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      dias.push(d);
+    }
+    const totalesPorDia = dias.map(d => {
+      const iso = fechaISO(d);
+      return ventas
+        .filter(v => v.fecha.slice(0, 10) === iso)
+        .reduce((acc, v) => acc + Number(v.totalMonedaLocal), 0);
+    });
+    const etiquetasDias = dias.map(d => d.toLocaleDateString("es", { weekday: "short" }));
+    dibujarGraficoLineas("graficoVentasSemana", etiquetasDias,
+      [{ label: "Ventas", valores: totalesPorDia, color: "#0d7730" }],
+      null, v => `$${Number(v).toFixed(2)}`);
+
+    // ---- Productos mas vendidos de la semana (grafico de pastel) ----
+    const cantidadesPorProducto = new Map();
+    ventas.forEach(v => {
+      (v.detalles || []).forEach(det => {
+        const cantidad = det.peso ? Number(det.peso) : Number(det.cantidad);
+        cantidadesPorProducto.set(det.producto, (cantidadesPorProducto.get(det.producto) || 0) + cantidad);
+      });
+    });
+    const topProductos = Array.from(cantidadesPorProducto.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([producto, cantidad]) => ({ label: producto, valor: cantidad }));
+
+    dibujarGraficoPastel("graficoTopProductos", topProductos, "leyendaTopProductos", v => `${Number(v).toFixed(0)}`);
+
+    // ---- Ultimas 5 ventas (la API ya devuelve mas recientes primero) ----
+    const recientes = ventas.slice(0, 5);
+    if (recientes.length === 0) {
+      listaDiv.innerHTML = `<p style="color:var(--muted); font-size:13px">Sin ventas en los ultimos 7 dias</p>`;
+      return;
+    }
+
+    listaDiv.innerHTML = recientes.map(v => {
+      const items = (v.detalles || [])
+        .map(d => d.peso ? `${d.producto} (${d.peso} lb)` : `${d.producto} x${d.cantidad}`)
+        .join(", ");
+      const cuando = new Date(v.fecha).toLocaleString("es", {
+        day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
+      });
+      return `
+        <div class="transaccion">
+          <div class="transaccion-icono"><i class="bi bi-cart-check"></i></div>
+          <div class="transaccion-info">
+            <strong>${items || "Venta"}</strong>
+            <small>${cuando}</small>
+          </div>
+          <div class="transaccion-monto">$${Number(v.totalMonedaLocal).toFixed(2)}</div>
+        </div>`;
+    }).join("");
+  } catch (e) {
+    listaDiv.innerHTML = `<p style="color:var(--muted); font-size:13px">No se pudo cargar la actividad reciente</p>`;
+  }
+}
+
 cargarInicio();
+cargarActividadReciente();
 </script>
 
 </body>

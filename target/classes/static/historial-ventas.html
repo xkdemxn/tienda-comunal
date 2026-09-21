@@ -14,41 +14,46 @@
   <aside id="sidebar" class="sidebar">
     <div class="sidebar-header"><i class="bi bi-shop"></i> Tienda</div>
     <nav class="sidebar-nav">
-      <a href="dashboard" data-pagina="inicio">Inicio</a>
-      <a href="venta" data-pagina="venta">Vender</a>
-      <a href="agregar-stock" data-pagina="agregar-stock">Agregar stock</a>
-      <a href="deudores" data-pagina="deudores">Fiar</a>
-      <a href="historial-ventas" data-pagina="historial-ventas">Historial de ventas</a>
+      <a href="dashboard" data-pagina="inicio"><span class="nav-icono g-azul"><i class="bi bi-house-door"></i></span><span class="nav-texto">Inicio</span></a>
+      <a href="venta" data-pagina="venta"><span class="nav-icono g-verde"><i class="bi bi-cart3"></i></span><span class="nav-texto">Vender</span></a>
+      <a href="agregar-stock" data-pagina="agregar-stock"><span class="nav-icono g-cian"><i class="bi bi-plus-circle"></i></span><span class="nav-texto">Agregar stock</span></a>
+      <a href="deudores" data-pagina="deudores"><span class="nav-icono g-rosa"><i class="bi bi-people"></i></span><span class="nav-texto">Fiar</span></a>
+      <a href="historial-ventas" data-pagina="historial-ventas"><span class="nav-icono g-naranja"><i class="bi bi-clock-history"></i></span><span class="nav-texto">Historial de ventas</span></a>
 
       <button class="grupo-toggle" data-grupo="catalogo" data-solo-admin="1" onclick="toggleGrupo('catalogo')">
-        <span>Catalogo</span><span class="grupo-flecha">▾</span>
+        <span class="nav-icono g-morado"><i class="bi bi-grid"></i></span><span class="nav-texto">Catalogo</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-catalogo" data-grupo="catalogo">
-        <a href="categorias" data-pagina="categorias" data-solo-admin="1">Categorias</a>
-        <a href="productos" data-pagina="productos" data-solo-admin="1">Productos</a>
+        <a href="categorias" data-pagina="categorias" data-solo-admin="1"><span class="nav-icono g-morado"><i class="bi bi-tags"></i></span><span class="nav-texto">Categorias</span></a>
+        <a href="productos" data-pagina="productos" data-solo-admin="1"><span class="nav-icono g-teal"><i class="bi bi-box-seam"></i></span><span class="nav-texto">Productos</span></a>
       </div>
 
       <button class="grupo-toggle" data-grupo="abastecimiento" data-solo-admin="1" onclick="toggleGrupo('abastecimiento')">
-        <span>Abastecimiento</span><span class="grupo-flecha">▾</span>
+        <span class="nav-icono g-indigo"><i class="bi bi-truck"></i></span><span class="nav-texto">Abastecimiento</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-abastecimiento" data-grupo="abastecimiento">
-        <a href="proveedores" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
-        <a href="compras" data-pagina="compras" data-solo-admin="1">Compras</a>
-        <a href="caducados" data-pagina="caducados" data-solo-admin="1">Caducados</a>
+        <a href="proveedores" data-pagina="proveedores" data-solo-admin="1"><span class="nav-icono g-indigo"><i class="bi bi-truck"></i></span><span class="nav-texto">Proveedores</span></a>
+        <a href="compras" data-pagina="compras" data-solo-admin="1"><span class="nav-icono g-ambar"><i class="bi bi-receipt"></i></span><span class="nav-texto">Compras</span></a>
+        <a href="caducados" data-pagina="caducados" data-solo-admin="1"><span class="nav-icono g-rojo"><i class="bi bi-exclamation-triangle"></i></span><span class="nav-texto">Caducados</span></a>
       </div>
 
       <button class="grupo-toggle" data-grupo="reportes" data-solo-admin="1" onclick="toggleGrupo('reportes')">
-        <span>Reportes</span><span class="grupo-flecha">▾</span>
+        <span class="nav-icono g-azul"><i class="bi bi-graph-up"></i></span><span class="nav-texto">Reportes</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-reportes" data-grupo="reportes">
-        <a href="estadisticas" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
-        <a href="fiscalizacion" data-pagina="fiscalizacion" data-solo-admin="1">Fiscalizacion</a>
+        <a href="estadisticas" data-pagina="estadisticas" data-solo-admin="1"><span class="nav-icono g-azul"><i class="bi bi-bar-chart-line"></i></span><span class="nav-texto">Estadisticas</span></a>
+        <a href="fiscalizacion" data-pagina="fiscalizacion" data-solo-admin="1"><span class="nav-icono g-violeta"><i class="bi bi-clipboard-data"></i></span><span class="nav-texto">Fiscalizacion</span></a>
       </div>
     </nav>
     <div class="sidebar-footer">
-      <div class="nombre" id="sidebarNombre"></div>
-      <div class="rol" id="sidebarRol"></div>
-      <button onclick="logout()">Cerrar sesion</button>
+      <div class="perfil-mini">
+        <span class="avatar-mini" id="sidebarAvatar">?</span>
+        <div class="perfil-mini-textos">
+          <div class="nombre" id="sidebarNombre"></div>
+          <div class="rol" id="sidebarRol"></div>
+        </div>
+      </div>
+      <button onclick="logout()"><i class="bi bi-box-arrow-right"></i> Cerrar sesion</button>
     </div>
   </aside>
 
@@ -113,7 +118,7 @@ async function cargarHistorial() {
     const ventas = await apiFetch(`/ventas?desde=${desde}&hasta=${hasta}`);
 
     if (ventas.length === 0) {
-      div.innerHTML = `<p style="color:var(--muted)">Sin ventas en este rango</p>`;
+      div.innerHTML = `<div class="card"><div class="estado-vacio"><i class="bi bi-receipt"></i>Sin ventas en este rango</div></div>`;
       return;
     }
 
@@ -127,19 +132,20 @@ async function cargarHistorial() {
 
     const totalGeneral = ventas.reduce((acc, v) => acc + Number(v.totalMonedaLocal), 0);
     let html = `
-      <div class="card">
-        <div class="item" style="border-bottom:none">
-          <div><strong>Total del periodo</strong>
-            <small>${ventas.length} venta${ventas.length === 1 ? "" : "s"} en total</small>
-          </div>
-          <strong class="total-general">$${totalGeneral.toFixed(2)}</strong>
+      <div class="card" style="display:flex; align-items:center; gap:14px">
+        <div class="nav-icono g-verde" style="width:46px; height:46px; font-size:20px; border-radius:14px">
+          <i class="bi bi-cash-coin"></i>
+        </div>
+        <div>
+          <div style="font-size:12px; color:var(--muted)">Total del periodo · ${ventas.length} venta${ventas.length === 1 ? "" : "s"}</div>
+          <strong style="font-size:26px; color:var(--accent)">$${totalGeneral.toFixed(2)}</strong>
         </div>
       </div>`;
 
     if (porDia.size > 1) {
       html += `
         <div class="card">
-          <h2>Ventas por dia</h2>
+          <h2><i class="bi bi-bar-chart-line"></i> Ventas por dia</h2>
           <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:center">
             <canvas id="graficoPorDia" width="200" height="200" style="flex-shrink:0"></canvas>
             <div id="leyendaPorDia" style="flex:1; min-width:180px"></div>
@@ -163,12 +169,13 @@ async function cargarHistorial() {
           d.peso ? `${d.producto} (${d.peso} lb)` : `${d.producto} x${d.cantidad}`
         ).join(", ");
         html += `
-          <div class="item">
-            <div>
-              <span class="hora-venta">${formatoHora(v.fecha)}</span>
+          <div class="transaccion">
+            <div class="transaccion-icono"><i class="bi bi-receipt"></i></div>
+            <div class="transaccion-info">
+              <strong class="hora-venta">${formatoHora(v.fecha)}</strong>
               <small>${items}</small>
             </div>
-            <strong>$${Number(v.totalMonedaLocal).toFixed(2)}</strong>
+            <div class="transaccion-monto">$${Number(v.totalMonedaLocal).toFixed(2)}</div>
           </div>`;
       });
 

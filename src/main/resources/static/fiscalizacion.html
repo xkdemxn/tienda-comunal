@@ -15,41 +15,46 @@
   <aside id="sidebar" class="sidebar">
     <div class="sidebar-header"><i class="bi bi-shop"></i> Tienda</div>
     <nav class="sidebar-nav">
-      <a href="dashboard" data-pagina="inicio">Inicio</a>
-      <a href="venta" data-pagina="venta">Vender</a>
-      <a href="agregar-stock" data-pagina="agregar-stock">Agregar stock</a>
-      <a href="deudores" data-pagina="deudores">Fiar</a>
-      <a href="historial-ventas" data-pagina="historial-ventas">Historial de ventas</a>
+      <a href="dashboard" data-pagina="inicio"><span class="nav-icono g-azul"><i class="bi bi-house-door"></i></span><span class="nav-texto">Inicio</span></a>
+      <a href="venta" data-pagina="venta"><span class="nav-icono g-verde"><i class="bi bi-cart3"></i></span><span class="nav-texto">Vender</span></a>
+      <a href="agregar-stock" data-pagina="agregar-stock"><span class="nav-icono g-cian"><i class="bi bi-plus-circle"></i></span><span class="nav-texto">Agregar stock</span></a>
+      <a href="deudores" data-pagina="deudores"><span class="nav-icono g-rosa"><i class="bi bi-people"></i></span><span class="nav-texto">Fiar</span></a>
+      <a href="historial-ventas" data-pagina="historial-ventas"><span class="nav-icono g-naranja"><i class="bi bi-clock-history"></i></span><span class="nav-texto">Historial de ventas</span></a>
 
       <button class="grupo-toggle" data-grupo="catalogo" data-solo-admin="1" onclick="toggleGrupo('catalogo')">
-        <span>Catalogo</span><span class="grupo-flecha">▾</span>
+        <span class="nav-icono g-morado"><i class="bi bi-grid"></i></span><span class="nav-texto">Catalogo</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-catalogo" data-grupo="catalogo">
-        <a href="categorias" data-pagina="categorias" data-solo-admin="1">Categorias</a>
-        <a href="productos" data-pagina="productos" data-solo-admin="1">Productos</a>
+        <a href="categorias" data-pagina="categorias" data-solo-admin="1"><span class="nav-icono g-morado"><i class="bi bi-tags"></i></span><span class="nav-texto">Categorias</span></a>
+        <a href="productos" data-pagina="productos" data-solo-admin="1"><span class="nav-icono g-teal"><i class="bi bi-box-seam"></i></span><span class="nav-texto">Productos</span></a>
       </div>
 
       <button class="grupo-toggle" data-grupo="abastecimiento" data-solo-admin="1" onclick="toggleGrupo('abastecimiento')">
-        <span>Abastecimiento</span><span class="grupo-flecha">▾</span>
+        <span class="nav-icono g-indigo"><i class="bi bi-truck"></i></span><span class="nav-texto">Abastecimiento</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-abastecimiento" data-grupo="abastecimiento">
-        <a href="proveedores" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
-        <a href="compras" data-pagina="compras" data-solo-admin="1">Compras</a>
-        <a href="caducados" data-pagina="caducados" data-solo-admin="1">Caducados</a>
+        <a href="proveedores" data-pagina="proveedores" data-solo-admin="1"><span class="nav-icono g-indigo"><i class="bi bi-truck"></i></span><span class="nav-texto">Proveedores</span></a>
+        <a href="compras" data-pagina="compras" data-solo-admin="1"><span class="nav-icono g-ambar"><i class="bi bi-receipt"></i></span><span class="nav-texto">Compras</span></a>
+        <a href="caducados" data-pagina="caducados" data-solo-admin="1"><span class="nav-icono g-rojo"><i class="bi bi-exclamation-triangle"></i></span><span class="nav-texto">Caducados</span></a>
       </div>
 
       <button class="grupo-toggle" data-grupo="reportes" data-solo-admin="1" onclick="toggleGrupo('reportes')">
-        <span>Reportes</span><span class="grupo-flecha">▾</span>
+        <span class="nav-icono g-azul"><i class="bi bi-graph-up"></i></span><span class="nav-texto">Reportes</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-reportes" data-grupo="reportes">
-        <a href="estadisticas" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
-        <a href="fiscalizacion" data-pagina="fiscalizacion" data-solo-admin="1">Fiscalizacion</a>
+        <a href="estadisticas" data-pagina="estadisticas" data-solo-admin="1"><span class="nav-icono g-azul"><i class="bi bi-bar-chart-line"></i></span><span class="nav-texto">Estadisticas</span></a>
+        <a href="fiscalizacion" data-pagina="fiscalizacion" data-solo-admin="1"><span class="nav-icono g-violeta"><i class="bi bi-clipboard-data"></i></span><span class="nav-texto">Fiscalizacion</span></a>
       </div>
     </nav>
     <div class="sidebar-footer">
-      <div class="nombre" id="sidebarNombre"></div>
-      <div class="rol" id="sidebarRol"></div>
-      <button onclick="logout()">Cerrar sesion</button>
+      <div class="perfil-mini">
+        <span class="avatar-mini" id="sidebarAvatar">?</span>
+        <div class="perfil-mini-textos">
+          <div class="nombre" id="sidebarNombre"></div>
+          <div class="rol" id="sidebarRol"></div>
+        </div>
+      </div>
+      <button onclick="logout()"><i class="bi bi-box-arrow-right"></i> Cerrar sesion</button>
     </div>
   </aside>
 
@@ -70,12 +75,10 @@
       </div>
 
       <div id="fiscalResultado">
-
-        <h1>DATOS DE FISCALIZACION</h1>
-
+        <p style="color:var(--muted)">Generando informe...</p>
       </div>
 
-      <div class="seccion-titulo">Progreso anual</div>
+      <div class="seccion-titulo"><i class="bi bi-graph-up"></i> Progreso anual</div>
       <div class="card">
         <label class="campo">Año</label>
         <select id="anualAnio" onchange="cargarProgresoAnual()"></select>
@@ -168,38 +171,44 @@ async function cargarFiscalizacion() {
     };
 
     if (categorias.length === 0) {
-      div.innerHTML = `<p style="color:var(--muted)">Sin productos activos para mostrar</p>`;
+      div.innerHTML = `<div class="card"><div class="estado-vacio"><i class="bi bi-clipboard-x"></i>Sin productos activos para mostrar</div></div>`;
       return;
     }
 
     const totales = calcularTotalesGenerales(r.porCategoria);
 
     let html = `
-      <div class="seccion-titulo">Resumen general</div>
-      <div class="card">
-        <div class="item">
-          <div>Total de ventas del periodo <small>bruto, sin restar costo ni gastos</small></div>
-          <strong style="color:#1d709d">$${formatoNumero(r.totalVentasBruto)}</strong>
+      <div class="seccion-titulo"><i class="bi bi-clipboard-data"></i> Resumen general</div>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-icono color-azul"><i class="bi bi-cash-coin"></i></div>
+          <div class="etiqueta">Total de ventas del periodo <small>bruto, sin restar costo ni gastos</small></div>
+          <div class="valor" style="color:#1d709d">$${formatoNumero(r.totalVentasBruto)}</div>
         </div>
-        <div class="item">
-          <div>Total de productos existentes</div>
-          <strong style="color:var(--accent)">$${formatoNumero(totales.existentesValor)} · ${totales.existentesUnidades} unidades</strong>
+        <div class="stat-card">
+          <div class="stat-icono color-verde"><i class="bi bi-box-seam"></i></div>
+          <div class="etiqueta">Productos existentes</div>
+          <div class="valor valor-positivo">$${formatoNumero(totales.existentesValor)} <small>· ${totales.existentesUnidades} unidades</small></div>
         </div>
-        <div class="item">
-          <div>Total de productos vendidos</div>
-          <strong>$${formatoNumero(totales.vendidos)}</strong>
+        <div class="stat-card">
+          <div class="stat-icono color-morado"><i class="bi bi-cart-check"></i></div>
+          <div class="etiqueta">Productos vendidos</div>
+          <div class="valor">$${formatoNumero(totales.vendidos)}</div>
         </div>
-        <div class="item">
-          <div>Total de productos de compras</div>
-          <strong>$${formatoNumero(totales.deCompras)}</strong>
+        <div class="stat-card">
+          <div class="stat-icono color-ambar"><i class="bi bi-basket"></i></div>
+          <div class="etiqueta">Productos de compras</div>
+          <div class="valor">$${formatoNumero(totales.deCompras)}</div>
         </div>
-        <div class="item">
-          <div>Total de productos netos</div>
-          <strong>$${formatoNumero(totales.netos)}</strong>
+        <div class="stat-card">
+          <div class="stat-icono color-azul"><i class="bi bi-boxes"></i></div>
+          <div class="etiqueta">Productos netos</div>
+          <div class="valor">$${formatoNumero(totales.netos)}</div>
         </div>
-        <div class="item" style="border-bottom:none">
-          <div><strong>Ganancia total del periodo</strong></div>
-          <strong>$${formatoNumero(r.totalGeneralGanancia)}</strong>
+        <div class="stat-card">
+          <div class="stat-icono color-verde"><i class="bi bi-graph-up-arrow"></i></div>
+          <div class="etiqueta">Ganancia total del periodo</div>
+          <div class="valor valor-positivo">$${formatoNumero(r.totalGeneralGanancia)}</div>
         </div>
       </div>`;
 
@@ -207,7 +216,7 @@ async function cargarFiscalizacion() {
 
     html += renderProductosPorPeso(r.productosPorPeso || []);
 
-    html += `<div class="seccion-titulo">Informe por categorias</div>`;
+    html += `<div class="seccion-titulo"><i class="bi bi-folder2"></i> Informe por categorias</div>`;
     categorias.forEach(categoria => {
       const items = r.porCategoria[categoria];
       const unidadesCategoria = sumaCampo(items, "existenciaActual");
@@ -215,7 +224,7 @@ async function cargarFiscalizacion() {
       const vendidoBrutoCategoria = sumaCampo(items, "salidaConGanancia");
       html += `
         <div class="card">
-          <h2>Categoria: ${categoria}</h2>
+          <h2><i class="bi bi-tag"></i> Categoria: ${categoria}</h2>
           <p style="color:var(--muted); font-size:13px; margin:-4px 0 12px">
             ${unidadesCategoria} unidades en existencia ·
             valor si se vendiera todo: $${formatoNumero(valorSiVendidoCategoria)} ·
@@ -296,11 +305,11 @@ function renderGastosYCierre(r, gastos) {
     </div>`).join("");
 
   if (gastos.length === 0) {
-    filasGastos = `<p style="color:var(--muted); font-size:13px">Sin gastos registrados en este rango</p>`;
+    filasGastos = `<div class="estado-vacio"><i class="bi bi-receipt-cutoff"></i>Sin gastos registrados en este rango</div>`;
   }
 
   return `
-    <div class="seccion-titulo">Gastos del periodo</div>
+    <div class="seccion-titulo"><i class="bi bi-wallet2"></i> Gastos del periodo</div>
     <div class="card">
       <input type="text" id="gastoDescripcion" placeholder="Ej: Pago a trabajador">
       <input type="number" min="0.01" step="0.01" id="gastoMonto" placeholder="Monto">
@@ -313,7 +322,7 @@ function renderGastosYCierre(r, gastos) {
       </div>
     </div>
 
-    <div class="seccion-titulo">Cierre de caja</div>
+    <div class="seccion-titulo"><i class="bi bi-safe2"></i> Cierre de caja</div>
     <div class="card">
       <div class="item">
         <div>Ganancia del periodo</div>
@@ -360,7 +369,7 @@ function renderProductosPorPeso(productos) {
     </tr>`).join("");
 
   return `
-    <div class="seccion-titulo">Productos por peso (ej. carnes)</div>
+    <div class="seccion-titulo"><i class="bi bi-egg-fried"></i> Productos por peso (ej. carnes)</div>
     <div class="card">
       <p style="color:var(--muted); font-size:13px; margin:-4px 0 12px">
         No llevan stock exacto (se venden por libra/peso) - la ganancia sale de comparar lo

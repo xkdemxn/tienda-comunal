@@ -8,23 +8,56 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
-  .total {
-    display: flex;
-    justify-content: space-between;
-    font-size: 18px;
-    font-weight: 700;
-    margin-top: 12px;
+  /* ---------- Layout de dos columnas en pantallas grandes: escanear/buscar
+     a la izquierda, carrito siempre visible (sticky) a la derecha - como en
+     un POS de verdad, en vez de una sola columna larga para desplazarse. */
+  .venta-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 16px;
+    align-items: start;
   }
-  .total small {
-    display: block;
-    font-size: 12px;
-    font-weight: 400;
-    color: var(--muted);
+  .venta-col-derecha { position: sticky; top: 86px; }
+  @media (max-width: 960px) {
+    .venta-layout { grid-template-columns: 1fr; }
+    .venta-col-derecha { position: static; }
   }
+
   .resultados-busqueda .item button {
     width: auto;
     padding: 8px 12px;
     margin-bottom: 0;
+  }
+
+  /* Barra fija abajo en celular: total + confirmar siempre a la vista, sin
+     tener que bajar hasta el final para cobrar. Solo aparece en movil,
+     donde el carrito ya no queda pegado (sticky) como en desktop. */
+  .venta-barra-fija { display: none; }
+  @media (max-width: 960px) {
+    .pagina-venta { padding-bottom: 92px; }
+    .venta-barra-fija {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      position: fixed;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 10px 10px 10px 16px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+      z-index: 15;
+    }
+    .venta-barra-fija strong { display: block; font-size: 18px; color: var(--accent); }
+    .venta-barra-fija small { color: var(--muted); font-size: 11px; }
+    .venta-barra-fija button {
+      width: auto;
+      margin-bottom: 0;
+      padding: 12px 20px;
+      white-space: nowrap;
+    }
   }
 </style>
 </head>
@@ -35,41 +68,46 @@
   <aside id="sidebar" class="sidebar">
     <div class="sidebar-header"><i class="bi bi-shop"></i> Tienda</div>
     <nav class="sidebar-nav">
-      <a href="dashboard" data-pagina="inicio">Inicio</a>
-      <a href="venta" data-pagina="venta">Vender</a>
-      <a href="agregar-stock" data-pagina="agregar-stock">Agregar stock</a>
-      <a href="deudores" data-pagina="deudores">Fiar</a>
-      <a href="historial-ventas" data-pagina="historial-ventas">Historial de ventas</a>
+      <a href="dashboard" data-pagina="inicio"><span class="nav-icono g-azul"><i class="bi bi-house-door"></i></span><span class="nav-texto">Inicio</span></a>
+      <a href="venta" data-pagina="venta"><span class="nav-icono g-verde"><i class="bi bi-cart3"></i></span><span class="nav-texto">Vender</span></a>
+      <a href="agregar-stock" data-pagina="agregar-stock"><span class="nav-icono g-cian"><i class="bi bi-plus-circle"></i></span><span class="nav-texto">Agregar stock</span></a>
+      <a href="deudores" data-pagina="deudores"><span class="nav-icono g-rosa"><i class="bi bi-people"></i></span><span class="nav-texto">Fiar</span></a>
+      <a href="historial-ventas" data-pagina="historial-ventas"><span class="nav-icono g-naranja"><i class="bi bi-clock-history"></i></span><span class="nav-texto">Historial de ventas</span></a>
 
       <button class="grupo-toggle" data-grupo="catalogo" data-solo-admin="1" onclick="toggleGrupo('catalogo')">
-        <span>Catalogo</span><span class="grupo-flecha">▾</span>
+        <span class="nav-icono g-morado"><i class="bi bi-grid"></i></span><span class="nav-texto">Catalogo</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-catalogo" data-grupo="catalogo">
-        <a href="categorias" data-pagina="categorias" data-solo-admin="1">Categorias</a>
-        <a href="productos" data-pagina="productos" data-solo-admin="1">Productos</a>
+        <a href="categorias" data-pagina="categorias" data-solo-admin="1"><span class="nav-icono g-morado"><i class="bi bi-tags"></i></span><span class="nav-texto">Categorias</span></a>
+        <a href="productos" data-pagina="productos" data-solo-admin="1"><span class="nav-icono g-teal"><i class="bi bi-box-seam"></i></span><span class="nav-texto">Productos</span></a>
       </div>
 
       <button class="grupo-toggle" data-grupo="abastecimiento" data-solo-admin="1" onclick="toggleGrupo('abastecimiento')">
-        <span>Abastecimiento</span><span class="grupo-flecha">▾</span>
+        <span class="nav-icono g-indigo"><i class="bi bi-truck"></i></span><span class="nav-texto">Abastecimiento</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-abastecimiento" data-grupo="abastecimiento">
-        <a href="proveedores" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
-        <a href="compras" data-pagina="compras" data-solo-admin="1">Compras</a>
-        <a href="caducados" data-pagina="caducados" data-solo-admin="1">Caducados</a>
+        <a href="proveedores" data-pagina="proveedores" data-solo-admin="1"><span class="nav-icono g-indigo"><i class="bi bi-truck"></i></span><span class="nav-texto">Proveedores</span></a>
+        <a href="compras" data-pagina="compras" data-solo-admin="1"><span class="nav-icono g-ambar"><i class="bi bi-receipt"></i></span><span class="nav-texto">Compras</span></a>
+        <a href="caducados" data-pagina="caducados" data-solo-admin="1"><span class="nav-icono g-rojo"><i class="bi bi-exclamation-triangle"></i></span><span class="nav-texto">Caducados</span></a>
       </div>
 
       <button class="grupo-toggle" data-grupo="reportes" data-solo-admin="1" onclick="toggleGrupo('reportes')">
-        <span>Reportes</span><span class="grupo-flecha">▾</span>
+        <span class="nav-icono g-azul"><i class="bi bi-graph-up"></i></span><span class="nav-texto">Reportes</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-reportes" data-grupo="reportes">
-        <a href="estadisticas" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
-        <a href="fiscalizacion" data-pagina="fiscalizacion" data-solo-admin="1">Fiscalizacion</a>
+        <a href="estadisticas" data-pagina="estadisticas" data-solo-admin="1"><span class="nav-icono g-azul"><i class="bi bi-bar-chart-line"></i></span><span class="nav-texto">Estadisticas</span></a>
+        <a href="fiscalizacion" data-pagina="fiscalizacion" data-solo-admin="1"><span class="nav-icono g-violeta"><i class="bi bi-clipboard-data"></i></span><span class="nav-texto">Fiscalizacion</span></a>
       </div>
     </nav>
     <div class="sidebar-footer">
-      <div class="nombre" id="sidebarNombre"></div>
-      <div class="rol" id="sidebarRol"></div>
-      <button onclick="logout()">Cerrar sesion</button>
+      <div class="perfil-mini">
+        <span class="avatar-mini" id="sidebarAvatar">?</span>
+        <div class="perfil-mini-textos">
+          <div class="nombre" id="sidebarNombre"></div>
+          <div class="rol" id="sidebarRol"></div>
+        </div>
+      </div>
+      <button onclick="logout()"><i class="bi bi-box-arrow-right"></i> Cerrar sesion</button>
     </div>
   </aside>
 
@@ -78,41 +116,55 @@
       <button id="btnHamburguesa" class="btn-hamburguesa"><i class="bi bi-list"></i></button>
       <h1>Vender</h1>
     </div>
-    <div class="pagina">
+    <div class="pagina pagina-venta">
 
-      <div class="card">
-        <div id="reader"></div>
-        <div class="controles-camara">
-          <button class="secundario" onclick="reiniciarCamara()">Reiniciar</button>
-          <button class="secundario" id="btnFlash" onclick="toggleFlash()"><i class="bi bi-lightning-charge-fill"></i> Flash</button>
-          <button class="secundario" onclick="enfocarCamara()"><i class="bi bi-crosshair"></i> Enfocar</button>
+      <div class="venta-layout">
+        <div class="venta-col-izquierda">
+          <div class="card">
+            <div id="reader"></div>
+            <div class="controles-camara">
+              <button class="secundario" onclick="reiniciarCamara()">Reiniciar</button>
+              <button class="secundario" id="btnFlash" onclick="toggleFlash()"><i class="bi bi-lightning-charge-fill"></i> Flash</button>
+              <button class="secundario" onclick="enfocarCamara()"><i class="bi bi-crosshair"></i> Enfocar</button>
+            </div>
+          </div>
+
+          <div id="mensaje"></div>
+
+          <div class="card">
+            <label class="campo">Producto sin codigo de barras (ej: pan)</label>
+            <input type="text" id="buscarProductoVenta" placeholder="Buscar por nombre..." oninput="buscarProductoParaVenta()">
+            <div id="resultadosBusquedaVenta" class="resultados-busqueda"></div>
+          </div>
         </div>
-      </div>
 
-      <div id="mensaje"></div>
+        <div class="venta-col-derecha">
+          <div class="card">
+            <strong><i class="bi bi-cart3"></i> Carrito</strong>
+            <div id="carrito"></div>
+            <div class="total">
+              <span>Total <small id="unidadesCarrito">0 productos</small></span>
+              <span id="totalCarrito">$0.00</span>
+            </div>
+          </div>
 
-      <div class="card">
-        <label class="campo">Producto sin codigo de barras (ej: pan)</label>
-        <input type="text" id="buscarProductoVenta" placeholder="Buscar por nombre..." oninput="buscarProductoParaVenta()">
-        <div id="resultadosBusquedaVenta" class="resultados-busqueda"></div>
-      </div>
-
-      <div class="card">
-        <strong>Carrito</strong>
-        <div id="carrito"></div>
-        <div class="total">
-          <span>Total <small id="unidadesCarrito">0 productos</small></span>
-          <span id="totalCarrito">$0.00</span>
+          <div class="card">
+            <button onclick="confirmarVenta()">Confirmar venta</button>
+            <button class="secundario" onclick="vaciarCarrito()">Vaciar carrito</button>
+          </div>
         </div>
-      </div>
-
-      <div class="card">
-        <button onclick="confirmarVenta()">Confirmar venta</button>
-        <button class="secundario" onclick="vaciarCarrito()">Vaciar carrito</button>
       </div>
 
     </div>
   </div>
+</div>
+
+<div class="venta-barra-fija" id="barraFijaVenta">
+  <div>
+    <small id="barraFijaUnidades">0 productos</small>
+    <strong id="barraFijaTotal">$0.00</strong>
+  </div>
+  <button onclick="confirmarVenta()"><i class="bi bi-check-lg"></i> Confirmar venta</button>
 </div>
 
 <script src="dashboard.js"></script>
@@ -225,6 +277,10 @@ function renderCarrito() {
   let total = 0;
   let unidades = 0;
 
+  if (carrito.length === 0) {
+    div.innerHTML = `<div class="estado-vacio"><i class="bi bi-cart-x"></i>Aun no has agregado productos</div>`;
+  }
+
   carrito.forEach((item, idx) => {
     if (item.esPeso) {
       const subtotal = item.precio * item.peso;
@@ -264,6 +320,12 @@ function renderCarrito() {
 
   document.getElementById("totalCarrito").innerText = `$${total.toFixed(2)}`;
   document.getElementById("unidadesCarrito").innerText =
+    `${unidades} producto${unidades === 1 ? "" : "s"}`;
+
+  // Barra fija de celular: mismo total/unidades, siempre visible sin
+  // depender de que el carrito quede "pegado" (eso solo pasa en desktop).
+  document.getElementById("barraFijaTotal").innerText = `$${total.toFixed(2)}`;
+  document.getElementById("barraFijaUnidades").innerText =
     `${unidades} producto${unidades === 1 ? "" : "s"}`;
 }
 
@@ -435,6 +497,7 @@ async function confirmarVenta() {
   }
 }
 
+renderCarrito();
 iniciarCamara();
 </script>
 

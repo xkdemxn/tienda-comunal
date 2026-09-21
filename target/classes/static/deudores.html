@@ -12,13 +12,6 @@
     padding: 8px 12px;
     margin-bottom: 0;
   }
-  .total {
-    display: flex;
-    justify-content: space-between;
-    font-size: 18px;
-    font-weight: 700;
-    margin-top: 12px;
-  }
 </style>
 </head>
 <body>
@@ -28,41 +21,46 @@
   <aside id="sidebar" class="sidebar">
     <div class="sidebar-header"><i class="bi bi-shop"></i> Tienda</div>
     <nav class="sidebar-nav">
-      <a href="dashboard" data-pagina="inicio">Inicio</a>
-      <a href="venta" data-pagina="venta">Vender</a>
-      <a href="agregar-stock" data-pagina="agregar-stock">Agregar stock</a>
-      <a href="deudores" data-pagina="deudores">Fiar</a>
-      <a href="historial-ventas" data-pagina="historial-ventas">Historial de ventas</a>
+      <a href="dashboard" data-pagina="inicio"><span class="nav-icono g-azul"><i class="bi bi-house-door"></i></span><span class="nav-texto">Inicio</span></a>
+      <a href="venta" data-pagina="venta"><span class="nav-icono g-verde"><i class="bi bi-cart3"></i></span><span class="nav-texto">Vender</span></a>
+      <a href="agregar-stock" data-pagina="agregar-stock"><span class="nav-icono g-cian"><i class="bi bi-plus-circle"></i></span><span class="nav-texto">Agregar stock</span></a>
+      <a href="deudores" data-pagina="deudores"><span class="nav-icono g-rosa"><i class="bi bi-people"></i></span><span class="nav-texto">Fiar</span></a>
+      <a href="historial-ventas" data-pagina="historial-ventas"><span class="nav-icono g-naranja"><i class="bi bi-clock-history"></i></span><span class="nav-texto">Historial de ventas</span></a>
 
       <button class="grupo-toggle" data-grupo="catalogo" data-solo-admin="1" onclick="toggleGrupo('catalogo')">
-        <span>Catalogo</span><span class="grupo-flecha">▾</span>
+        <span class="nav-icono g-morado"><i class="bi bi-grid"></i></span><span class="nav-texto">Catalogo</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-catalogo" data-grupo="catalogo">
-        <a href="categorias" data-pagina="categorias" data-solo-admin="1">Categorias</a>
-        <a href="productos" data-pagina="productos" data-solo-admin="1">Productos</a>
+        <a href="categorias" data-pagina="categorias" data-solo-admin="1"><span class="nav-icono g-morado"><i class="bi bi-tags"></i></span><span class="nav-texto">Categorias</span></a>
+        <a href="productos" data-pagina="productos" data-solo-admin="1"><span class="nav-icono g-teal"><i class="bi bi-box-seam"></i></span><span class="nav-texto">Productos</span></a>
       </div>
 
       <button class="grupo-toggle" data-grupo="abastecimiento" data-solo-admin="1" onclick="toggleGrupo('abastecimiento')">
-        <span>Abastecimiento</span><span class="grupo-flecha">▾</span>
+        <span class="nav-icono g-indigo"><i class="bi bi-truck"></i></span><span class="nav-texto">Abastecimiento</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-abastecimiento" data-grupo="abastecimiento">
-        <a href="proveedores" data-pagina="proveedores" data-solo-admin="1">Proveedores</a>
-        <a href="compras" data-pagina="compras" data-solo-admin="1">Compras</a>
-        <a href="caducados" data-pagina="caducados" data-solo-admin="1">Caducados</a>
+        <a href="proveedores" data-pagina="proveedores" data-solo-admin="1"><span class="nav-icono g-indigo"><i class="bi bi-truck"></i></span><span class="nav-texto">Proveedores</span></a>
+        <a href="compras" data-pagina="compras" data-solo-admin="1"><span class="nav-icono g-ambar"><i class="bi bi-receipt"></i></span><span class="nav-texto">Compras</span></a>
+        <a href="caducados" data-pagina="caducados" data-solo-admin="1"><span class="nav-icono g-rojo"><i class="bi bi-exclamation-triangle"></i></span><span class="nav-texto">Caducados</span></a>
       </div>
 
       <button class="grupo-toggle" data-grupo="reportes" data-solo-admin="1" onclick="toggleGrupo('reportes')">
-        <span>Reportes</span><span class="grupo-flecha">▾</span>
+        <span class="nav-icono g-azul"><i class="bi bi-graph-up"></i></span><span class="nav-texto">Reportes</span><span class="grupo-flecha">▾</span>
       </button>
       <div class="grupo-links oculto" id="grupo-reportes" data-grupo="reportes">
-        <a href="estadisticas" data-pagina="estadisticas" data-solo-admin="1">Estadisticas</a>
-        <a href="fiscalizacion" data-pagina="fiscalizacion" data-solo-admin="1">Fiscalizacion</a>
+        <a href="estadisticas" data-pagina="estadisticas" data-solo-admin="1"><span class="nav-icono g-azul"><i class="bi bi-bar-chart-line"></i></span><span class="nav-texto">Estadisticas</span></a>
+        <a href="fiscalizacion" data-pagina="fiscalizacion" data-solo-admin="1"><span class="nav-icono g-violeta"><i class="bi bi-clipboard-data"></i></span><span class="nav-texto">Fiscalizacion</span></a>
       </div>
     </nav>
     <div class="sidebar-footer">
-      <div class="nombre" id="sidebarNombre"></div>
-      <div class="rol" id="sidebarRol"></div>
-      <button onclick="logout()">Cerrar sesion</button>
+      <div class="perfil-mini">
+        <span class="avatar-mini" id="sidebarAvatar">?</span>
+        <div class="perfil-mini-textos">
+          <div class="nombre" id="sidebarNombre"></div>
+          <div class="rol" id="sidebarRol"></div>
+        </div>
+      </div>
+      <button onclick="logout()"><i class="bi bi-box-arrow-right"></i> Cerrar sesion</button>
     </div>
   </aside>
 
@@ -73,15 +71,18 @@
     </div>
     <div class="pagina">
 
-      <div class="card">
-        <div class="item" style="border-bottom:none">
-          <div>Deuda total pendiente</div>
-          <strong id="deudaTotalGeneral" class="total-general">$0.00</strong>
+      <div class="card" style="display:flex; align-items:center; gap:14px">
+        <div class="nav-icono g-rojo" style="width:46px; height:46px; font-size:20px; border-radius:14px">
+          <i class="bi bi-cash-stack"></i>
+        </div>
+        <div>
+          <div style="font-size:12px; color:var(--muted)">Deuda total pendiente</div>
+          <strong id="deudaTotalGeneral" style="font-size:26px; color:var(--danger)">$0.00</strong>
         </div>
       </div>
 
       <div class="card">
-        <h2>Nuevo deudor</h2>
+        <h2><i class="bi bi-person-plus"></i> Nuevo deudor</h2>
         <input type="text" id="nuevoNombre" placeholder="Nombre">
         <input type="text" id="nuevoTelefono" placeholder="Telefono (opcional)">
         <button onclick="crearDeudor()">Agregar deudor</button>
@@ -173,7 +174,7 @@ function renderDeudores() {
   document.getElementById("deudaTotalGeneral").innerText = `$${totalGeneral.toFixed(2)}`;
 
   if (deudores.length === 0) {
-    div.innerHTML = `<p style="color:var(--muted)">Sin deudores todavia</p>`;
+    div.innerHTML = `<div class="estado-vacio"><i class="bi bi-people"></i>Sin deudores todavia</div>`;
     return;
   }
 
@@ -181,11 +182,17 @@ function renderDeudores() {
   deudores.forEach(d => {
     const saldo = Number(d.saldoActual);
     const badgeClase = saldo > 0 ? "bajo" : "ok";
+    const colorAvatar = saldo > 0
+      ? "linear-gradient(135deg, #f87171, #dc2626)"
+      : "linear-gradient(135deg, #4ade80, #16a34a)";
     div.innerHTML += `
       <div class="item">
-        <div>
-          ${d.nombre}
-          <small>${d.telefono || "Sin telefono"}</small>
+        <div style="display:flex; align-items:center; gap:10px">
+          <span class="avatar-mini" style="background:${colorAvatar}">${d.nombre.charAt(0).toUpperCase()}</span>
+          <div>
+            ${d.nombre}
+            <small>${d.telefono || "Sin telefono"}</small>
+          </div>
         </div>
         <div class="item-acciones">
           <span class="badge ${badgeClase}">$${saldo.toFixed(2)}</span>
@@ -321,6 +328,11 @@ function renderCarritoFiar() {
   const div = document.getElementById("carritoFiar");
   let total = 0;
   div.innerHTML = "";
+
+  if (carritoFiar.length === 0) {
+    div.innerHTML = `<div class="estado-vacio"><i class="bi bi-basket"></i>Agrega productos al fiado</div>`;
+  }
+
   carritoFiar.forEach((item, idx) => {
     const subtotal = item.precio * item.cantidad;
     total += subtotal;
@@ -453,7 +465,7 @@ async function abrirHistorial(deudorId) {
   try {
     const movimientos = await apiFetch(`/deudores/${deudorId}/movimientos`);
     if (movimientos.length === 0) {
-      div.innerHTML = `<p style="color:var(--muted)">Sin movimientos todavia</p>`;
+      div.innerHTML = `<div class="estado-vacio"><i class="bi bi-clock-history"></i>Sin movimientos todavia</div>`;
       return;
     }
     div.innerHTML = "";
