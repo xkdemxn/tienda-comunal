@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,6 +63,29 @@ public class DeudorService {
     public List<MovimientoDeudaResponse> historial(Long deudorId) {
         return movimientoDeudaRepository.findByDeudorIdOrderByFechaDesc(deudorId).stream()
                 .map(this::mapear)
+                .toList();
+    }
+
+    // Fiados de TODOS los deudores en un rango de fechas - a diferencia de
+    // "historial", que es de un solo deudor. Se usa para mostrar el fiado
+    // por separado del efectivo en Estadisticas, Historial de ventas e
+    // Inicio (esas paginas solo leen la tabla de Ventas, y un fiado no crea
+    // una Venta, asi que sin esto quedaba invisible ahi aunque ya descuenta
+    // stock y ya se refleja bien en Fiscalizacion).
+    public List<FiadoEnRangoResponse> fiadoEnRango(LocalDateTime desde, LocalDateTime hasta) {
+        return movimientoDeudaRepository
+                .findByTipoAndFechaBetweenOrderByFechaDesc(TipoMovimientoDeuda.FIADO, desde, hasta).stream()
+                .map(m -> new FiadoEnRangoResponse(
+                        m.getId(),
+                        m.getDeudor().getNombre(),
+                        m.getMonto(),
+                        m.getDescripcion(),
+                        m.getFecha(),
+                        m.getDetalles().stream()
+                                .map(d -> new DetalleFiadoResponse(
+                                        d.getProducto().getNombre(), d.getCantidad(),
+                                        d.getPrecioUnitario(), d.getSubtotal()))
+                                .toList()))
                 .toList();
     }
 

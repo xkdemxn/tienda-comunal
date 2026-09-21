@@ -106,9 +106,14 @@
     <input type="text" id="buscarProductoFiar" placeholder="Buscar por nombre..." oninput="buscarProductoParaFiar()">
     <div id="resultadosBusquedaFiar" class="resultados-busqueda"></div>
 
+    <!-- Justo debajo de la busqueda, no al fondo del modal: es donde el ojo
+         ya esta puesto cuando se hace clic en "Agregar", asi el aviso de
+         "no hay stock" se ve al toque sin tener que buscarlo mas abajo. -->
+    <div id="mensajeFiar"></div>
+
     <div id="carritoFiar"></div>
     <div class="total">
-      <span>Total</span>
+      <span>Total <small id="unidadesFiar">0 productos</small></span>
       <span id="totalFiar">$0.00</span>
     </div>
 
@@ -263,6 +268,7 @@ function abrirModalFiar(deudorId) {
   document.getElementById("fiadoManualBloque").classList.add("oculto");
   document.getElementById("fiadoManualMonto").value = "";
   document.getElementById("fiadoManualDescripcion").value = "";
+  document.getElementById("mensajeFiar").innerHTML = "";
   document.getElementById("modalFiarFondo").classList.remove("oculto");
 }
 
@@ -317,6 +323,19 @@ function agregarProductoAlFiado(id) {
   if (!producto) return;
 
   const existente = carritoFiar.find(i => i.codigoBarras === producto.codigoBarras);
+  const cantidadActual = existente ? existente.cantidad : 0;
+
+  // El aviso de stock insuficiente se muestra DENTRO del modal (mensajeFiar),
+  // no en el mensaje de la pagina de atras, que queda tapado por el modal.
+  if (cantidadActual + 1 > producto.stockActual) {
+    mostrarMensajeEn("mensajeFiar",
+      producto.stockActual > 0
+        ? `Solo hay ${producto.stockActual} unidades de "${producto.nombre}" en stock`
+        : `"${producto.nombre}" no tiene stock disponible`,
+      "error");
+    return;
+  }
+
   if (existente) {
     existente.cantidad += 1;
   } else {
@@ -324,7 +343,8 @@ function agregarProductoAlFiado(id) {
       codigoBarras: producto.codigoBarras,
       nombre: producto.nombre,
       precio: producto.precioVenta,
-      cantidad: 1
+      cantidad: 1,
+      stockActual: producto.stockActual
     });
   }
   document.getElementById("buscarProductoFiar").value = "";
@@ -332,9 +352,12 @@ function agregarProductoAlFiado(id) {
   renderCarritoFiar();
 }
 
+// Mismo estilo del carrito de Vender: nombre a la izquierda, stepper -/+ y
+// subtotal a la derecha.
 function renderCarritoFiar() {
   const div = document.getElementById("carritoFiar");
   let total = 0;
+  let unidades = 0;
   div.innerHTML = "";
 
   if (carritoFiar.length === 0) {
@@ -344,42 +367,45 @@ function renderCarritoFiar() {
   carritoFiar.forEach((item, idx) => {
     const subtotal = item.precio * item.cantidad;
     total += subtotal;
+    unidades += item.cantidad;
     div.innerHTML += `
-      <div class="item">
-        <div>
-          ${item.nombre}
+      <div class="item item-carrito">
+        <div class="item-carrito-info">
+          <div class="item-carrito-nombre">${item.nombre}</div>
           <small>$${Number(item.precio).toFixed(2)} c/u</small>
         </div>
-        <div style="display:flex; align-items:center; gap:8px">
-          <input type="number" min="1" value="${item.cantidad}" style="width:55px; margin-bottom:0"
-                 onchange="actualizarCantidadFiado(${idx}, this.value)">
-          <span>$${subtotal.toFixed(2)}</span>
-          <button class="secundario" style="width:auto; padding:4px 8px"
-                  onclick="quitarDelFiado(${idx})"><i class="bi bi-x-lg"></i></button>
+        <div class="item-carrito-controles">
+          <button class="secundario btn-cantidad" onclick="cambiarCantidadFiado(${idx}, -1)">−</button>
+          <span class="cantidad-valor">${item.cantidad}</span>
+          <button class="secundario btn-cantidad" onclick="cambiarCantidadFiado(${idx}, 1)">+</button>
+          <span class="item-carrito-subtotal">$${subtotal.toFixed(2)}</span>
         </div>
       </div>`;
   });
   document.getElementById("totalFiar").innerText = `$${total.toFixed(2)}`;
+  document.getElementById("unidadesFiar").innerText = `${unidades} producto${unidades === 1 ? "" : "s"}`;
 }
 
-function actualizarCantidadFiado(idx, valor) {
-  const cantidad = parseInt(valor, 10);
-  if (!cantidad || cantidad < 1) {
-    renderCarritoFiar();
+function cambiarCantidadFiado(idx, delta) {
+  const item = carritoFiar[idx];
+  const nuevaCantidad = item.cantidad + delta;
+
+  if (delta > 0 && nuevaCantidad > item.stockActual) {
+    mostrarMensajeEn("mensajeFiar", `Solo hay ${item.stockActual} unidades de "${item.nombre}" en stock`, "error");
     return;
   }
-  carritoFiar[idx].cantidad = cantidad;
-  renderCarritoFiar();
-}
 
-function quitarDelFiado(idx) {
-  carritoFiar.splice(idx, 1);
+  if (nuevaCantidad < 1) {
+    carritoFiar.splice(idx, 1); // llego a 0: se quita del carrito
+  } else {
+    item.cantidad = nuevaCantidad;
+  }
   renderCarritoFiar();
 }
 
 async function confirmarFiadoProductos() {
   if (carritoFiar.length === 0) {
-    mostrarMensajeEn("mensajeDeudores", "Agrega al menos un producto (o usa el monto manual)", "error");
+    mostrarMensajeEn("mensajeFiar", "Agrega al menos un producto (o usa el monto manual)", "error");
     return;
   }
   try {
@@ -389,11 +415,13 @@ async function confirmarFiadoProductos() {
         items: carritoFiar.map(i => ({ codigoBarras: i.codigoBarras, cantidad: i.cantidad }))
       })
     });
-    mostrarMensajeEn("mensajeDeudores", "Fiado registrado", "ok");
     cerrarModalFiar();
+    mostrarMensajeEn("mensajeDeudores", "Fiado registrado", "ok");
     await cargarDeudores();
   } catch (e) {
-    mostrarMensajeEn("mensajeDeudores", e.message, "error");
+    // Se muestra DENTRO del modal (queda abierto): ej. si entre que se abrio
+    // el modal y se confirmo, otra venta se llevo el stock que faltaba.
+    mostrarMensajeEn("mensajeFiar", e.message, "error");
   }
 }
 
@@ -402,7 +430,7 @@ async function confirmarFiadoManual() {
   const descripcion = document.getElementById("fiadoManualDescripcion").value.trim();
 
   if (!monto || monto <= 0) {
-    mostrarMensajeEn("mensajeDeudores", "Ingresa un monto valido", "error");
+    mostrarMensajeEn("mensajeFiar", "Ingresa un monto valido", "error");
     return;
   }
 
@@ -411,11 +439,11 @@ async function confirmarFiadoManual() {
       method: "POST",
       body: JSON.stringify({ monto, descripcion: descripcion || null })
     });
-    mostrarMensajeEn("mensajeDeudores", "Fiado registrado", "ok");
     cerrarModalFiar();
+    mostrarMensajeEn("mensajeDeudores", "Fiado registrado", "ok");
     await cargarDeudores();
   } catch (e) {
-    mostrarMensajeEn("mensajeDeudores", e.message, "error");
+    mostrarMensajeEn("mensajeFiar", e.message, "error");
   }
 }
 

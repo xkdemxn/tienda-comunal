@@ -2,6 +2,7 @@ package com.tienda.inventario.controller;
 
 import com.tienda.inventario.dto.DeudorRequest;
 import com.tienda.inventario.dto.DeudorResponse;
+import com.tienda.inventario.dto.FiadoEnRangoResponse;
 import com.tienda.inventario.dto.FiadoRequest;
 import com.tienda.inventario.dto.MovimientoDeudaRequest;
 import com.tienda.inventario.dto.MovimientoDeudaResponse;
@@ -11,10 +12,12 @@ import com.tienda.inventario.security.UsuarioPrincipal;
 import com.tienda.inventario.service.DeudorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -43,6 +46,15 @@ public class DeudorController {
     @GetMapping("/{id}/movimientos")
     public ResponseEntity<List<MovimientoDeudaResponse>> historial(@PathVariable Long id) {
         return ResponseEntity.ok(deudorService.historial(id));
+    }
+
+    // Fiados de todos los deudores en un rango (para mostrarlo aparte del
+    // efectivo en Estadisticas/Historial de ventas/Inicio).
+    @GetMapping("/fiado-en-rango")
+    public ResponseEntity<List<FiadoEnRangoResponse>> fiadoEnRango(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime desde,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime hasta) {
+        return ResponseEntity.ok(deudorService.fiadoEnRango(desde, hasta));
     }
 
     @PostMapping("/{id}/fiado")
