@@ -304,14 +304,26 @@ function initSidebar(paginaActiva) {
     if (btn.dataset.soloAdmin === "1" && !esAdmin()) btn.classList.add("oculto");
   });
 
-  const btnHamburguesa = document.getElementById("btnHamburguesa");
+  // Barra de navegacion inferior (solo celular): mismo resaltado de la
+  // pagina activa que el sidebar, pero es una lista aparte (no esta dentro
+  // de .sidebar-nav) porque vive fija al fondo de la pantalla.
+  document.querySelectorAll(".barra-inferior a").forEach(a => {
+    if (a.dataset.pagina === paginaActiva) a.classList.add("activo");
+  });
+
   const sidebar = document.getElementById("sidebar");
   const fondoMovil = document.getElementById("fondoSidebarMovil");
-  if (btnHamburguesa && sidebar && fondoMovil) {
-    btnHamburguesa.addEventListener("click", () => {
-      sidebar.classList.toggle("abierta");
-      fondoMovil.classList.toggle("abierta");
-    });
+  const abrirCerrarSidebarMovil = () => {
+    if (!sidebar || !fondoMovil) return;
+    sidebar.classList.toggle("abierta");
+    fondoMovil.classList.toggle("abierta");
+  };
+
+  const btnHamburguesa = document.getElementById("btnHamburguesa");
+  const btnMasMovil = document.getElementById("btnMasMovil");
+  if (btnHamburguesa) btnHamburguesa.addEventListener("click", abrirCerrarSidebarMovil);
+  if (btnMasMovil) btnMasMovil.addEventListener("click", abrirCerrarSidebarMovil);
+  if (fondoMovil) {
     fondoMovil.addEventListener("click", () => {
       sidebar.classList.remove("abierta");
       fondoMovil.classList.remove("abierta");

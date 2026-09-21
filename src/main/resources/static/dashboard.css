@@ -271,6 +271,73 @@ button.grupo-toggle.abierto .grupo-flecha { transform: rotate(180deg); }
   .contenido { margin-left: 0; }
   .btn-hamburguesa { display: inline-block; }
   .fondo-sidebar-movil.abierta { display: block; }
+  /* Deja espacio abajo para que la barra de navegacion fija no tape el
+     ultimo elemento de la pagina. */
+  .pagina { padding-bottom: 86px; }
+}
+
+/* ---------- Barra de navegacion inferior (solo celular) ----------
+   En desktop la barra lateral ya es comoda (siempre visible, con texto).
+   En celular, en vez de depender solo del menu hamburguesa (que obliga a
+   abrir un cajon para cualquier cosa), los accesos mas usados quedan
+   siempre a un toque del pulgar, abajo - como en cualquier app movil. Las
+   secciones menos frecuentes (Catalogo, Abastecimiento, Reportes, Historial)
+   se ven tocando "Mas", que abre el mismo menu lateral de siempre. */
+.barra-inferior { display: none; }
+@media (max-width: 860px) {
+  .barra-inferior {
+    display: flex;
+    align-items: flex-end;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #ffffff;
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.06);
+    padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
+    z-index: 20;
+  }
+  .barra-inferior a,
+  .barra-inferior button {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 4px 2px;
+    border-radius: 12px;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 10.5px;
+    font-weight: 600;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    width: auto;
+    margin-bottom: 0;
+    box-shadow: none;
+  }
+  .barra-inferior a .bi,
+  .barra-inferior button .bi {
+    font-size: 19px;
+    margin-right: 0;
+  }
+  .barra-inferior a.activo { color: var(--accent); }
+  /* El boton central (Vender) sobresale de la barra, como el boton
+     principal de apps de delivery/POS - marca la accion mas usada. */
+  .barra-inferior .accion-principal {
+    flex: 0 0 56px;
+    width: 56px;
+    height: 56px;
+    margin-top: -22px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+    color: #ffffff;
+    box-shadow: 0 8px 20px rgba(13, 119, 48, 0.35);
+  }
+  .barra-inferior .accion-principal .bi { font-size: 24px; }
 }
 
 /* ---------- INICIO: saludo personalizado ---------- */

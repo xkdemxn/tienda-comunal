@@ -34,7 +34,7 @@
      donde el carrito ya no queda pegado (sticky) como en desktop. */
   .venta-barra-fija { display: none; }
   @media (max-width: 960px) {
-    .pagina-venta { padding-bottom: 92px; }
+    .pagina-venta { padding-bottom: 180px; }
     .venta-barra-fija {
       display: flex;
       align-items: center;
@@ -43,7 +43,9 @@
       position: fixed;
       left: 12px;
       right: 12px;
-      bottom: 12px;
+      /* Encima de la barra de navegacion inferior (que en celular mide
+         unos 70-90px con el "safe area" del notch), no pegada al fondo. */
+      bottom: calc(78px + env(safe-area-inset-bottom));
       background: #ffffff;
       border-radius: 16px;
       padding: 10px 10px 10px 16px;
@@ -166,6 +168,14 @@
   </div>
   <button onclick="confirmarVenta()"><i class="bi bi-check-lg"></i> Confirmar venta</button>
 </div>
+
+<nav class="barra-inferior">
+  <a href="dashboard" data-pagina="inicio"><i class="bi bi-house-door"></i><span>Inicio</span></a>
+  <a href="agregar-stock" data-pagina="agregar-stock"><i class="bi bi-plus-circle"></i><span>Stock</span></a>
+  <a href="venta" data-pagina="venta" class="accion-principal"><i class="bi bi-cart3"></i></a>
+  <a href="deudores" data-pagina="deudores"><i class="bi bi-people"></i><span>Fiar</span></a>
+  <button type="button" id="btnMasMovil"><i class="bi bi-grid-3x3-gap"></i><span>Mas</span></button>
+</nav>
 
 <script src="dashboard.js"></script>
 <script>
