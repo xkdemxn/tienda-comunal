@@ -168,7 +168,7 @@
         </label>
 
         <button onclick="guardarProductoNuevo()">Guardar producto</button>
-        <button class="secundario" onclick="cerrarFormularioNuevo()">Cancelar</button>
+        <button style="margin-top: 10px;" class="secundario" onclick="cerrarFormularioNuevo()">Cancelar</button>
       </div>
 
     </div>
@@ -476,7 +476,7 @@ async function guardarProductoNuevo() {
     precioVenta,
     precioCompra: precioCompraTexto ? parseFloat(precioCompraTexto) : null,
     stockActual: vendidoPorPeso ? 0 : stockActual,
-    stockMinimo: vendidoPorPeso ? 0 : (stockMinimo || 5),
+    stockMinimo: vendidoPorPeso ? 0 : (Number.isNaN(stockMinimo) ? 5 : stockMinimo),
     categoria: categoriaId ? { id: parseInt(categoriaId, 10) } : null,
     codigoBarrasCaja: codigoCaja || null,
     unidadesPorCaja: unidadesPorCajaTexto ? parseInt(unidadesPorCajaTexto, 10) : null,

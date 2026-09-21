@@ -315,7 +315,7 @@ async function guardarEdicionProducto() {
     descripcion: document.getElementById("editDescripcion").value.trim() || null,
     precioVenta,
     precioCompra: precioCompraTexto ? parseFloat(precioCompraTexto) : null,
-    stockMinimo: stockMinimo || 5,
+    stockMinimo: Number.isNaN(stockMinimo) ? 5 : stockMinimo,
     categoria: categoriaId ? { id: parseInt(categoriaId, 10) } : null,
     proveedor: p.proveedor || null,
     codigoBarrasCaja: codigoCaja || null,
