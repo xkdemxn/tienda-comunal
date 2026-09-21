@@ -60,6 +60,18 @@ public class DeudorService {
         deudorRepository.save(deudor);
     }
 
+    // Borra TODOS los movimientos de deuda (fiados y abonos) de TODOS los
+    // deudores, dejando cada saldo en $0.00 - pero sin tocar la tabla de
+    // deudores (nombres/telefonos quedan intactos). deleteAll() borra
+    // entidad por entidad (no es un DELETE masivo crudo), asi que cascadea
+    // correctamente a DetalleFiado via el cascade=ALL/orphanRemoval de
+    // MovimientoDeuda.detalles. Accion irreversible, protegida ademas por
+    // ADMIN + confirmacion explicita en el controller.
+    @Transactional
+    public void resetearDeudas() {
+        movimientoDeudaRepository.deleteAll();
+    }
+
     public List<MovimientoDeudaResponse> historial(Long deudorId) {
         return movimientoDeudaRepository.findByDeudorIdOrderByFechaDesc(deudorId).stream()
                 .map(this::mapear)

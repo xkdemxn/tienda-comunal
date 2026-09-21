@@ -80,6 +80,9 @@ public class SecurityConfig {
                         .requestMatchers("GET", "/api/productos/**").hasAnyRole("ADMIN", "VENDEDOR")
                         // registrar ventas: admin y vendedor
                         .requestMatchers("/api/ventas/**").hasAnyRole("ADMIN", "VENDEDOR")
+                        // resetear TODO el historial de deudas es destructivo e irreversible:
+                        // solo ADMIN, a diferencia del resto de /api/deudores/** de abajo
+                        .requestMatchers("/api/deudores/reset").hasRole("ADMIN")
                         // fiar/abonar: admin y vendedor (se hace en el mostrador, como una venta)
                         .requestMatchers("/api/deudores/**").hasAnyRole("ADMIN", "VENDEDOR")
                         // agregar stock: admin y vendedor pueden sumar stock (ajuste positivo);

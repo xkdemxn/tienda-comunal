@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/deudores")
@@ -40,6 +41,21 @@ public class DeudorController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> desactivar(@PathVariable Long id) {
         deudorService.desactivar(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // Borra TODO el historial de fiados/abonos (todos los deudores quedan en
+    // $0.00), sin borrar la lista de deudores. Solo ADMIN (restringido tambien
+    // en SecurityConfig, no solo aca) y requiere confirmar a mano con el texto
+    // exacto para que no se dispare por accidente desde Postman/un script.
+    @PostMapping("/reset")
+    public ResponseEntity<Void> resetearDeudas(@RequestBody(required = false) Map<String, String> body) {
+        String confirmacion = body != null ? body.get("confirmacion") : null;
+        if (!"RESETEAR DEUDAS".equals(confirmacion)) {
+            throw new IllegalArgumentException(
+                    "Falta confirmar. Envia { \"confirmacion\": \"RESETEAR DEUDAS\" } en el body para continuar.");
+        }
+        deudorService.resetearDeudas();
         return ResponseEntity.noContent().build();
     }
 
