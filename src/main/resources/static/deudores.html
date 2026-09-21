@@ -242,7 +242,18 @@ async function crearDeudor() {
 }
 
 async function eliminarDeudor(id) {
-  if (!confirm("¿Eliminar este deudor de la lista?")) return;
+  const deudor = deudores.find(d => d.id === id);
+  const saldo = deudor ? Number(deudor.saldoActual) : 0;
+
+  // Si todavia debe algo, "eliminar" no cobra esa deuda - solo la saca de la
+  // lista de deudores activos. Eso hace que desaparezca de "Deuda total
+  // pendiente" y del cierre de caja de Fiscalizacion como si se hubiera
+  // pagado, aunque nadie pago nada. Se avisa explicito antes de continuar.
+  const mensaje = saldo > 0
+    ? `"${deudor.nombre}" todavia debe $${saldo.toFixed(2)}. Si lo eliminas, esa deuda deja de contarse en "Deuda total pendiente" y en el cierre de caja de Fiscalizacion (como si ya se hubiera pagado), aunque en realidad nadie la pago. ¿Eliminarlo de todas formas?`
+    : "¿Eliminar este deudor de la lista?";
+
+  if (!confirm(mensaje)) return;
   try {
     await apiFetch(`/deudores/${id}`, { method: "DELETE" });
     mostrarMensajeEn("mensajeDeudores", "Deudor eliminado", "ok");
