@@ -1023,6 +1023,9 @@ button.secundario.activo {
   .login-card-grande { flex-direction: column; border-radius: 18px; min-height: 0; }
   .login-imagen { flex: 0 0 220px; padding: 14px; }
   .login-form-col { padding: 28px 24px; }
+  /* El banner de arriba ya cumple ese rol - repetir logo/titulo aca abajo
+     es redundante y ocupa espacio de sobra en pantallas chicas. */
+  .login-form-header { display: none; }
 }
 
 /* Campos con icono a la izquierda + boton de mostrar/ocultar contrasena. */
@@ -1045,7 +1048,7 @@ button.secundario.activo {
    al pasar el mouse o enfocar - mas facil de leer mientras se escribe. */
 .login-form-col .campo-icono input {
   background: rgba(255, 255, 255, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  border: 1.5px solid rgba(15, 23, 42, 0.3);
   border-radius: 999px;
   color: var(--text);
 }
