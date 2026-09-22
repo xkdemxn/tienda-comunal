@@ -19,4 +19,13 @@ COPY --from=build /app/target/*.jar app.jar
 # Railway inyecta la variable PORT; la app ya esta configurada para leerla
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Flags para achicar la memoria reservada (Railway cobra por GB-minuto, sin
+# esto la JVM asume que puede usar hasta el limite del contenedor):
+#   MaxRAMPercentage: el heap solo puede crecer hasta el 65% de la memoria
+#     que Railway le asigne al contenedor (deja margen para stacks de
+#     threads, metaspace, etc. que no son parte del heap).
+#   UseSerialGC: para una app de una sola tienda con poco trafico, el
+#     recolector G1 (el que usa por defecto) reserva mas memoria de la que
+#     realmente hace falta; el recolector serial es mas chico y mas simple,
+#     el pequeno costo en velocidad de recoleccion no se nota a esta escala.
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=65.0", "-XX:+UseSerialGC", "-jar", "app.jar"]

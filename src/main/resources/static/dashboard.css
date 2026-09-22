@@ -914,8 +914,6 @@ button.secundario.activo {
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  background: url(img/fondoas.jpg) no-repeat center center;
-  background-size: cover;
 
 }
 .login-fondo {
@@ -957,12 +955,6 @@ button.secundario.activo {
 @media (prefers-reduced-motion: reduce) {
   .login-fondo .orbe { animation: none; }
 }
-.login-fila {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
 .login-wrap {
   position: relative;
   z-index: 1;
@@ -973,88 +965,69 @@ button.secundario.activo {
   padding: 16px;
 }
 
-.login-logo {
-  width: 170px;
-  height: 170px;
-  display: block;
-  margin: 0 auto 0;
+/* ---------- Tarjeta grande dividida en dos: imagen (la agrega el usuario)
+   a la izquierda + formulario a la derecha, flotando sobre el fondo. ---------- */
+.login-card-grande {
+  display: flex;
+  width: 100%;
+  max-width: 860px;
+  min-height: 460px;
+  /* Vidrio esmerilado: se ve el fondo de la pagina de fondo detras, difuminado,
+     en vez de una tarjeta blanca solida. */
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 24px;
+  box-shadow: 0 25px 60px rgba(15, 23, 42, .15);
+  animation: aparecer 0.35s ease;
 }
-
-.login-logo img {
+.login-imagen {
+  flex: 1;
+  min-width: 0;
+  /* Marco: la imagen queda separada del borde de la tarjeta por este padding,
+     como una foto dentro de un passe-partout, en vez de pegada borde a borde. */
+  padding: 18px;
+  display: flex;
+}
+.login-imagen img {
   width: 100%;
   height: 100%;
-}
-
-.login-box { width: 100%; max-width: 380px; animation: aparecer 0.35s ease; }
-.login-box-titulo {
-  text-align: center;
-  color: var(--text);
-  margin: 14px 0 20px;
-  font-size: 22px;
-  line-height: 1.35;
-}
-.login-box-titulo small {
+  object-fit: contain;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #e6e6e6, #fffbf8);
   display: block;
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--muted);
-  margin-top: 6px;
-}
-.login-card-titulo { font-size: 18px; margin: 0 0 16px; }
-
-/* ---------- Panel de marca (solo pantallas anchas): logo + nombre grande a
-   la izquierda, tarjeta de login desplazada a la derecha - en celular no
-   entra la columna, asi que se oculta y la tarjeta trae su propio logo. */
-.login-marca { display: none; }
-@media (min-width: 900px) {
-  .login-fila { flex-direction: row; }
-  .login-marca {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 40px;
-    position: relative;
-    z-index: 1;
-    flex: 1;
-    padding: 0 40px 0 64px;
-    max-width: 620px;
-  }
-  .login-marca-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-weight: 700;
-    font-size: 15px;
-    color: var(--text);
-  }
-  .login-marca-header img { width: 32px; height: 32px; }
-  .login-marca-wordmark h1 {
-    font-size: 56px;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    margin: 0;
-    background: linear-gradient(135deg, var(--accent-dark), var(--accent) 60%, #34d399);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-  .login-marca-wordmark p {
-    margin: 10px 0 0;
-    color: var(--muted);
-    font-size: 15px;
-    line-height: 1.5;
-  }
-  .login-wrap { justify-content: flex-end; padding-right: 64px; flex: 1; }
-  .login-logo, .login-box-titulo { display: none; }
 }
 
-/* La tarjeta y los inputs del login ya no necesitan estilos propios: al
-   quedar sobre fondo claro, el .card y los input/button generales de la app
-   (blancos, con sombra, boton en degradado verde) quedan bien tal cual. */
+.login-form-col {
+  flex: 1;
+  min-width: 0;
+  padding: 48px 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.login-form-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.login-logo-chico { width: 44px; height: 44px; flex-shrink: 0; }
+.login-form-header h1 { margin: 0; font-size: 24px; font-weight: 800; color: var(--text); line-height: 1.2; }
+.login-form-header p { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+
+@media (max-width: 760px) {
+  /* En celular no se oculta la imagen: pasa a ser un banner arriba (como
+     una pantalla de app movil), con el formulario debajo apilado. */
+  .login-card-grande { flex-direction: column; border-radius: 18px; min-height: 0; }
+  .login-imagen { flex: 0 0 220px; padding: 14px; }
+  .login-form-col { padding: 28px 24px; }
+}
 
 /* Campos con icono a la izquierda + boton de mostrar/ocultar contrasena. */
-.login-box .campo-icono { position: relative; margin-bottom: 10px; }
-.login-box .campo-icono > .bi {
+.campo-icono { position: relative; margin-bottom: 10px; }
+.campo-icono > .bi {
   position: absolute;
   left: 14px;
   top: 50%;
@@ -1064,9 +1037,38 @@ button.secundario.activo {
   margin-right: 0;
   pointer-events: none;
 }
-.login-box .campo-icono input { padding-left: 40px; margin-bottom: 0; }
-.login-box .campo-icono input.input-password { padding-right: 40px; }
-.login-box .campo-icono .toggle-password {
+.campo-icono input { padding-left: 40px; margin-bottom: 0; }
+.campo-icono input.input-password { padding-right: 40px; }
+
+/* Inputs del login: transparentes/con vidrio por defecto (para que se note
+   el efecto de fondo difuminado de la tarjeta), y se "invierten" a solidos
+   al pasar el mouse o enfocar - mas facil de leer mientras se escribe. */
+.login-form-col .campo-icono input {
+  background: rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  color: var(--text);
+}
+.login-form-col .campo-icono input.input-password { padding-right: 44px; }
+.login-form-col .campo-icono > .bi { left: 18px; }
+.login-form-col .campo-icono input::placeholder { color: rgba(15, 23, 42, 0.55); }
+.login-form-col .campo-icono input:hover,
+.login-form-col .campo-icono input:focus {
+  background: #ffffff;
+  border-color: var(--accent-dark);
+  box-shadow: 0 0 0 3px rgba(17, 107, 50, 0.15);
+}
+
+/* Boton de "Iniciar sesion": verde mas oscuro que el resto de los botones
+   de la app (aca resalta mejor sobre la tarjeta de vidrio). */
+#btnLogin {
+  background: linear-gradient(135deg, var(--accent-dark), #0a4d21);
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(10, 77, 33, 0.35);
+}
+#btnLogin:hover { box-shadow: 0 6px 18px rgba(10, 77, 33, 0.4); }
+#btnLogin:active { background: #0a4d21; }
+.campo-icono .toggle-password {
   position: absolute;
   right: 4px;
   top: 50%;
@@ -1080,8 +1082,8 @@ button.secundario.activo {
   cursor: pointer;
   margin-bottom: 0;
 }
-.login-box .campo-icono .toggle-password:hover { color: var(--text); transform: translateY(-50%); }
-.login-box .campo-icono .toggle-password .bi { margin-right: 0; font-size: 15px; }
+.campo-icono .toggle-password:hover { color: var(--text); transform: translateY(-50%); }
+.campo-icono .toggle-password .bi { margin-right: 0; font-size: 15px; }
 .login-footer {
   position: relative;
   z-index: 1;
