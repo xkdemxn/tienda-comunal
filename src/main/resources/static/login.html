@@ -31,29 +31,48 @@
   <div class="login-wrap">
     <div class="login-card-grande" id="loginCard">
       <div class="login-imagen">
+        <div class="abarrotes-flotantes" aria-hidden="true">
+          <i class="bi bi-basket3 ab-1"></i>
+          <i class="bi bi-bag-fill ab-2"></i>
+          <i class="bi bi-cup-straw ab-3"></i>
+          <i class="bi bi-egg-fried ab-4"></i>
+          <i class="bi bi-box-seam ab-5"></i>
+          <i class="bi bi-basket2 ab-6"></i>
+        </div>
         <img src="img/controltienda.png" alt="Control de tienda" class="login-card-img">
       </div>
 
       <div class="login-form-col">
         <div class="login-form-header">
-          <img class="login-logo-chico" src="img/logoL.png" alt="Logo de la tienda">
+          <div class="ia-puntos-grupo" aria-hidden="true">
+            <div class="brazo brazo-1"><span class="punto punto-celeste"></span></div>
+            <div class="brazo brazo-2"><span class="punto punto-morado"></span></div>
+            <div class="brazo brazo-3"><span class="punto punto-rosado"></span></div>
+            <div class="brazo brazo-4"><span class="punto punto-celeste-opaco"></span></div>
+          </div>
           <div>
             <h1>Iniciar sesión</h1>
             <p>Tienda Prueba</p>
           </div>
         </div>
 
-        <div class="campo-icono">
-          <i class="bi bi-envelope"></i>
-          <input type="email" id="email" placeholder="Correo de Acceso" onkeydown="if(event.key==='Enter') login()">
+        <div class="campo-subrayado">
+          <label for="email">Usuario de Acceso</label>
+          <div class="campo-icono">
+            <i class="bi bi-person"></i>
+            <input type="text" id="email" autocomplete="username" placeholder="Usuario de acceso" onkeydown="if(event.key==='Enter') login()">
+          </div>
         </div>
-        <div class="campo-icono">
-          <i class="bi bi-lock"></i>
-          <input type="password" id="password" class="input-password" placeholder="Contraseña"
-                 onkeydown="if(event.key==='Enter') login()">
-          <button type="button" class="toggle-password" onclick="togglePassword()" tabindex="-1" title="Mostrar/ocultar contrasena">
-            <i class="bi bi-eye" id="iconoTogglePassword"></i>
-          </button>
+        <div class="campo-subrayado">
+          <label for="password">Contraseña</label>
+          <div class="campo-icono">
+            <i class="bi bi-lock"></i>
+            <input type="password" id="password" class="input-password" placeholder="••••••••"
+                   onkeydown="if(event.key==='Enter') login()">
+            <button type="button" class="toggle-password" onclick="togglePassword()" tabindex="-1" title="Mostrar/ocultar contrasena">
+              <i class="bi bi-eye" id="iconoTogglePassword"></i>
+            </button>
+          </div>
         </div>
 
         <button id="btnLogin" onclick="login()">Iniciar sesion</button>

@@ -1,6 +1,5 @@
 package com.tienda.inventario.dto;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -13,8 +12,10 @@ public class RegistroRequest {
     @NotBlank
     private String nombre;
 
+    // Se sigue llamando "email" por dentro (mismo campo/columna de siempre),
+    // pero ya no exige formato de correo: es el "usuario de acceso", puede
+    // ser cualquier texto (ej. "cajero1").
     @NotBlank
-    @Email
     private String email;
 
     @NotBlank

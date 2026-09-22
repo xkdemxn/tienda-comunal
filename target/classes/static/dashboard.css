@@ -914,8 +914,10 @@ button.secundario.activo {
   flex-direction: column;
   position: relative;
   overflow: hidden;
-
+  /* background: linear-gradient(135deg, #0d7730 0%, #0a5c26 55%, #06371a 100%); */
 }
+
+
 .login-fondo {
   position: absolute;
   inset: 0;
@@ -955,6 +957,60 @@ button.secundario.activo {
 @media (prefers-reduced-motion: reduce) {
   .login-fondo .orbe { animation: none; }
 }
+
+/* ---------- 4 puntos de colores: giran juntos 360 grados sin parar, y a
+   la vez se alejan/acercan del centro (se juntan casi en un punto y vuelven
+   a expandirse). Cada "brazo" tiene un angulo fijo (0/90/180/270) y adentro
+   el punto anima su distancia al centro - asi se mueve en linea recta sobre
+   ese angulo, y como el grupo entero gira, se ve como si diera vueltas.
+   Diseño propio, puro CSS, sin imagenes - cero peso de red. Va en linea
+   dentro del encabezado de la tarjeta, del mismo tamaño que tenia el logo
+   (no flota suelto por la pagina). ---------- */
+.ia-puntos-grupo {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  animation: girarGrupo 6s linear infinite;
+}
+.brazo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+}
+.brazo-1 { transform: rotate(0deg); }
+.brazo-2 { transform: rotate(90deg); }
+.brazo-3 { transform: rotate(180deg); }
+.brazo-4 { transform: rotate(270deg); }
+
+.punto {
+  position: absolute;
+  top: -3.5px;
+  left: -3.5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  animation: juntarYExpandir 2.4s ease-in-out infinite;
+}
+.punto-celeste { background: #0045a0; }
+.punto-morado { background: #00e5ff;  }
+.punto-rosado { background: #0045a0; }
+.punto-celeste-opaco { background: #00e5ff;  }
+
+@keyframes juntarYExpandir {
+  0%, 100% { transform: translateX(3px); }
+  50% { transform: translateX(17px); }
+}
+@keyframes girarGrupo {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ia-puntos-grupo, .punto { animation: none; }
+}
+
 .login-wrap {
   position: relative;
   z-index: 1;
@@ -972,31 +1028,63 @@ button.secundario.activo {
   width: 100%;
   max-width: 860px;
   min-height: 460px;
-  /* Vidrio esmerilado: se ve el fondo de la pagina de fondo detras, difuminado,
-     en vez de una tarjeta blanca solida. */
-  background: rgba(255, 255, 255, 0.45);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  /* Blanco solido y opaco: sobre el fondo en degradado se ve mejor una
+     tarjeta nitida que una de vidrio (el efecto de vidrio se notaba mas
+     sobre una foto, no sobre un color plano). */
+  background: #ffffff;
   border-radius: 24px;
-  box-shadow: 0 25px 60px rgba(15, 23, 42, .15);
+  box-shadow: 0 25px 60px rgba(6, 55, 26, .35);
   animation: aparecer 0.35s ease;
+  padding: 15px;
 }
 .login-imagen {
+  position: relative;
   flex: 1;
   min-width: 0;
+  overflow: hidden;
   /* Marco: la imagen queda separada del borde de la tarjeta por este padding,
      como una foto dentro de un passe-partout, en vez de pegada borde a borde. */
-  padding: 18px;
   display: flex;
+  /* Fondo detras de la imagen (se nota en el marco y si la imagen tiene
+     transparencia) - aca "flotan" los iconos de abarrotes. */
+  background:#cccccc26;
+  border-radius: 18px;
+
+
 }
+
 .login-imagen img {
+  position: relative;
+  z-index: 1;
   width: 100%;
   height: 100%;
   object-fit: contain;
   border-radius: 18px;
-  background: linear-gradient(135deg, #e6e6e6, #fffbf8);
   display: block;
+}
+
+/* Iconos de "abarrotes" flotando detras de la foto - puro Bootstrap Icons
+   (ya cargado en la pagina, cero peso extra) con un vaivén suave, cada uno
+   a su propio ritmo. Solo decorativo. */
+.abarrotes-flotantes { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.abarrotes-flotantes .bi {
+  position: absolute;
+  margin-right: 0;
+  color: #06371a46;
+  animation: flotarAbarrote 6s ease-in-out infinite;
+}
+.ab-1 { top: 8%; left: 10%; font-size: 34px; animation-duration: 7s; }
+.ab-2 { top: 58%; left: 8%; font-size: 26px; animation-duration: 5.5s; animation-delay: .8s; color: rgba(255, 255, 255, .25); }
+.ab-3 { top: 14%; right: 10%; font-size: 30px; animation-duration: 6.5s; animation-delay: 1.6s; }
+.ab-4 { bottom: 10%; right: 16%; font-size: 24px; animation-duration: 5s; animation-delay: .4s; color: rgba(255, 255, 255, .25); }
+.ab-5 { bottom: 20%; left: 22%; font-size: 22px; animation-duration: 6s; animation-delay: 2s; }
+.ab-6 { top: 42%; right: 24%; font-size: 20px; animation-duration: 7.5s; animation-delay: 1s; color: rgba(255, 255, 255, .2); }
+@keyframes flotarAbarrote {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-14px) rotate(8deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .abarrotes-flotantes .bi { animation: none; }
 }
 
 .login-form-col {
@@ -1021,11 +1109,21 @@ button.secundario.activo {
   /* En celular no se oculta la imagen: pasa a ser un banner arriba (como
      una pantalla de app movil), con el formulario debajo apilado. */
   .login-card-grande { flex-direction: column; border-radius: 18px; min-height: 0; }
-  .login-imagen { flex: 0 0 220px; padding: 14px; }
-  .login-form-col { padding: 28px 24px; }
+  .login-imagen {padding: 24px; }
+
   /* El banner de arriba ya cumple ese rol - repetir logo/titulo aca abajo
      es redundante y ocupa espacio de sobra en pantallas chicas. */
-  .login-form-header { display: none; }
+}
+
+/* Etiqueta chica arriba de cada campo (ej. "Correo Electronico") */
+.campo-subrayado { margin-bottom: 20px; }
+.campo-subrayado label {
+  margin-top: 10px;
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 6px;
 }
 
 /* Campos con icono a la izquierda + boton de mostrar/ocultar contrasena. */
@@ -1043,23 +1141,28 @@ button.secundario.activo {
 .campo-icono input { padding-left: 40px; margin-bottom: 0; }
 .campo-icono input.input-password { padding-right: 40px; }
 
-/* Inputs del login: transparentes/con vidrio por defecto (para que se note
-   el efecto de fondo difuminado de la tarjeta), y se "invierten" a solidos
-   al pasar el mouse o enfocar - mas facil de leer mientras se escribe. */
+/* Inputs del login: subrayado (sin caja ni fondo), como una linea que se
+   pinta de verde al enfocar - mas minimalista que un input con borde
+   completo alrededor. */
+.login-form-col .campo-subrayado { margin-bottom: 0; }
+.login-form-col .campo-icono { margin-bottom: 0; }
 .login-form-col .campo-icono input {
-  background: rgba(255, 255, 255, 0.25);
-  border: 1.5px solid rgba(15, 23, 42, 0.3);
-  border-radius: 999px;
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px solid rgba(15, 23, 42, 0.2);
+  border-radius: 0;
+  padding-left: 28px;
+  padding-bottom: 8px;
   color: var(--text);
+  transition: border-color 0.15s ease;
 }
-.login-form-col .campo-icono input.input-password { padding-right: 44px; }
-.login-form-col .campo-icono > .bi { left: 18px; }
-.login-form-col .campo-icono input::placeholder { color: rgba(15, 23, 42, 0.55); }
-.login-form-col .campo-icono input:hover,
+.login-form-col .campo-icono > .bi { left: 0; color: var(--muted); }
+.login-form-col .campo-icono input.input-password { padding-right: 34px; }
+.login-form-col .campo-icono input::placeholder { color: rgba(15, 23, 42, 0.35); }
+.login-form-col .campo-icono input:hover { border-bottom-color: rgba(15, 23, 42, 0.4); }
 .login-form-col .campo-icono input:focus {
-  background: #ffffff;
-  border-color: var(--accent-dark);
-  box-shadow: 0 0 0 3px rgba(17, 107, 50, 0.15);
+  border-bottom-color: var(--accent-dark);
+  box-shadow: none;
 }
 
 /* Boton de "Iniciar sesion": verde mas oscuro que el resto de los botones
@@ -1068,6 +1171,7 @@ button.secundario.activo {
   background: linear-gradient(135deg, var(--accent-dark), #0a4d21);
   border-radius: 999px;
   box-shadow: 0 4px 14px rgba(10, 77, 33, 0.35);
+  margin-top: 20px;
 }
 #btnLogin:hover { box-shadow: 0 6px 18px rgba(10, 77, 33, 0.4); }
 #btnLogin:active { background: #0a4d21; }
