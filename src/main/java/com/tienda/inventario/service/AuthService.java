@@ -61,8 +61,8 @@ public class AuthService {
     }
 
     private Usuario crearUsuarioInterno(RegistroRequest request, RolNombre rolNombre) {
-        if (usuarioRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Ya existe un usuario con ese email");
+        if (usuarioRepository.existsByEmail(request.getUsuario())) {
+            throw new IllegalArgumentException("Ya existe un usuario con ese nombre de acceso");
         }
 
         Rol rol = rolRepository.findByNombre(rolNombre)
@@ -74,7 +74,7 @@ public class AuthService {
 
         Usuario usuario = new Usuario();
         usuario.setNombre(request.getNombre());
-        usuario.setEmail(request.getEmail());
+        usuario.setEmail(request.getUsuario());
         usuario.setPassword(passwordEncoder.encode(request.getPassword()));
         usuario.setRoles(roles);
         usuario.setActivo(true);
@@ -109,10 +109,10 @@ public class AuthService {
 
     public AuthResponse login(LoginRequest request) {
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+                new UsernamePasswordAuthenticationToken(request.getUsuario(), request.getPassword())
         );
 
-        Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
+        Usuario usuario = usuarioRepository.findByEmail(request.getUsuario())
                 .orElseThrow(() -> new IllegalArgumentException("Credenciales invalidas"));
 
         UsuarioPrincipal principal = new UsuarioPrincipal(usuario);

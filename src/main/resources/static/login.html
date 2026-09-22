@@ -69,14 +69,14 @@
             <i class="bi bi-lock"></i>
             <input type="password" id="password" class="input-password" placeholder="••••••••"
                    onkeydown="if(event.key==='Enter') login()">
-            <button type="button" class="toggle-password" onclick="togglePassword()" tabindex="-1" title="Mostrar/ocultar contrasena">
+            <button type="button" class="toggle-password" onclick="togglePassword()" tabindex="-1" title="Mostrar/ocultar contraseña">
               <i class="bi bi-eye" id="iconoTogglePassword"></i>
             </button>
           </div>
         </div>
 
-        <button id="btnLogin" onclick="login()">Iniciar sesion</button>
-        <div id="loginMsg"></div>
+        <button id="btnLogin" onclick="login()">Ingresar</button>
+        <div style="margin-top: 10px;" id="loginMsg"></div>
       </div>
     </div>
   </div>
@@ -88,14 +88,11 @@
 
 <script src="dashboard.js"></script>
 <script>
-// Si ya hay sesion, no tiene sentido mostrar el login de nuevo
 if (getToken()) {
   window.location.href = "dashboard";
 }
 
-// Si llegamos aca porque cerrarSesionPorTokenInvalido() nos mando (token
-// vencido/invalido a mitad de uso), mostramos el porque en vez de dejar
-// que parezca un login normal sin explicacion.
+
 const mensajePendiente = localStorage.getItem("mensajeLogin");
 if (mensajePendiente) {
   document.getElementById("loginMsg").innerHTML = `<div class="msg error"><i class="bi bi-exclamation-circle-fill"></i><span>${mensajePendiente}</span></div>`;
@@ -111,7 +108,7 @@ function togglePassword() {
 }
 
 async function login() {
-  const email = document.getElementById("email").value;
+  const usuario = document.getElementById("email").value;
   const password = document.getElementById("password").value;
   const msgDiv = document.getElementById("loginMsg");
   const btn = document.getElementById("btnLogin");
@@ -124,9 +121,9 @@ async function login() {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ usuario, password })
     });
-    if (!res.ok) throw new Error((await res.json()).mensaje || "Error al iniciar sesion");
+    if (!res.ok) throw new Error((await res.json()).mensaje || "Error al iniciar sesión");
 
     const data = await res.json();
     localStorage.setItem("token", data.token);

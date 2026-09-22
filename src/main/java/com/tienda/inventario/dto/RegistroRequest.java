@@ -12,11 +12,11 @@ public class RegistroRequest {
     @NotBlank
     private String nombre;
 
-    // Se sigue llamando "email" por dentro (mismo campo/columna de siempre),
-    // pero ya no exige formato de correo: es el "usuario de acceso", puede
-    // ser cualquier texto (ej. "cajero1").
+    // DTO de peticion, no toca la base de datos: el campo se llama "usuario"
+    // para que los mensajes de validacion digan "usuario" y no "email"
+    // (la entidad Usuario/columna de la BD se sigue llamando "email").
     @NotBlank
-    private String email;
+    private String usuario;
 
     @NotBlank
     @Size(min = 6, message = "La contrasena debe tener al menos 6 caracteres")

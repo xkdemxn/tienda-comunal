@@ -9,6 +9,7 @@ import com.tienda.inventario.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -49,6 +50,14 @@ public class UsuarioController {
     public ResponseEntity<Void> resetearPassword(@PathVariable Long id,
                                                   @Valid @RequestBody NuevaPasswordRequest request) {
         authService.resetearPassword(id, request.passwordNueva());
+        return ResponseEntity.noContent().build();
+    }
+
+    // Elimina un usuario (ej: cuentas de prueba o empleados que ya no trabajan
+    // en la tienda). Solo llega hasta aca si esta logueado como ADMIN.
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        usuarioRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 

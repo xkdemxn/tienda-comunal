@@ -8,11 +8,11 @@ import lombok.Setter;
 @Setter
 public class LoginRequest {
 
-    // Se sigue llamando "email" por dentro (mismo campo/columna de siempre,
-    // sin tocar la base de datos), pero ya no exige formato de correo: el
-    // login es por "usuario de acceso", puede ser cualquier texto.
+    // DTO de peticion, no toca la base de datos: el campo se llama "usuario"
+    // para que los mensajes de validacion digan "usuario" y no "email"
+    // (la entidad Usuario/columna de la BD se sigue llamando "email").
     @NotBlank
-    private String email;
+    private String usuario;
 
     @NotBlank
     private String password;

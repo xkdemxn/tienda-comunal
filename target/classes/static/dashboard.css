@@ -421,6 +421,7 @@ button.grupo-toggle.abierto .grupo-flecha { transform: rotate(180deg); }
 .stat-card .valor.valor-azul { color: #000000; }
 .stat-card .etiqueta { font-size: 13px; color: var(--muted); }
 .stat-card .tendencia {
+  
   font-size: 12px;
   font-weight: 600;
   display: inline-flex;
@@ -1174,14 +1175,16 @@ button.secundario.activo {
 /* Boton de "Iniciar sesion": verde mas oscuro que el resto de los botones
    de la app (aca resalta mejor sobre la tarjeta de vidrio). */
 #btnLogin {
-  background: linear-gradient(135deg, var(--accent-dark), #0a4d21);
+  background: rgb(10, 77, 33);;
+
   border-radius: 999px;
-  box-shadow: 0 4px 14px rgba(10, 77, 33, 0.35);
+  
   margin-top: 20px;
 }
-#btnLogin:hover { box-shadow: 0 6px 18px rgba(10, 77, 33, 0.4); }
-#btnLogin:active { background: #0a4d21; }
+#btnLogin:hover {background: #000000; box-shadow: 0 0 3px rgba(10, 77, 33, 0.4); scale: 1; transform: translateY(0); }
+#btnLogin:active { background: #000000; }
 .campo-icono .toggle-password {
+  
   position: absolute;
   right: 4px;
   top: 50%;
@@ -1193,7 +1196,7 @@ button.secundario.activo {
   box-shadow: none;
   color: var(--muted);
   cursor: pointer;
-  margin-bottom: 0;
+  margin-bottom: 10px;
 }
 .campo-icono .toggle-password:hover { color: var(--text); transform: translateY(-50%); }
 .campo-icono .toggle-password .bi { margin-right: 0; font-size: 15px; }
