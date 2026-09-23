@@ -35,10 +35,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         String token = authHeader.substring(7);
-        String email;
+        String usuario;
 
         try {
-            email = jwtUtil.extraerEmail(token);
+            usuario = jwtUtil.extraerUsuario(token);
         } catch (Exception e) {
             // token invalido o expirado: dejamos pasar sin autenticar,
             // Spring Security se encarga de rechazar el endpoint protegido
@@ -46,8 +46,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = usuarioDetailsService.loadUserByUsername(email);
+        if (usuario != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            UserDetails userDetails = usuarioDetailsService.loadUserByUsername(usuario);
 
             if (jwtUtil.esTokenValido(token, userDetails.getUsername())) {
                 UsernamePasswordAuthenticationToken authToken =

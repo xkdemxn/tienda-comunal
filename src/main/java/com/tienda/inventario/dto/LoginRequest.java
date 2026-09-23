@@ -11,9 +11,9 @@ public class LoginRequest {
     // DTO de peticion, no toca la base de datos: el campo se llama "usuario"
     // para que los mensajes de validacion digan "usuario" y no "email"
     // (la entidad Usuario/columna de la BD se sigue llamando "email").
-    @NotBlank
+    @NotBlank(message = "no debe estar vacio")
     private String usuario;
 
-    @NotBlank
+    @NotBlank(message = "no debe estar vacia")
     private String password;
 }

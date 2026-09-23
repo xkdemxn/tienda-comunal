@@ -6,7 +6,7 @@ import java.util.List;
 public record UsuarioResponse(
         Long id,
         String nombre,
-        String email,
+        String usuario,
         Boolean activo,
         List<String> roles,
         LocalDateTime creadoEn

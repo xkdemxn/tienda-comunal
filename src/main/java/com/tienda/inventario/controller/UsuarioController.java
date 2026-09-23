@@ -65,7 +65,7 @@ public class UsuarioController {
         return new UsuarioResponse(
                 u.getId(),
                 u.getNombre(),
-                u.getEmail(),
+                u.getUsuario(),
                 u.getActivo(),
                 u.getRoles().stream().map(r -> r.getNombre().name()).toList(),
                 u.getCreadoEn()

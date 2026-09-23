@@ -43,13 +43,13 @@ public class JwtUtil {
                 .compact();
     }
 
-    public String extraerEmail(String token) {
+    public String extraerUsuario(String token) {
         return extraerClaim(token, Claims::getSubject);
     }
 
-    public boolean esTokenValido(String token, String email) {
-        String emailToken = extraerEmail(token);
-        return emailToken.equals(email) && !esTokenExpirado(token);
+    public boolean esTokenValido(String token, String usuario) {
+        String usuarioToken = extraerUsuario(token);
+        return usuarioToken.equals(usuario) && !esTokenExpirado(token);
     }
 
     private boolean esTokenExpirado(String token) {

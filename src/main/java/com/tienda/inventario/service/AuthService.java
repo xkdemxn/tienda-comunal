@@ -41,7 +41,7 @@ public class AuthService {
         UsuarioPrincipal principal = new UsuarioPrincipal(usuario);
         String token = jwtUtil.generarToken(principal);
 
-        return new AuthResponse(token, usuario.getEmail(), usuario.getNombre(),
+        return new AuthResponse(token, usuario.getUsuario(), usuario.getNombre(),
                 List.of("ROLE_VENDEDOR"));
     }
 
@@ -61,7 +61,7 @@ public class AuthService {
     }
 
     private Usuario crearUsuarioInterno(RegistroRequest request, RolNombre rolNombre) {
-        if (usuarioRepository.existsByEmail(request.getUsuario())) {
+        if (usuarioRepository.existsByUsuario(request.getUsuario())) {
             throw new IllegalArgumentException("Ya existe un usuario con ese nombre de acceso");
         }
 
@@ -74,7 +74,7 @@ public class AuthService {
 
         Usuario usuario = new Usuario();
         usuario.setNombre(request.getNombre());
-        usuario.setEmail(request.getUsuario());
+        usuario.setUsuario(request.getUsuario());
         usuario.setPassword(passwordEncoder.encode(request.getPassword()));
         usuario.setRoles(roles);
         usuario.setActivo(true);
@@ -112,7 +112,7 @@ public class AuthService {
                 new UsernamePasswordAuthenticationToken(request.getUsuario(), request.getPassword())
         );
 
-        Usuario usuario = usuarioRepository.findByEmail(request.getUsuario())
+        Usuario usuario = usuarioRepository.findByUsuario(request.getUsuario())
                 .orElseThrow(() -> new IllegalArgumentException("Credenciales invalidas"));
 
         UsuarioPrincipal principal = new UsuarioPrincipal(usuario);
@@ -122,6 +122,6 @@ public class AuthService {
                 .map(Object::toString)
                 .toList();
 
-        return new AuthResponse(token, usuario.getEmail(), usuario.getNombre(), roles);
+        return new AuthResponse(token, usuario.getUsuario(), usuario.getNombre(), roles);
     }
 }

@@ -9,16 +9,16 @@ import lombok.Setter;
 @Setter
 public class RegistroRequest {
 
-    @NotBlank
+    @NotBlank(message = "no debe estar vacio")
     private String nombre;
 
     // DTO de peticion, no toca la base de datos: el campo se llama "usuario"
     // para que los mensajes de validacion digan "usuario" y no "email"
     // (la entidad Usuario/columna de la BD se sigue llamando "email").
-    @NotBlank
+    @NotBlank(message = "no debe estar vacio")
     private String usuario;
 
-    @NotBlank
+    @NotBlank(message = "no debe estar vacia")
     @Size(min = 6, message = "La contrasena debe tener al menos 6 caracteres")
     private String password;
 
