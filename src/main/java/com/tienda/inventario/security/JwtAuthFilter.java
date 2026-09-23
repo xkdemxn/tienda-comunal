@@ -9,6 +9,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -47,9 +48,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         if (usuario != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = usuarioDetailsService.loadUserByUsername(usuario);
+            UserDetails userDetails;
+            try {
+                userDetails = usuarioDetailsService.loadUserByUsername(usuario);
+            } catch (UsernameNotFoundException e) {
+                // el usuario fue eliminado: su token viejo ya no sirve
+                filterChain.doFilter(request, response);
+                return;
+            }
 
-            if (jwtUtil.esTokenValido(token, userDetails.getUsername())) {
+            // desactivado = no puede seguir usando un token que ya tenia
+            if (userDetails.isEnabled() && jwtUtil.esTokenValido(token, userDetails.getUsername())) {
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

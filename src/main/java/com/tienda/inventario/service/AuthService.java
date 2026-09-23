@@ -11,6 +11,7 @@ import com.tienda.inventario.repository.UsuarioRepository;
 import com.tienda.inventario.security.JwtUtil;
 import com.tienda.inventario.security.UsuarioPrincipal;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -105,6 +106,67 @@ public class AuthService {
 
         usuario.setPassword(passwordEncoder.encode(passwordNueva));
         usuarioRepository.save(usuario);
+    }
+
+    // Cambia el rol de un usuario (queda con ese unico rol). Nadie puede
+    // cambiar su propio rol: si el unico ADMIN se pasara a VENDEDOR, el
+    // sistema quedaria sin administrador.
+    @Transactional
+    public Usuario cambiarRol(Long usuarioId, String rolNuevo, Long solicitanteId) {
+        if (usuarioId.equals(solicitanteId)) {
+            throw new IllegalArgumentException("No puedes cambiar tu propio rol");
+        }
+
+        RolNombre rolNombre;
+        try {
+            rolNombre = RolNombre.valueOf(rolNuevo.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Rol invalido. Usa ADMIN o VENDEDOR");
+        }
+
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+        Rol rol = rolRepository.findByNombre(rolNombre)
+                .orElseThrow(() -> new IllegalStateException(
+                        "El rol " + rolNombre + " no existe en la base de datos."));
+
+        Set<Rol> roles = new HashSet<>();
+        roles.add(rol);
+        usuario.setRoles(roles);
+        return usuarioRepository.save(usuario);
+    }
+
+    // Borra al usuario de verdad. Si ya tiene ventas/compras/etc. registradas
+    // la base lo impide (esos registros apuntan a el): en ese caso hay que
+    // desactivarlo en vez de borrarlo, para no perder el historial.
+    @Transactional
+    public void eliminarUsuario(Long usuarioId, Long solicitanteId) {
+        if (usuarioId.equals(solicitanteId)) {
+            throw new IllegalArgumentException("No puedes eliminar tu propio usuario");
+        }
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+        try {
+            usuarioRepository.delete(usuario);
+            usuarioRepository.flush();
+        } catch (DataIntegrityViolationException e) {
+            throw new IllegalStateException(
+                    "Este usuario ya tiene ventas u otros movimientos registrados y no se puede eliminar. "
+                            + "Desactivalo con PUT /api/usuarios/" + usuarioId + "/activo");
+        }
+    }
+
+    // Activa o desactiva un usuario (desactivado no puede entrar, pero se
+    // conserva su historial).
+    @Transactional
+    public Usuario cambiarActivo(Long usuarioId, boolean activo, Long solicitanteId) {
+        if (usuarioId.equals(solicitanteId)) {
+            throw new IllegalArgumentException("No puedes desactivar tu propio usuario");
+        }
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+        usuario.setActivo(activo);
+        return usuarioRepository.save(usuario);
     }
 
     public AuthResponse login(LoginRequest request) {

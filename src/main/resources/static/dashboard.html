@@ -135,8 +135,9 @@
         <div class="tile-grid">
           <a class="tile" href="venta"><span class="nav-icono g-verde"><i class="bi bi-cart3"></i></span>Vender<small>Escanear y cobrar</small></a>
           <a class="tile" href="productos" data-solo-admin="1"><span class="nav-icono g-teal"><i class="bi bi-box-seam"></i></span>Productos<small>Ver, editar, stock</small></a>
-          <a class="tile" href="agregar-stock" data-solo-admin="1"><span class="nav-icono g-cian"><i class="bi bi-plus-circle"></i></span>Agregar stock<small>Escanear entradas</small></a>
+          <a class="tile" href="agregar-stock"><span class="nav-icono g-cian"><i class="bi bi-plus-circle"></i></span>Agregar stock<small>Escanear entradas</small></a>
           <a class="tile" href="deudores"><span class="nav-icono g-rosa"><i class="bi bi-people"></i></span>Deudores<small>Fiar y cobrar</small></a>
+          <a class="tile" href="historial-ventas"><span class="nav-icono g-naranja"><i class="bi bi-clock-history"></i></span>Historial<small>Ventas realizadas</small></a>
           <a class="tile" href="compras" data-solo-admin="1"><span class="nav-icono g-ambar"><i class="bi bi-receipt"></i></span>Compras<small>Registrar a proveedor</small></a>
           <a class="tile" href="proveedores" data-solo-admin="1"><span class="nav-icono g-indigo"><i class="bi bi-truck"></i></span>Proveedores<small>Gestionar</small></a>
           <a class="tile" href="categorias" data-solo-admin="1"><span class="nav-icono g-morado"><i class="bi bi-folder2"></i></span>Categorias<small>Gestionar</small></a>
@@ -164,6 +165,15 @@ initSidebar("inicio");
 document.querySelectorAll(".tile[data-solo-admin]").forEach(a => {
   if (!esAdmin()) a.classList.add("oculto");
 });
+
+// Vendedor: no hay menu lateral, asi que los accesos directos son su menu y
+// suben arriba de todo (justo despues del saludo/avisos).
+if (!esAdmin()) {
+  const accesos = document.getElementById("cardAccesosDirectos");
+  accesos.classList.add("accesos-vendedor");
+  accesos.querySelector("h2").innerText = "¿Que quieres hacer?";
+  document.getElementById("mensajeInicio").after(accesos);
+}
 
 function fechaISO(date) {
   return fechaLocalISO(date);

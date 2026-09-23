@@ -32,4 +32,19 @@ public class AdminController {
         adminService.resetProductosYVentas();
         return ResponseEntity.ok("Productos, ventas, compras e historial de inventario borrados");
     }
+
+    /**
+     * Deja todo el negocio desde cero, conservando SOLO los usuarios (y sus
+     * roles y la configuracion del sistema). Irreversible: requiere mandar
+     * {"confirmacion": "BORRAR TODO"} en el body.
+     */
+    @PostMapping("/reset-todo")
+    public ResponseEntity<String> resetTodo(@Valid @RequestBody ResetRequest request) {
+        if (!"BORRAR TODO".equals(request.getConfirmacion())) {
+            throw new IllegalArgumentException(
+                    "Para confirmar el reset, envia en el body: \"confirmacion\": \"BORRAR TODO\"");
+        }
+        adminService.resetTodoMenosUsuarios();
+        return ResponseEntity.ok("Todos los datos borrados. Los usuarios se conservaron");
+    }
 }

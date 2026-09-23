@@ -20,7 +20,9 @@ C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventari
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\ActualizarSuscripcionRequest.java
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\AjusteInventarioRequest.java
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\AuthResponse.java
+C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\CambiarActivoRequest.java
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\CambiarPasswordRequest.java
+C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\CambiarRolRequest.java
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\CompraRequest.java
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\DetalleFiadoResponse.java
 C:\Users\ASUS\Downloads\INV\tienda-inventario\src\main\java\com\tienda\inventario\dto\DetalleVentaResponse.java

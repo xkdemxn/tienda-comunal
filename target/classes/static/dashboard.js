@@ -276,6 +276,71 @@ async function apiFetch(path, options = {}) {
   return res.json();
 }
 
+// ---------- MODO VENDEDOR ----------
+// El vendedor tiene pocas tareas, asi que en vez del menu lateral (que se
+// esconde por CSS con body.modo-vendedor) navega con una cuadricula de
+// botones grandes: en Inicio es la pantalla principal; en las demas paginas
+// hay un boton de "Inicio" arriba; y en celular el boton "Mas" abre la misma
+// cuadricula como una hoja desde abajo. Todo se inyecta desde aca para no
+// tener que editar el HTML de cada pagina.
+const MENU_VENDEDOR = [
+  { pagina: "inicio", href: "dashboard", texto: "Inicio", icono: "bi-house-door", color: "g-azul" },
+  { pagina: "venta", href: "venta", texto: "Vender", icono: "bi-cart3", color: "g-verde" },
+  { pagina: "agregar-stock", href: "agregar-stock", texto: "Agregar stock", icono: "bi-plus-circle", color: "g-cian" },
+  { pagina: "deudores", href: "deudores", texto: "Fiar", icono: "bi-people", color: "g-rosa" },
+  { pagina: "historial-ventas", href: "historial-ventas", texto: "Historial", icono: "bi-clock-history", color: "g-naranja" }
+];
+
+// Devuelve la funcion que abre/cierra la hoja del menu (para el boton "Mas").
+function activarModoVendedor(paginaActiva, barraInferior) {
+  document.body.classList.add("modo-vendedor");
+  const nombre = localStorage.getItem("nombre") || "";
+
+  const topbar = document.querySelector(".topbar");
+  if (topbar) {
+    if (paginaActiva !== "inicio") {
+      const inicio = document.createElement("a");
+      inicio.href = "dashboard";
+      inicio.className = "btn-inicio-vendedor";
+      inicio.title = "Ir al inicio";
+      inicio.innerHTML = '<i class="bi bi-house-door"></i>';
+      topbar.prepend(inicio);
+    }
+    const usuario = document.createElement("div");
+    usuario.className = "topbar-usuario";
+    usuario.innerHTML = '<span class="avatar-mini"></span><span class="nombre"></span>' +
+      '<button type="button" title="Cerrar sesion"><i class="bi bi-box-arrow-right"></i></button>';
+    usuario.querySelector(".avatar-mini").textContent = nombre ? nombre.charAt(0).toUpperCase() : "?";
+    usuario.querySelector(".nombre").textContent = nombre;
+    usuario.querySelector("button").addEventListener("click", logout);
+    topbar.appendChild(usuario);
+  }
+
+  const fondo = document.createElement("div");
+  fondo.className = "hoja-vendedor-fondo oculto";
+  const hoja = document.createElement("div");
+  hoja.className = "hoja-vendedor oculto";
+  hoja.innerHTML =
+    '<div class="tile-grid">' +
+    MENU_VENDEDOR.map(m =>
+      `<a class="tile${m.pagina === paginaActiva ? " activo" : ""}" href="${m.href}">` +
+      `<span class="nav-icono ${m.color}"><i class="bi ${m.icono}"></i></span>${m.texto}</a>`
+    ).join("") +
+    '</div>' +
+    '<button type="button" class="hoja-cerrar-sesion"><i class="bi bi-box-arrow-right"></i> Cerrar sesion</button>';
+  hoja.querySelector(".hoja-cerrar-sesion").addEventListener("click", logout);
+  document.body.appendChild(fondo);
+  document.body.appendChild(hoja);
+
+  const alternar = (abrir) => {
+    fondo.classList.toggle("oculto", !abrir);
+    hoja.classList.toggle("oculto", !abrir);
+    if (barraInferior) barraInferior.classList.toggle("oculto", abrir);
+  };
+  fondo.addEventListener("click", () => alternar(false));
+  return () => alternar(hoja.classList.contains("oculto"));
+}
+
 // ---------- SIDEBAR / SHELL ----------
 function initSidebar(paginaActiva) {
   requireAuth();
@@ -328,8 +393,13 @@ function initSidebar(paginaActiva) {
 
   const btnHamburguesa = document.getElementById("btnHamburguesa");
   const btnMasMovil = document.getElementById("btnMasMovil");
+  // Vendedor: sin menu lateral; "Mas" abre la hoja con la cuadricula de botones.
+  const abrirCerrarMenuMas = esAdmin()
+    ? abrirCerrarSidebarMovil
+    : activarModoVendedor(paginaActiva, barraInferior);
+
   if (btnHamburguesa) btnHamburguesa.addEventListener("click", abrirCerrarSidebarMovil);
-  if (btnMasMovil) btnMasMovil.addEventListener("click", abrirCerrarSidebarMovil);
+  if (btnMasMovil) btnMasMovil.addEventListener("click", abrirCerrarMenuMas);
   if (fondoMovil) {
     fondoMovil.addEventListener("click", () => {
       sidebar.classList.remove("abierta");

@@ -859,6 +859,108 @@ button.secundario.activo {
    causaba que el banner de suscripcion se viera aunque tuviera .oculto). */
 .oculto { display: none !important; }
 
+/* ---------- MODO VENDEDOR (body.modo-vendedor, lo pone dashboard.js) ----------
+   Sin menu lateral: navega con botones grandes (cuadricula en Inicio, boton
+   "Inicio" en la topbar y hoja desde abajo en celular con "Mas"). */
+.modo-vendedor .sidebar,
+.modo-vendedor .fondo-sidebar-movil,
+.modo-vendedor .btn-hamburguesa { display: none !important; }
+.modo-vendedor .contenido { margin-left: 0; }
+.modo-vendedor .topbar,
+.modo-vendedor .pagina { max-width: 1100px; margin-left: auto; margin-right: auto; }
+
+.btn-inicio-vendedor {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--text);
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.btn-inicio-vendedor .bi { font-size: 18px; margin-right: 0; }
+
+.topbar-usuario {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.topbar-usuario .avatar-mini { width: 34px; height: 34px; }
+.topbar-usuario .nombre {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+.topbar-usuario button {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--text);
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.topbar-usuario button .bi { margin-right: 0; font-size: 16px; }
+@media (max-width: 480px) {
+  .topbar-usuario .nombre { display: none; }
+}
+
+/* Inicio del vendedor: la cuadricula es el menu, asi que va arriba y con
+   botones mas grandes. */
+.accesos-vendedor .tile { padding: 24px 12px; }
+.accesos-vendedor .tile .nav-icono { width: 54px; height: 54px; font-size: 24px; border-radius: 16px; }
+@media (max-width: 640px) {
+  .accesos-vendedor .tile { padding: 18px 6px; }
+  .accesos-vendedor .tile .nav-icono { width: 46px; height: 46px; font-size: 20px; }
+}
+
+/* Hoja del menu (celular): sube desde abajo al tocar "Mas". */
+.hoja-vendedor-fondo {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  z-index: 40;
+}
+.hoja-vendedor {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--bg);
+  border-radius: 22px 22px 0 0;
+  padding: 18px 14px calc(18px + env(safe-area-inset-bottom));
+  box-shadow: 0 -10px 30px rgba(15, 23, 42, 0.15);
+  z-index: 41;
+}
+.hoja-vendedor .tile-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.hoja-vendedor .tile { padding: 16px 6px; gap: 6px; font-size: 12px; }
+.hoja-vendedor .tile.activo { box-shadow: 0 0 0 2px var(--accent), 0 4px 18px rgba(15, 23, 42, 0.06); }
+.hoja-cerrar-sesion {
+  margin-top: 14px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  box-shadow: none;
+  font-size: 13px;
+  padding: 10px;
+}
+.hoja-cerrar-sesion:hover { background: rgba(0, 0, 0, 0.05); box-shadow: none; transform: none; }
+@media (min-width: 861px) {
+  .hoja-vendedor-fondo, .hoja-vendedor { display: none !important; }
+}
+
 /* ---------- Aviso destacado de suscripcion suspendida (Inicio) ---------- */
 .banner-suscripcion {
   display: flex;
