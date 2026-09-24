@@ -8,9 +8,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
-  /* ---------- Layout de dos columnas en pantallas grandes: escanear/buscar
-     a la izquierda, carrito siempre visible (sticky) a la derecha - como en
-     un POS de verdad, en vez de una sola columna larga para desplazarse. */
+  
   .venta-layout {
     display: grid;
     grid-template-columns: 1fr 380px;
@@ -29,9 +27,6 @@
     margin-bottom: 0;
   }
 
-  /* Barra fija abajo en celular: total + confirmar siempre a la vista, sin
-     tener que bajar hasta el final para cobrar. Solo aparece en movil,
-     donde el carrito ya no queda pegado (sticky) como en desktop. */
   .venta-barra-fija { display: none; }
   @media (max-width: 960px) {
     .pagina-venta { padding-bottom: 180px; }
@@ -43,8 +38,6 @@
       position: fixed;
       left: 12px;
       right: 12px;
-      /* Encima de la barra de navegacion inferior (que en celular mide
-         unos 70-90px con el "safe area" del notch), no pegada al fondo. */
       bottom: calc(78px + env(safe-area-inset-bottom));
       background: #ffffff;
       border-radius: 16px;
@@ -512,7 +505,6 @@ function agregarProductoBuscado(id) {
   document.getElementById("resultadosBusquedaVenta").innerHTML = "";
 }
 
-// ---------- CONFIRMAR VENTA ----------
 async function confirmarVenta() {
   if (carrito.length === 0) {
     mostrarMensajeEn("mensaje", "El carrito esta vacio", "error");

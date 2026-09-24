@@ -325,8 +325,7 @@ button.grupo-toggle.abierto .grupo-flecha { transform: rotate(180deg); }
     margin-right: 0;
   }
   .barra-inferior a.activo { color: var(--accent); }
-  /* El boton central (Vender) sobresale de la barra, como el boton
-     principal de apps de delivery/POS - marca la accion mas usada. */
+
   .barra-inferior .accion-principal {
     flex: 0 0 56px;
     width: 56px;
@@ -337,10 +336,9 @@ button.grupo-toggle.abierto .grupo-flecha { transform: rotate(180deg); }
     color: #ffffff;
     box-shadow: 0 8px 20px rgba(13, 119, 48, 0.35);
   }
-  .barra-inferior .accion-principal .bi { font-size: 24px; }
+  .barra-inferior .accion-principal .bi { font-size: 24px; color:white }
 }
 
-/* ---------- INICIO: saludo personalizado ---------- */
 .inicio-saludo {
   display: flex;
   align-items: center;
@@ -668,7 +666,7 @@ button {
   font-weight: 600;
   font-size: 15px;
   cursor: pointer;
-
+  margin-top:10px;
   transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
