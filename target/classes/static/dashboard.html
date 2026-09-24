@@ -263,10 +263,10 @@ async function cargarInicio(intento) {
       ayerDate.setDate(ayerDate.getDate() - 1);
       const ayer = fechaISO(ayerDate);
 
-      const [reporte, reporteAyer, fiadoHoy] = await Promise.all([
+      const [reporte, reporteAyer, resumenFiado] = await Promise.all([
         apiFetch(`/reportes/ventas?desde=${hoy}T00:00:00&hasta=${hoy}T23:59:59`),
         apiFetch(`/reportes/ventas?desde=${ayer}T00:00:00&hasta=${ayer}T23:59:59`).catch(() => null),
-        apiFetch(`/deudores/fiado-en-rango?desde=${hoy}T00:00:00&hasta=${hoy}T23:59:59`).catch(() => [])
+        apiFetch(`/deudores/resumen?desde=${hoy}T00:00:00&hasta=${hoy}T23:59:59`).catch(() => null)
       ]);
 
       tarjetas.push({
@@ -282,11 +282,15 @@ async function cargarInicio(intento) {
 
       // Aparte del efectivo a proposito: fiar no es dinero cobrado, mezclarlo
       // con "Ventas de hoy" haria parecer que entro mas efectivo del real.
-      const totalFiadoHoy = fiadoHoy.reduce((acc, f) => acc + Number(f.monto), 0);
-      tarjetas.push({
-        etiqueta: "Fiado hoy", valor: `$${totalFiadoHoy.toFixed(2)}`,
-        alerta: true, icono: "bi-people", color: "rojo"
-      });
+      // Una sola tarjeta: lo que falta por cobrar de todos los fiados (el
+      // detalle de hoy y del total esta en la pagina de Fiar).
+      if (resumenFiado) {
+        const porCobrar = Number(resumenFiado.porCobrar);
+        tarjetas.push({
+          etiqueta: "Por cobrar (fiado)", valor: `$${porCobrar.toFixed(2)}`,
+          alerta: porCobrar > 0, positivo: porCobrar <= 0, icono: "bi-people", color: "rojo"
+        });
+      }
     } catch (e) {}
   }
 
@@ -389,7 +393,7 @@ async function cargarActividadReciente() {
         items: (f.detalles && f.detalles.length > 0)
           ? f.detalles.map(d => `${d.cantidad}x ${d.producto}`).join(", ")
           : (f.descripcion || ""),
-        deudorNombre: f.deudorNombre
+        deudorNombre: f.deudorNombre, estado: f.estado, pagado: Number(f.pagado || 0)
       }))
     ].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
@@ -405,14 +409,14 @@ async function cargarActividadReciente() {
       });
       return `
         <div class="transaccion">
-          <div class="transaccion-icono"${t.esFiado ? ' style="background:#fee2e2; color:var(--danger)"' : ""}>
-            <i class="bi ${t.esFiado ? "bi-people" : "bi-cart-check"}"></i>
+          <div class="transaccion-icono"${t.esFiado ? (t.estado === "PAGADO" ? ' style="background:#dcfce7; color:var(--accent)"' : ' style="background:#fee2e2; color:var(--danger)"') : ""}>
+            <i class="bi ${t.esFiado ? (t.estado === "PAGADO" ? "bi-check2-circle" : "bi-people") : "bi-cart-check"}"></i>
           </div>
           <div class="transaccion-info">
-            <strong>${t.items || (t.esFiado ? "Fiado" : "Venta")}${t.esFiado ? ' <span class="badge bajo">Fiado</span>' : ""}</strong>
+            <strong>${t.items || (t.esFiado ? "Fiado" : "Venta")}${t.esFiado ? " " + badgeFiado(t.estado, t.pagado) : ""}</strong>
             <small>${t.esFiado ? `${t.deudorNombre} · ` : ""}${cuando}</small>
           </div>
-          <div class="transaccion-monto"${t.esFiado ? ' style="color:var(--danger)"' : ""}>$${t.monto.toFixed(2)}</div>
+          <div class="transaccion-monto"${t.esFiado ? estiloMontoFiado(t.estado) : ""}>$${t.monto.toFixed(2)}</div>
         </div>`;
     }).join("");
   } catch (e) {

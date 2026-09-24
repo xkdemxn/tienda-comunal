@@ -118,6 +118,10 @@ async function cargarEstadisticas() {
       apiFetch(`/deudores/fiado-en-rango?desde=${desde}&hasta=${hasta}`).catch(() => [])
     ]);
     const totalFiado = fiados.reduce((acc, f) => acc + Number(f.monto), 0);
+    // "pagado" = lo que los abonos del deudor ya cubrieron de esos fiados
+    // (aplicados a los mas antiguos primero); lo demas sigue pendiente.
+    const totalPagado = fiados.reduce((acc, f) => acc + Number(f.pagado || 0), 0);
+    const totalPendiente = totalFiado - totalPagado;
 
     let html = `
       <div class="stat-grid">
@@ -133,8 +137,13 @@ async function cargarEstadisticas() {
         </div>
         <div class="stat-card">
           <div class="stat-icono color-rojo"><i class="bi bi-people"></i></div>
-          <div class="etiqueta">Fiado <small>${fiados.length} movimiento${fiados.length === 1 ? "" : "s"}, no es efectivo cobrado</small></div>
-          <div class="valor" style="color:var(--danger)">$${totalFiado.toFixed(2)}</div>
+          <div class="etiqueta">Fiado pendiente <small>de $${totalFiado.toFixed(2)} fiado en ${fiados.length} movimiento${fiados.length === 1 ? "" : "s"}</small></div>
+          <div class="valor" style="color:var(--danger)">$${totalPendiente.toFixed(2)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icono color-verde"><i class="bi bi-check2-circle"></i></div>
+          <div class="etiqueta">Deuda pagada <small>abonos ya cubiertos de esos fiados</small></div>
+          <div class="valor valor-positivo">$${totalPagado.toFixed(2)}</div>
         </div>
       </div>
       <div class="card">

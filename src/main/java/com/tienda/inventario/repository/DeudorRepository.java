@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface DeudorRepository extends JpaRepository<Deudor, Long> {
     List<Deudor> findByActivoTrueOrderByNombreAsc();
+    List<Deudor> findAllByOrderByNombreAsc();
 }

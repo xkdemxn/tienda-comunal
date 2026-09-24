@@ -71,13 +71,37 @@
     </div>
     <div class="pagina">
 
-      <div class="card" style="display:flex; align-items:center; gap:14px">
-        <div class="nav-icono g-rojo" style="width:46px; height:46px; font-size:20px; border-radius:14px">
-          <i class="bi bi-cash-stack"></i>
+      <!-- Resumen de fiados: en general y de hoy -->
+      <h2 class="titulo-resumen">En general</h2>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="nav-icono g-rojo"><i class="bi bi-cash-stack"></i></div>
+          <div class="etiqueta">Por cobrar <small id="resPorCobrarSub">&nbsp;</small></div>
+          <div class="valor valor-alerta" id="resPorCobrar">$0.00</div>
         </div>
-        <div>
-          <div style="font-size:12px; color:var(--muted)">Deuda total pendiente</div>
-          <strong id="deudaTotalGeneral" style="font-size:26px; color:var(--danger)">$0.00</strong>
+        <div class="stat-card">
+          <div class="nav-icono g-naranja"><i class="bi bi-people"></i></div>
+          <div class="etiqueta">Fiado en total <small>desde el inicio</small></div>
+          <div class="valor" id="resTotalFiado">$0.00</div>
+        </div>
+        <div class="stat-card">
+          <div class="nav-icono g-verde"><i class="bi bi-check2-circle"></i></div>
+          <div class="etiqueta">Ya cobrado <small id="resCobradoSub">&nbsp;</small></div>
+          <div class="valor valor-positivo" id="resTotalCobrado">$0.00</div>
+        </div>
+      </div>
+
+      <h2 class="titulo-resumen">Hoy</h2>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="nav-icono g-rosa"><i class="bi bi-person-plus"></i></div>
+          <div class="etiqueta">Fiado hoy <small>lo que se fio hoy</small></div>
+          <div class="valor" id="resFiadoHoy">$0.00</div>
+        </div>
+        <div class="stat-card">
+          <div class="nav-icono g-cian"><i class="bi bi-cash-coin"></i></div>
+          <div class="etiqueta">Cobrado hoy <small>abonos recibidos hoy</small></div>
+          <div class="valor valor-positivo" id="resCobradoHoy">$0.00</div>
         </div>
       </div>
 
@@ -89,6 +113,16 @@
       </div>
 
       <div class="card">
+        <input type="text" id="buscarDeudor" placeholder="Buscar por nombre o telefono..." oninput="renderDeudores()">
+        <div class="filtros-deudores">
+          <button type="button" class="secundario activo" data-filtro="todos" onclick="cambiarFiltroDeudores('todos')">Todos</button>
+          <button type="button" class="secundario" data-filtro="deuda" onclick="cambiarFiltroDeudores('deuda')">Con deuda</button>
+          <button type="button" class="secundario" data-filtro="aldia" onclick="cambiarFiltroDeudores('aldia')">Al dia</button>
+        </div>
+        <label class="campo" style="display:flex; align-items:center; gap:8px; margin:0 0 10px">
+          <input type="checkbox" id="verDesactivados" style="width:auto; margin:0" onchange="cargarDeudores()">
+          Mostrar desactivados
+        </label>
         <div id="mensajeDeudores"></div>
         <div id="listaDeudores">Cargando deudores...</div>
       </div>
@@ -139,6 +173,8 @@
 <div id="modalAbonoFondo" class="modal-fondo oculto" onclick="cerrarModalAbonoSiFondo(event)">
   <div class="modal" style="text-align:left">
     <h2 id="modalAbonoTitulo">Abonar</h2>
+    <p id="modalAbonoSaldo" style="margin:0 0 10px; color:var(--muted)"></p>
+    <div id="mensajeAbono"></div>
     <label class="campo">Monto</label>
     <input type="number" min="0.01" step="0.01" id="abonoMonto" placeholder="0.00">
     <label class="campo">Detalle (opcional)</label>
@@ -170,49 +206,102 @@
 initSidebar("deudores");
 
 let deudores = [];
+let filtroDeudores = "todos"; // todos | deuda | aldia
 
 async function cargarDeudores() {
   const div = document.getElementById("listaDeudores");
+  const incluirInactivos = document.getElementById("verDesactivados").checked;
   try {
-    deudores = await apiFetch("/deudores");
+    deudores = await apiFetch(`/deudores?incluirInactivos=${incluirInactivos}`);
     renderDeudores();
   } catch (e) {
     div.innerHTML = `<div class="msg error"><i class="bi bi-exclamation-circle-fill"></i><span>${e.message}</span></div>`;
   }
+  cargarResumenFiado();
+}
+
+// Totales de fiado en general y de hoy. "Hoy" se calcula aca (hora local del
+// navegador) y se manda al servidor, que puede estar en otra zona horaria.
+async function cargarResumenFiado() {
+  try {
+    const hoy = fechaLocalISO(new Date());
+    const r = await apiFetch(`/deudores/resumen?desde=${hoy}T00:00:00&hasta=${hoy}T23:59:59`);
+    const dinero = v => `$${Number(v).toFixed(2)}`;
+    const fiado = Number(r.totalFiado);
+    const cobrado = Number(r.totalCobrado);
+    const pct = fiado > 0 ? Math.round((cobrado / fiado) * 100) : 0;
+
+    document.getElementById("resPorCobrar").innerText = dinero(r.porCobrar);
+    document.getElementById("resPorCobrarSub").innerText =
+      r.deudoresConDeuda > 0
+        ? `${r.deudoresConDeuda} persona${r.deudoresConDeuda === 1 ? "" : "s"} con deuda`
+        : "nadie debe nada";
+    document.getElementById("resTotalFiado").innerText = dinero(r.totalFiado);
+    document.getElementById("resTotalCobrado").innerText = dinero(r.totalCobrado);
+    document.getElementById("resCobradoSub").innerText = fiado > 0 ? `${pct}% de lo fiado` : "sin fiados todavia";
+    document.getElementById("resFiadoHoy").innerText = dinero(r.fiadoEnRango);
+    document.getElementById("resCobradoHoy").innerText = dinero(r.cobradoEnRango);
+  } catch (e) {
+    // si el resumen falla, la lista de deudores igual se puede usar
+  }
+}
+
+function cambiarFiltroDeudores(filtro) {
+  filtroDeudores = filtro;
+  document.querySelectorAll(".filtros-deudores button").forEach(b => {
+    b.classList.toggle("activo", b.dataset.filtro === filtro);
+  });
+  renderDeudores();
 }
 
 function renderDeudores() {
   const div = document.getElementById("listaDeudores");
-  const totalGeneral = deudores.reduce((acc, d) => acc + Number(d.saldoActual), 0);
-  document.getElementById("deudaTotalGeneral").innerText = `$${totalGeneral.toFixed(2)}`;
-
   if (deudores.length === 0) {
     div.innerHTML = `<div class="estado-vacio"><i class="bi bi-people"></i>Sin deudores todavia</div>`;
     return;
   }
 
-  div.innerHTML = "";
-  deudores.forEach(d => {
+  const texto = document.getElementById("buscarDeudor").value.trim().toLowerCase();
+  const visibles = deudores.filter(d => {
     const saldo = Number(d.saldoActual);
+    if (filtroDeudores === "deuda" && saldo <= 0) return false;
+    if (filtroDeudores === "aldia" && saldo > 0) return false;
+    if (!texto) return true;
+    return d.nombre.toLowerCase().includes(texto) || (d.telefono || "").toLowerCase().includes(texto);
+  });
+
+  if (visibles.length === 0) {
+    div.innerHTML = `<div class="estado-vacio"><i class="bi bi-search"></i>Ningun deudor coincide con la busqueda</div>`;
+    return;
+  }
+
+  div.innerHTML = "";
+  visibles.forEach(d => {
+    const saldo = Number(d.saldoActual);
+    const activo = d.activo !== false;
     const badgeClase = saldo > 0 ? "bajo" : "ok";
     const colorAvatar = saldo > 0
       ? "linear-gradient(135deg, #f87171, #dc2626)"
       : "linear-gradient(135deg, #4ade80, #16a34a)";
+    const acciones = activo
+      ? `<button onclick="abrirModalFiar(${d.id})">Fiar</button>
+         <button class="secundario" onclick="abrirModalAbono(${d.id})">Abonar</button>
+         <button class="secundario" onclick="abrirHistorial(${d.id})">Historial</button>
+         <button class="secundario" onclick="desactivarDeudor(${d.id})">Desactivar</button>`
+      : `<button class="secundario" onclick="abrirHistorial(${d.id})">Historial</button>
+         <button onclick="reactivarDeudor(${d.id})">Reactivar</button>`;
     div.innerHTML += `
-      <div class="item">
+      <div class="item"${activo ? "" : ' style="opacity:.6"'}>
         <div style="display:flex; align-items:center; gap:10px">
           <span class="avatar-mini" style="background:${colorAvatar}">${d.nombre.charAt(0).toUpperCase()}</span>
           <div>
-            ${d.nombre}
+            ${d.nombre}${activo ? "" : ' <span class="badge" style="background:#e2e8f0; color:#475569">Desactivado</span>'}
             <small>${d.telefono || "Sin telefono"}</small>
           </div>
         </div>
         <div class="item-acciones">
           <span class="badge ${badgeClase}">$${saldo.toFixed(2)}</span>
-          <button onclick="abrirModalFiar(${d.id})">Fiar</button>
-          <button class="secundario" onclick="abrirModalAbono(${d.id})">Abonar</button>
-          <button class="secundario" onclick="abrirHistorial(${d.id})">Historial</button>
-          <button class="secundario" onclick="eliminarDeudor(${d.id})">Eliminar</button>
+          ${acciones}
         </div>
       </div>`;
   });
@@ -241,22 +330,31 @@ async function crearDeudor() {
   }
 }
 
-async function eliminarDeudor(id) {
+// Nunca se borra un deudor (su historial de fiados y abonos se conserva):
+// solo se desactiva, y unicamente si esta al dia. Si aun debe, el servidor lo
+// rechaza para que su deuda no desaparezca de los totales sin haberse pagado.
+async function desactivarDeudor(id) {
   const deudor = deudores.find(d => d.id === id);
   const saldo = deudor ? Number(deudor.saldoActual) : 0;
-
-  // Si todavia debe algo, "eliminar" no cobra esa deuda - solo la saca de la
-  // lista de deudores activos. Eso hace que desaparezca de "Deuda total
-  // pendiente" y del cierre de caja de Fiscalizacion como si se hubiera
-  // pagado, aunque nadie pago nada. Se avisa explicito antes de continuar.
-  const mensaje = saldo > 0
-    ? `"${deudor.nombre}" todavia debe $${saldo.toFixed(2)}. Si lo eliminas, esa deuda deja de contarse en "Deuda total pendiente" y en el cierre de caja de Fiscalizacion (como si ya se hubiera pagado), aunque en realidad nadie la pago. ¿Eliminarlo de todas formas?`
-    : "¿Eliminar este deudor de la lista?";
-
-  if (!confirm(mensaje)) return;
+  if (saldo > 0) {
+    mostrarMensajeEn("mensajeDeudores",
+      `${deudor.nombre} todavia debe $${saldo.toFixed(2)}. Cobra o registra su abono antes de desactivarlo`, "error");
+    return;
+  }
+  if (!confirm(`¿Desactivar a "${deudor.nombre}"? Deja de salir en la lista, pero su historial se conserva y lo puedes reactivar cuando quieras.`)) return;
   try {
     await apiFetch(`/deudores/${id}`, { method: "DELETE" });
-    mostrarMensajeEn("mensajeDeudores", "Deudor eliminado", "ok");
+    mostrarMensajeEn("mensajeDeudores", "Deudor desactivado", "ok");
+    await cargarDeudores();
+  } catch (e) {
+    mostrarMensajeEn("mensajeDeudores", e.message, "error");
+  }
+}
+
+async function reactivarDeudor(id) {
+  try {
+    await apiFetch(`/deudores/${id}/activar`, { method: "PUT" });
+    mostrarMensajeEn("mensajeDeudores", "Deudor reactivado", "ok");
     await cargarDeudores();
   } catch (e) {
     mostrarMensajeEn("mensajeDeudores", e.message, "error");
@@ -465,6 +563,8 @@ function abrirModalAbono(deudorId) {
   deudorAbonoId = deudorId;
   const deudor = deudores.find(d => d.id === deudorId);
   document.getElementById("modalAbonoTitulo").innerText = `Abonar de ${deudor.nombre}`;
+  document.getElementById("modalAbonoSaldo").innerText = `Debe $${Number(deudor.saldoActual).toFixed(2)}`;
+  document.getElementById("mensajeAbono").innerHTML = "";
   document.getElementById("abonoMonto").value = "";
   document.getElementById("abonoDescripcion").value = "";
   document.getElementById("modalAbonoFondo").classList.remove("oculto");
@@ -483,8 +583,18 @@ async function confirmarAbono() {
   const monto = parseFloat(document.getElementById("abonoMonto").value);
   const descripcion = document.getElementById("abonoDescripcion").value.trim();
 
+  // El aviso va dentro del modal: el de la pagina queda tapado por el fondo oscuro.
   if (!monto || monto <= 0) {
-    mostrarMensajeEn("mensajeDeudores", "Ingresa un monto valido", "error");
+    mostrarMensajeEn("mensajeAbono", "Ingresa un monto valido", "error");
+    return;
+  }
+
+  const deudor = deudores.find(d => d.id === deudorAbonoId);
+  const saldo = deudor ? Number(deudor.saldoActual) : 0;
+  if (deudor && monto > saldo + 0.001) {
+    mostrarMensajeEn("mensajeAbono", saldo > 0
+      ? `${deudor.nombre} solo debe $${saldo.toFixed(2)}. Ese abono se pasa por $${(monto - saldo).toFixed(2)}`
+      : `${deudor.nombre} no tiene deuda pendiente`, "error");
     return;
   }
 
@@ -497,7 +607,8 @@ async function confirmarAbono() {
     cerrarModalAbono();
     await cargarDeudores();
   } catch (e) {
-    mostrarMensajeEn("mensajeDeudores", e.message, "error");
+    // el servidor tambien valida (ej: si otro cajero abono al mismo tiempo)
+    mostrarMensajeEn("mensajeAbono", e.message, "error");
   }
 }
 

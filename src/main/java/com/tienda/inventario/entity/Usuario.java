@@ -1,5 +1,6 @@
 package com.tienda.inventario.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -28,6 +29,9 @@ public class Usuario {
     @Column(nullable = false, unique = true, length = 150)
     private String usuario;
 
+    // Nunca debe salir en un JSON, aunque alguna entidad que apunte a Usuario
+    // se serialice por descuido.
+    @JsonIgnore
     @Column(nullable = false)
     private String password;
 

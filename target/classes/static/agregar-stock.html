@@ -79,9 +79,9 @@
       <div class="stock-layout">
         <div>
           <div class="card">
-            <label class="campo">Que estas guardando (opcional, ayuda a categorizar productos nuevos)</label>
+            <label class="campo">Que estas guardando (preselecciona la categoria de los productos nuevos)</label>
             <select id="categoriaSesion">
-              <option value="">Sin categoria</option>
+              <option value="">Sin elegir</option>
             </select>
           </div>
 
@@ -136,9 +136,9 @@
         <label class="campo">Codigo de barras (unidad)</label>
         <input type="text" id="nuevoCodigoBarras" readonly>
 
-        <label class="campo">Categoria</label>
+        <label class="campo">Categoria (obligatoria)</label>
         <select id="nuevoCategoria">
-          <option value="">Sin categoria</option>
+          <option value="">Selecciona una categoria...</option>
         </select>
 
         <label class="campo">Nombre</label>
@@ -157,10 +157,13 @@
         <input type="number" id="nuevoStockMinimo" min="0" value="5">
 
         <label class="campo">Codigo de barras de la caja/paquete (opcional)</label>
-        <input type="text" id="nuevoCodigoCaja" placeholder="Si el proveedor te lo vende por caja">
+        <input type="text" id="nuevoCodigoCaja" placeholder="Si el proveedor vende por cajas" oninput="actualizarFilaUnidadesCaja()">
 
-        <label class="campo">Unidades por caja (si pusiste codigo de caja)</label>
-        <input type="number" id="nuevoUnidadesPorCaja" min="1" placeholder="Ej: 12">
+        
+        <div id="filaUnidadesCaja" class="oculto">
+          <label class="campo">Unidades por caja</label>
+          <input type="number" id="nuevoUnidadesPorCaja" min="1" placeholder="Cuantas unidades trae la caja">
+        </div>
 
         <label class="campo" style="display:flex; align-items:center; gap:8px; margin-top:8px">
           <input type="checkbox" id="nuevoVendidoPorPeso" style="width:auto; margin:0">
@@ -416,6 +419,14 @@ async function sumarStockExistente(id) {
 }
 
 // ---------- FORMULARIO DE PRODUCTO NUEVO ----------
+// "Unidades por caja" solo tiene sentido si hay codigo de caja: se muestra
+// al escribirlo y se oculta (y se limpia) si lo borran.
+function actualizarFilaUnidadesCaja() {
+  const hayCodigo = document.getElementById("nuevoCodigoCaja").value.trim() !== "";
+  document.getElementById("filaUnidadesCaja").classList.toggle("oculto", !hayCodigo);
+  if (!hayCodigo) document.getElementById("nuevoUnidadesPorCaja").value = "";
+}
+
 function abrirFormularioProductoNuevo(codigo) {
   formularioEsManual = false;
   codigoFormularioActual = codigo;
@@ -428,6 +439,7 @@ function abrirFormularioProductoNuevo(codigo) {
   document.getElementById("nuevoStockMinimo").value = "5";
   document.getElementById("nuevoCodigoCaja").value = "";
   document.getElementById("nuevoUnidadesPorCaja").value = "";
+  actualizarFilaUnidadesCaja();
   document.getElementById("cardProductoNuevo").classList.remove("oculto");
   mostrarMensajeEn("mensaje", "Codigo nuevo, completa los datos del producto", "ok");
 }
@@ -453,6 +465,10 @@ async function guardarProductoNuevo() {
   const unidadesPorCajaTexto = document.getElementById("nuevoUnidadesPorCaja").value;
   const vendidoPorPeso = document.getElementById("nuevoVendidoPorPeso").checked;
 
+  if (!categoriaId) {
+    mostrarMensajeEn("mensaje", "Elige una categoria: un producto sin categoria queda suelto y no se registra", "error");
+    return;
+  }
   if (!nombre) {
     mostrarMensajeEn("mensaje", "Falta el nombre del producto", "error");
     return;
@@ -477,7 +493,7 @@ async function guardarProductoNuevo() {
     precioCompra: precioCompraTexto ? parseFloat(precioCompraTexto) : null,
     stockActual: vendidoPorPeso ? 0 : stockActual,
     stockMinimo: vendidoPorPeso ? 0 : (Number.isNaN(stockMinimo) ? 5 : stockMinimo),
-    categoria: categoriaId ? { id: parseInt(categoriaId, 10) } : null,
+    categoria: { id: parseInt(categoriaId, 10) },
     codigoBarrasCaja: codigoCaja || null,
     unidadesPorCaja: unidadesPorCajaTexto ? parseInt(unidadesPorCajaTexto, 10) : null,
     vendidoPorPeso

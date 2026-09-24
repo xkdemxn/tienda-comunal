@@ -276,6 +276,21 @@ async function apiFetch(path, options = {}) {
   return res.json();
 }
 
+// ---------- FIADO: etiqueta segun si ya se pago ----------
+// estado viene de /deudores/fiado-en-rango: PAGADO, PARCIAL o PENDIENTE.
+function badgeFiado(estado, pagado) {
+  if (estado === "PAGADO") return '<span class="badge ok">Deuda pagada</span>';
+  if (estado === "PARCIAL") {
+    return `<span class="badge" style="background:#fef3c7; color:#92400e">Pagado $${Number(pagado).toFixed(2)}</span>`;
+  }
+  return '<span class="badge bajo">Fiado</span>';
+}
+
+// Un fiado ya pagado deja de verse en rojo (deuda) y pasa a verde.
+function estiloMontoFiado(estado) {
+  return estado === "PAGADO" ? ' style="color:var(--accent)"' : ' style="color:var(--danger)"';
+}
+
 // ---------- MODO VENDEDOR ----------
 // El vendedor tiene pocas tareas, asi que en vez del menu lateral (que se
 // esconde por CSS con body.modo-vendedor) navega con una cuadricula de

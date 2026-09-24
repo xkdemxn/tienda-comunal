@@ -6,6 +6,7 @@ public record DeudorResponse(
         Long id,
         String nombre,
         String telefono,
-        BigDecimal saldoActual
+        BigDecimal saldoActual,
+        Boolean activo
 ) {
 }

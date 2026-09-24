@@ -16,9 +16,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -29,18 +33,43 @@ public class DeudorService {
     private final ProductoRepository productoRepository;
     private final InventarioService inventarioService;
 
-    public List<DeudorResponse> listar() {
-        return deudorRepository.findByActivoTrueOrderByNombreAsc().stream()
-                .map(d -> new DeudorResponse(d.getId(), d.getNombre(), d.getTelefono(), calcularSaldo(d.getId())))
+    // Por defecto solo los activos; con incluirInactivos tambien salen los
+    // desactivados (para poder ver su historial o reactivarlos).
+    public List<DeudorResponse> listar(boolean incluirInactivos) {
+        List<Deudor> deudores = incluirInactivos
+                ? deudorRepository.findAllByOrderByNombreAsc()
+                : deudorRepository.findByActivoTrueOrderByNombreAsc();
+        return deudores.stream()
+                .map(d -> new DeudorResponse(d.getId(), d.getNombre(), d.getTelefono(),
+                        calcularSaldo(d.getId()), d.getActivo()))
                 .toList();
     }
 
-    // Suma de lo que deben todos los deudores activos ahora mismo (no tiene
-    // rango de fechas, es una foto del momento, igual que el stock actual).
+    // Suma de lo que deben todos los deudores ahora mismo (no tiene rango de
+    // fechas, es una foto del momento, igual que el stock actual). Incluye a
+    // los desactivados: si alguno quedo con deuda, sigue sin estar pagada.
     public BigDecimal totalPendiente() {
-        return deudorRepository.findByActivoTrueOrderByNombreAsc().stream()
+        return deudorRepository.findAllByOrderByNombreAsc().stream()
                 .map(d -> calcularSaldo(d.getId()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    // Resumen de fiados: totales generales (deudores activos) + lo fiado y lo
+    // cobrado (abonos) en el rango pedido, normalmente "hoy" (lo manda el
+    // navegador para respetar la zona horaria de la tienda, no la del servidor).
+    public ResumenDeudasResponse resumen(LocalDateTime desde, LocalDateTime hasta) {
+        BigDecimal totalFiado = movimientoDeudaRepository.sumaPorTipo(TipoMovimientoDeuda.FIADO);
+        BigDecimal totalCobrado = movimientoDeudaRepository.sumaPorTipo(TipoMovimientoDeuda.ABONO);
+        int conDeuda = (int) deudorRepository.findAllByOrderByNombreAsc().stream()
+                .filter(d -> calcularSaldo(d.getId()).signum() > 0)
+                .count();
+        return new ResumenDeudasResponse(
+                totalFiado,
+                totalCobrado,
+                totalFiado.subtract(totalCobrado),
+                conDeuda,
+                movimientoDeudaRepository.sumaEnRangoPorTipo(TipoMovimientoDeuda.FIADO, desde, hasta),
+                movimientoDeudaRepository.sumaEnRangoPorTipo(TipoMovimientoDeuda.ABONO, desde, hasta));
     }
 
     @Transactional
@@ -52,11 +81,28 @@ public class DeudorService {
         return deudorRepository.save(deudor);
     }
 
+    // Nunca se borra un deudor (su historial de fiados/abonos debe conservarse):
+    // solo se desactiva, y unicamente si esta al dia. Si aun debe, su deuda
+    // desapareceria de "Deuda total pendiente" y del cierre de caja como si
+    // se hubiera pagado, mientras el historial la sigue mostrando pendiente.
     @Transactional
     public void desactivar(Long id) {
         Deudor deudor = deudorRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Deudor no encontrado"));
+        BigDecimal saldo = calcularSaldo(id);
+        if (saldo.signum() > 0) {
+            throw new IllegalArgumentException(deudor.getNombre() + " todavia debe $" + dinero(saldo)
+                    + ". Cobra o registra su abono antes de desactivarlo");
+        }
         deudor.setActivo(false);
+        deudorRepository.save(deudor);
+    }
+
+    @Transactional
+    public void activar(Long id) {
+        Deudor deudor = deudorRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Deudor no encontrado"));
+        deudor.setActivo(true);
         deudorRepository.save(deudor);
     }
 
@@ -85,20 +131,56 @@ public class DeudorService {
     // una Venta, asi que sin esto quedaba invisible ahi aunque ya descuenta
     // stock y ya se refleja bien en Fiscalizacion).
     public List<FiadoEnRangoResponse> fiadoEnRango(LocalDateTime desde, LocalDateTime hasta) {
+        // cache por deudor: el pagado de un fiado depende de TODO el historial
+        // del deudor (no solo del rango pedido)
+        Map<Long, Map<Long, BigDecimal>> pagadoPorDeudor = new HashMap<>();
+
         return movimientoDeudaRepository
                 .findByTipoAndFechaBetweenOrderByFechaDesc(TipoMovimientoDeuda.FIADO, desde, hasta).stream()
-                .map(m -> new FiadoEnRangoResponse(
-                        m.getId(),
-                        m.getDeudor().getNombre(),
-                        m.getMonto(),
-                        m.getDescripcion(),
-                        m.getFecha(),
-                        m.getDetalles().stream()
-                                .map(d -> new DetalleFiadoResponse(
-                                        d.getProducto().getNombre(), d.getCantidad(),
-                                        d.getPrecioUnitario(), d.getSubtotal()))
-                                .toList()))
+                .map(m -> {
+                    BigDecimal pagado = pagadoPorDeudor
+                            .computeIfAbsent(m.getDeudor().getId(), this::pagadoPorFiado)
+                            .getOrDefault(m.getId(), BigDecimal.ZERO);
+                    String estado = pagado.compareTo(m.getMonto()) >= 0 ? "PAGADO"
+                            : pagado.signum() > 0 ? "PARCIAL" : "PENDIENTE";
+                    return new FiadoEnRangoResponse(
+                            m.getId(),
+                            m.getDeudor().getNombre(),
+                            m.getMonto(),
+                            m.getDescripcion(),
+                            m.getFecha(),
+                            m.getDetalles().stream()
+                                    .map(d -> new DetalleFiadoResponse(
+                                            d.getProducto().getNombre(), d.getCantidad(),
+                                            d.getPrecioUnitario(), d.getSubtotal()))
+                                    .toList(),
+                            pagado.min(m.getMonto()),
+                            estado);
+                })
                 .toList();
+    }
+
+    // Cuanto de cada fiado (id del fiado -> monto pagado) ya cubrieron los
+    // abonos del deudor: los abonos se van aplicando a los fiados mas
+    // antiguos primero, hasta agotarse.
+    private Map<Long, BigDecimal> pagadoPorFiado(Long deudorId) {
+        List<MovimientoDeuda> movimientos = movimientoDeudaRepository.findByDeudorId(deudorId).stream()
+                .sorted(Comparator.comparing(MovimientoDeuda::getFecha).thenComparing(MovimientoDeuda::getId))
+                .toList();
+
+        BigDecimal abonosDisponibles = movimientos.stream()
+                .filter(x -> x.getTipo() == TipoMovimientoDeuda.ABONO)
+                .map(MovimientoDeuda::getMonto)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        Map<Long, BigDecimal> pagado = new HashMap<>();
+        for (MovimientoDeuda fiado : movimientos) {
+            if (fiado.getTipo() != TipoMovimientoDeuda.FIADO) continue;
+            BigDecimal cubierto = abonosDisponibles.min(fiado.getMonto());
+            pagado.put(fiado.getId(), cubierto);
+            abonosDisponibles = abonosDisponibles.subtract(cubierto);
+        }
+        return pagado;
     }
 
     // Fiado manual: un monto y una descripcion libre, sin tocar stock (para
@@ -172,6 +254,18 @@ public class DeudorService {
         Deudor deudor = deudorRepository.findById(deudorId)
                 .orElseThrow(() -> new IllegalArgumentException("Deudor no encontrado"));
 
+        // Un abono no puede pasar de lo que se debe: si no, el saldo quedaria
+        // negativo (como si la tienda le debiera al cliente).
+        BigDecimal saldo = calcularSaldo(deudorId);
+        if (saldo.signum() <= 0) {
+            throw new IllegalArgumentException(deudor.getNombre() + " no tiene deuda pendiente");
+        }
+        if (request.getMonto().compareTo(saldo) > 0) {
+            BigDecimal exceso = request.getMonto().subtract(saldo);
+            throw new IllegalArgumentException(deudor.getNombre() + " solo debe $" + dinero(saldo)
+                    + ". El abono de $" + dinero(request.getMonto()) + " se pasa por $" + dinero(exceso));
+        }
+
         MovimientoDeuda movimiento = new MovimientoDeuda();
         movimiento.setDeudor(deudor);
         movimiento.setTipo(TipoMovimientoDeuda.ABONO);
@@ -190,6 +284,10 @@ public class DeudorService {
                 .toList();
         return new MovimientoDeudaResponse(m.getId(), m.getTipo(), m.getMonto(), m.getDescripcion(),
                 m.getFecha(), detalles);
+    }
+
+    private String dinero(BigDecimal monto) {
+        return monto.setScale(2, RoundingMode.HALF_UP).toPlainString();
     }
 
     private BigDecimal calcularSaldo(Long deudorId) {

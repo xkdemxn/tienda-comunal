@@ -146,7 +146,7 @@ async function cargarHistorial() {
         items: (f.detalles && f.detalles.length > 0)
           ? f.detalles.map(d => `${d.cantidad}x ${d.producto}`).join(", ")
           : (f.descripcion || ""),
-        deudorNombre: f.deudorNombre
+        deudorNombre: f.deudorNombre, estado: f.estado, pagado: Number(f.pagado || 0)
       }))
     ].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
@@ -160,6 +160,7 @@ async function cargarHistorial() {
 
     const totalEfectivo = ventas.reduce((acc, v) => acc + Number(v.totalMonedaLocal), 0);
     const totalFiado = fiados.reduce((acc, f) => acc + Number(f.monto), 0);
+    const totalPagado = fiados.reduce((acc, f) => acc + Number(f.pagado || 0), 0);
     let html = `
       <div class="stat-grid">
         <div class="stat-card">
@@ -169,8 +170,13 @@ async function cargarHistorial() {
         </div>
         <div class="stat-card">
           <div class="nav-icono g-rojo"><i class="bi bi-people"></i></div>
-          <div class="etiqueta">Fiado <small>${fiados.length} movimiento${fiados.length === 1 ? "" : "s"}, no es efectivo cobrado</small></div>
-          <div class="valor" style="color:var(--danger)">$${totalFiado.toFixed(2)}</div>
+          <div class="etiqueta">Fiado pendiente <small>de $${totalFiado.toFixed(2)} fiado en ${fiados.length} movimiento${fiados.length === 1 ? "" : "s"}</small></div>
+          <div class="valor" style="color:var(--danger)">$${(totalFiado - totalPagado).toFixed(2)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="nav-icono g-verde"><i class="bi bi-check2-circle"></i></div>
+          <div class="etiqueta">Deuda pagada <small>abonos ya cubiertos de esos fiados</small></div>
+          <div class="valor valor-positivo">$${totalPagado.toFixed(2)}</div>
         </div>
       </div>`;
 
@@ -200,14 +206,14 @@ async function cargarHistorial() {
       transDelDia.forEach(t => {
         html += `
           <div class="transaccion">
-            <div class="transaccion-icono"${t.esFiado ? ' style="background:#fee2e2; color:var(--danger)"' : ""}>
-              <i class="bi ${t.esFiado ? "bi-people" : "bi-receipt"}"></i>
+            <div class="transaccion-icono"${t.esFiado ? (t.estado === "PAGADO" ? ' style="background:#dcfce7; color:var(--accent)"' : ' style="background:#fee2e2; color:var(--danger)"') : ""}>
+              <i class="bi ${t.esFiado ? (t.estado === "PAGADO" ? "bi-check2-circle" : "bi-people") : "bi-receipt"}"></i>
             </div>
             <div class="transaccion-info">
-              <strong class="hora-venta">${formatoHora(t.fecha)}${t.esFiado ? ' <span class="badge bajo">Fiado</span>' : ""}</strong>
+              <strong class="hora-venta">${formatoHora(t.fecha)}${t.esFiado ? " " + badgeFiado(t.estado, t.pagado) : ""}</strong>
               <small>${t.esFiado ? `${t.deudorNombre} · ` : ""}${t.items}</small>
             </div>
-            <div class="transaccion-monto"${t.esFiado ? ' style="color:var(--danger)"' : ""}>$${t.monto.toFixed(2)}</div>
+            <div class="transaccion-monto"${t.esFiado ? estiloMontoFiado(t.estado) : ""}>$${t.monto.toFixed(2)}</div>
           </div>`;
       });
 

@@ -98,9 +98,9 @@
     <label class="campo">Nombre</label>
     <input type="text" id="editNombre">
 
-    <label class="campo">Categoria</label>
+    <label class="campo">Categoria (obligatoria)</label>
     <select id="editCategoria">
-      <option value="">Sin categoria</option>
+      <option value="">Selecciona una categoria...</option>
     </select>
 
     <label class="campo">Descripcion (opcional)</label>
@@ -112,14 +112,23 @@
     <label class="campo">Precio de compra (opcional)</label>
     <input type="number" id="editPrecioCompra" step="0.01" min="0">
 
+    <div id="filaStockActual">
+      <label class="campo">Stock actual</label>
+      <input type="number" id="editStockActual" min="0" step="1">
+      <small id="editStockAyuda" style="display:block; color:var(--muted); margin:-4px 0 10px"></small>
+    </div>
+
     <label class="campo">Stock minimo</label>
     <input type="number" id="editStockMinimo" min="0">
 
     <label class="campo">Codigo de barras de la caja (opcional)</label>
-    <input type="text" id="editCodigoCaja">
+    <input type="text" id="editCodigoCaja" oninput="actualizarFilaUnidadesCajaEdit()">
 
-    <label class="campo">Unidades por caja</label>
-    <input type="number" id="editUnidadesPorCaja" min="1">
+    <!-- Solo aparece cuando hay un codigo de caja -->
+    <div id="filaUnidadesCajaEdit" class="oculto">
+      <label class="campo">Unidades por caja</label>
+      <input type="number" id="editUnidadesPorCaja" min="1">
+    </div>
 
     <label class="campo" style="display:flex; align-items:center; gap:8px; margin-top:8px">
       <input type="checkbox" id="editVendidoPorPeso" style="width:auto; margin:0">
@@ -259,6 +268,12 @@ function imprimirCodigo() {
 }
 
 // ---------- EDITAR / ACTIVAR-DESACTIVAR ----------
+function actualizarFilaUnidadesCajaEdit() {
+  const hayCodigo = document.getElementById("editCodigoCaja").value.trim() !== "";
+  document.getElementById("filaUnidadesCajaEdit").classList.toggle("oculto", !hayCodigo);
+  if (!hayCodigo) document.getElementById("editUnidadesPorCaja").value = "";
+}
+
 function abrirEditar(id) {
   const p = productos.find(x => x.id === id);
   if (!p) return;
@@ -272,7 +287,13 @@ function abrirEditar(id) {
   document.getElementById("editStockMinimo").value = p.stockMinimo;
   document.getElementById("editCodigoCaja").value = p.codigoBarrasCaja || "";
   document.getElementById("editUnidadesPorCaja").value = p.unidadesPorCaja || "";
+  actualizarFilaUnidadesCajaEdit();
   document.getElementById("editVendidoPorPeso").checked = !!p.vendidoPorPeso;
+  // Los productos por peso no llevan stock exacto (ver VentaService).
+  document.getElementById("filaStockActual").classList.toggle("oculto", !!p.vendidoPorPeso);
+  document.getElementById("editStockActual").value = p.stockActual;
+  document.getElementById("editStockAyuda").innerText =
+    `En el sistema hay ${p.stockActual}. Si te equivocaste al agregar, corrige el numero aqui: queda registrado en el historial de inventario.`;
   document.getElementById("modalEditarFondo").classList.remove("oculto");
 }
 
@@ -296,9 +317,19 @@ async function guardarEdicionProducto() {
   const categoriaId = document.getElementById("editCategoria").value;
   const codigoCaja = document.getElementById("editCodigoCaja").value.trim();
   const unidadesPorCajaTexto = document.getElementById("editUnidadesPorCaja").value;
+  const vendidoPorPeso = document.getElementById("editVendidoPorPeso").checked;
+  const stockNuevo = parseInt(document.getElementById("editStockActual").value, 10);
 
   if (!nombre) {
     mostrarMensajeEn("mensajeProductos", "Falta el nombre", "error");
+    return;
+  }
+  if (!categoriaId) {
+    mostrarMensajeEn("mensajeProductos", "Elige una categoria: un producto sin categoria queda suelto", "error");
+    return;
+  }
+  if (!vendidoPorPeso && (Number.isNaN(stockNuevo) || stockNuevo < 0)) {
+    mostrarMensajeEn("mensajeProductos", "El stock actual debe ser 0 o mas", "error");
     return;
   }
   if (!precioVenta || precioVenta <= 0) {
@@ -316,15 +347,38 @@ async function guardarEdicionProducto() {
     precioVenta,
     precioCompra: precioCompraTexto ? parseFloat(precioCompraTexto) : null,
     stockMinimo: Number.isNaN(stockMinimo) ? 5 : stockMinimo,
-    categoria: categoriaId ? { id: parseInt(categoriaId, 10) } : null,
+    categoria: { id: parseInt(categoriaId, 10) },
     proveedor: p.proveedor || null,
     codigoBarrasCaja: codigoCaja || null,
     unidadesPorCaja: unidadesPorCajaTexto ? parseInt(unidadesPorCajaTexto, 10) : null,
-    vendidoPorPeso: document.getElementById("editVendidoPorPeso").checked,
+    vendidoPorPeso,
     activo: p.activo
   };
 
-  await guardarProducto(productoEditandoId, body, "Producto actualizado");
+  const guardado = await guardarProducto(productoEditandoId, body, "Producto actualizado");
+  if (!guardado) return; // se queda abierto para corregir (ej: falta categoria)
+
+  // El stock no viaja en el PUT: se corrige con un ajuste por la diferencia,
+  // asi queda en el historial de inventario (kardex) con su motivo.
+  const diferencia = stockNuevo - p.stockActual;
+  if (!vendidoPorPeso && diferencia !== 0) {
+    try {
+      await apiFetch("/inventario/ajuste", {
+        method: "POST",
+        body: JSON.stringify({
+          codigoBarras: p.codigoBarras,
+          cantidad: Math.abs(diferencia),
+          esPositivo: diferencia > 0,
+          motivo: `Correccion de stock desde Editar producto (de ${p.stockActual} a ${stockNuevo})`
+        })
+      });
+      mostrarMensajeEn("mensajeProductos", `Producto actualizado. Stock corregido: ${p.stockActual} → ${stockNuevo}`, "ok");
+      await cargarProductos();
+    } catch (e) {
+      mostrarMensajeEn("mensajeProductos", `Se guardaron los datos, pero no se pudo corregir el stock: ${e.message}`, "error");
+      await cargarProductos();
+    }
+  }
   cerrarModalEditar();
 }
 
@@ -333,8 +387,10 @@ async function guardarProducto(id, body, mensajeExito) {
     await apiFetch(`/productos/${id}`, { method: "PUT", body: JSON.stringify(body) });
     mostrarMensajeEn("mensajeProductos", mensajeExito || "Guardado", "ok");
     await cargarProductos();
+    return true;
   } catch (e) {
     mostrarMensajeEn("mensajeProductos", e.message, "error");
+    return false;
   }
 }
 
@@ -362,6 +418,7 @@ async function toggleActivo(id) {
       proveedor: p.proveedor || null,
       codigoBarrasCaja: p.codigoBarrasCaja || null,
       unidadesPorCaja: p.unidadesPorCaja || null,
+      vendidoPorPeso: !!p.vendidoPorPeso,
       activo: true
     };
     await guardarProducto(id, body, `"${p.nombre}" reactivado`);

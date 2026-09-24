@@ -108,7 +108,7 @@
 <script>
 initSidebar("compras");
 
-let carritoCompra = []; // { codigoBarras, nombre, cantidad, costoUnitario }
+let carritoCompra = []; // { codigoBarras, nombre, cantidad, modo, unidadesPorCaja, costoUnitario, editandoCosto }
 let temporizadorBusquedaCompra;
 let resultadosBusqueda = [];
 
@@ -170,7 +170,11 @@ function agregarItemCompra(id) {
       codigoBarras: p.codigoBarras,
       nombre: p.nombre,
       cantidad: 1,
-      costoUnitario: p.precioCompra || 0
+      modo: "unidad",
+      // solo hay opcion "caja" si el producto tiene definidas las unidades por caja
+      unidadesPorCaja: p.codigoBarrasCaja && p.unidadesPorCaja > 0 ? p.unidadesPorCaja : null,
+      costoUnitario: p.precioCompra || 0,
+      editandoCosto: !p.precioCompra
     });
   }
   document.getElementById("buscarProductoCompra").value = "";
@@ -182,6 +186,36 @@ function actualizarItemCompra(idx, campo, valor) {
   const numero = parseFloat(valor);
   carritoCompra[idx][campo] = isNaN(numero) ? 0 : numero;
   renderCarritoCompra();
+}
+
+function cambiarCantidadCompra(idx, delta) {
+  const item = carritoCompra[idx];
+  item.cantidad = Math.max(1, item.cantidad + delta);
+  renderCarritoCompra();
+}
+
+function escribirCantidadCompra(idx, valor) {
+  const numero = parseInt(valor, 10);
+  carritoCompra[idx].cantidad = isNaN(numero) || numero < 1 ? 1 : numero;
+  renderCarritoCompra();
+}
+
+function cambiarModoCompra(idx, modo) {
+  carritoCompra[idx].modo = modo;
+  renderCarritoCompra();
+}
+
+function editarCostoCompra(idx) {
+  carritoCompra[idx].editandoCosto = true;
+  renderCarritoCompra();
+}
+
+// El stock siempre se lleva en unidades: si se compra por caja, se
+// convierte a unidades (cajas x unidades por caja) antes de sumar.
+function unidadesDeItem(item) {
+  return item.modo === "caja" && item.unidadesPorCaja
+    ? item.cantidad * item.unidadesPorCaja
+    : item.cantidad;
 }
 
 function quitarItemCompra(idx) {
@@ -200,23 +234,49 @@ function renderCarritoCompra() {
   let total = 0;
   div.innerHTML = "";
   carritoCompra.forEach((item, idx) => {
-    const subtotal = item.cantidad * item.costoUnitario;
+    const unidades = unidadesDeItem(item);
+    const subtotal = unidades * item.costoUnitario;
     total += subtotal;
+
+    const selectorModo = item.unidadesPorCaja
+      ? `<div class="selector-unidad">
+           <button type="button" class="secundario${item.modo === "unidad" ? " activo" : ""}"
+                   onclick="cambiarModoCompra(${idx}, 'unidad')">Unidad</button>
+           <button type="button" class="secundario${item.modo === "caja" ? " activo" : ""}"
+                   onclick="cambiarModoCompra(${idx}, 'caja')">Caja de ${item.unidadesPorCaja}</button>
+         </div>`
+      : "";
+    const equivale = item.modo === "caja"
+      ? `<small>= ${unidades} unidades</small>`
+      : "";
+    // El costo sale del producto; solo se escribe a mano si el producto no
+    // tiene precio de compra guardado o se toca "cambiar".
+    const costo = item.editandoCosto
+      ? `<div class="costo-compra">
+           <label class="campo">Costo por unidad ($)${item.costoUnitario > 0 ? "" : " — este producto no tiene precio de compra"}</label>
+           <input type="number" min="0" step="0.01" value="${item.costoUnitario}" style="margin-bottom:0"
+                  onchange="actualizarItemCompra(${idx}, 'costoUnitario', this.value)">
+         </div>`
+      : `<small>$${Number(item.costoUnitario).toFixed(2)} c/u (precio del producto)
+           <a href="#" onclick="editarCostoCompra(${idx}); return false">cambiar</a></small>`;
+
     div.innerHTML += `
-      <div class="item">
-        <div style="flex:1">
-          ${item.nombre}
-          <div style="display:flex; gap:6px; margin-top:6px">
-            <input type="number" min="1" value="${item.cantidad}" style="margin-bottom:0"
-                   onchange="actualizarItemCompra(${idx}, 'cantidad', this.value)">
-            <input type="number" min="0" step="0.01" value="${item.costoUnitario}" style="margin-bottom:0"
-                   onchange="actualizarItemCompra(${idx}, 'costoUnitario', this.value)">
-          </div>
+      <div class="item item-compra">
+        <div class="item-compra-info">
+          <div class="item-carrito-nombre">${item.nombre}</div>
+          ${costo}
         </div>
-        <div style="text-align:right">
-          $${subtotal.toFixed(2)}
-          <button class="secundario" style="width:auto; padding:4px 8px; margin-top:6px"
-                  onclick="quitarItemCompra(${idx})"><i class="bi bi-x-lg"></i></button>
+        <div class="item-compra-controles">
+          ${selectorModo}
+          <div class="stepper" style="margin-bottom:0">
+            <button type="button" class="secundario btn-cantidad" onclick="cambiarCantidadCompra(${idx}, -1)">−</button>
+            <input type="number" min="1" value="${item.cantidad}" class="stepper-input"
+                   onchange="escribirCantidadCompra(${idx}, this.value)">
+            <button type="button" class="secundario btn-cantidad" onclick="cambiarCantidadCompra(${idx}, 1)">+</button>
+          </div>
+          ${equivale}
+          <span class="item-carrito-subtotal">$${subtotal.toFixed(2)}</span>
+          <button class="secundario btn-cantidad" onclick="quitarItemCompra(${idx})"><i class="bi bi-x-lg"></i></button>
         </div>
       </div>`;
   });
@@ -235,11 +295,17 @@ async function confirmarCompra() {
     return;
   }
 
+  const sinCosto = carritoCompra.find(i => !(i.costoUnitario > 0));
+  if (sinCosto) {
+    mostrarMensajeEn("mensajeCompra", `Falta el costo de "${sinCosto.nombre}"`, "error");
+    return;
+  }
+
   const body = {
     proveedorId: parseInt(proveedorId, 10),
     items: carritoCompra.map(i => ({
       codigoBarras: i.codigoBarras,
-      cantidad: i.cantidad,
+      cantidad: unidadesDeItem(i),
       costoUnitario: i.costoUnitario
     }))
   };

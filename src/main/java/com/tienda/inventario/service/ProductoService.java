@@ -4,7 +4,9 @@ import com.google.zxing.BarcodeFormat;
 import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
+import com.tienda.inventario.entity.Categoria;
 import com.tienda.inventario.entity.Producto;
+import com.tienda.inventario.repository.CategoriaRepository;
 import com.tienda.inventario.repository.ProductoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,7 @@ import java.util.List;
 public class ProductoService {
 
     private final ProductoRepository productoRepository;
+    private final CategoriaRepository categoriaRepository;
 
     public List<Producto> listarTodos() {
         return productoRepository.findAll();
@@ -41,8 +44,21 @@ public class ProductoService {
                         "Ningun producto tiene ese codigo registrado como caja: " + codigo));
     }
 
+    // Un producto sin categoria queda "suelto" (no aparece en su grupo, ni en
+    // los reportes por categoria): se exige siempre una categoria existente.
+    private Categoria categoriaObligatoria(Categoria categoria) {
+        if (categoria == null || categoria.getId() == null) {
+            throw new IllegalArgumentException(
+                    "El producto debe tener una categoria. Elige una (o crea una en Categorias)");
+        }
+        return categoriaRepository.findById(categoria.getId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "La categoria elegida no existe: " + categoria.getId()));
+    }
+
     @Transactional
     public Producto crear(Producto producto) {
+        producto.setCategoria(categoriaObligatoria(producto.getCategoria()));
         if (productoRepository.existsByCodigoBarras(producto.getCodigoBarras())) {
             throw new IllegalArgumentException(
                     "Ya existe un producto con el codigo de barras: " + producto.getCodigoBarras());
@@ -63,7 +79,7 @@ public class ProductoService {
         producto.setPrecioVenta(datos.getPrecioVenta());
         producto.setPrecioCompra(datos.getPrecioCompra());
         producto.setStockMinimo(datos.getStockMinimo());
-        producto.setCategoria(datos.getCategoria());
+        producto.setCategoria(categoriaObligatoria(datos.getCategoria()));
         producto.setProveedor(datos.getProveedor());
         producto.setCodigoBarrasCaja(datos.getCodigoBarrasCaja());
         producto.setUnidadesPorCaja(datos.getUnidadesPorCaja());

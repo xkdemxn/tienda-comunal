@@ -1,5 +1,6 @@
 package com.tienda.inventario.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -27,6 +28,9 @@ public class Compra {
     @JoinColumn(name = "proveedor_id", nullable = false)
     private Proveedor proveedor;
 
+    // No se envia al frontend (llevaria el usuario completo, con su contrasena
+    // encriptada); el historial de compras solo necesita proveedor, total y detalles.
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;

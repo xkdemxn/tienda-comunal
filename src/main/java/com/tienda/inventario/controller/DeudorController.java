@@ -6,6 +6,7 @@ import com.tienda.inventario.dto.FiadoEnRangoResponse;
 import com.tienda.inventario.dto.FiadoRequest;
 import com.tienda.inventario.dto.MovimientoDeudaRequest;
 import com.tienda.inventario.dto.MovimientoDeudaResponse;
+import com.tienda.inventario.dto.ResumenDeudasResponse;
 import com.tienda.inventario.entity.Deudor;
 import com.tienda.inventario.entity.Usuario;
 import com.tienda.inventario.security.UsuarioPrincipal;
@@ -29,8 +30,24 @@ public class DeudorController {
     private final DeudorService deudorService;
 
     @GetMapping
-    public ResponseEntity<List<DeudorResponse>> listar() {
-        return ResponseEntity.ok(deudorService.listar());
+    public ResponseEntity<List<DeudorResponse>> listar(
+            @RequestParam(defaultValue = "false") boolean incluirInactivos) {
+        return ResponseEntity.ok(deudorService.listar(incluirInactivos));
+    }
+
+    // Totales de fiado (general) y de un rango (ej. hoy): lo fiado, lo cobrado
+    // y lo que falta por cobrar.
+    @GetMapping("/resumen")
+    public ResponseEntity<ResumenDeudasResponse> resumen(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime desde,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime hasta) {
+        return ResponseEntity.ok(deudorService.resumen(desde, hasta));
+    }
+
+    @PutMapping("/{id}/activar")
+    public ResponseEntity<Void> activar(@PathVariable Long id) {
+        deudorService.activar(id);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping

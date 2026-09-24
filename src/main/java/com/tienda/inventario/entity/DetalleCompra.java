@@ -1,5 +1,6 @@
 package com.tienda.inventario.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -20,6 +21,9 @@ public class DetalleCompra {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // @JsonIgnore: Compra ya lista sus detalles; sin esto el JSON entra en un
+    // ciclo infinito (compra -> detalles -> compra -> ...) y sale roto.
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "compra_id", nullable = false)
     private Compra compra;
