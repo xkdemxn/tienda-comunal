@@ -140,12 +140,7 @@ function sumaCampo(items, campo) {
   return items.reduce((acc, it) => acc + Number(it[campo]), 0);
 }
 
-// Totales generales (todas las categorias juntas), mapeados a los campos que
-// ya calcula el backend por producto:
-//   Productos existentes -> valorExistencia (existencia actual a precio de venta)
-//   Productos vendidos    -> salidaConGanancia (lo vendido, a precio de venta)
-//   Costo de lo vendido   -> salidaPrecioMercado (lo vendido, pero a precio de compra/costo)
-//   Productos netos       -> productoNetoExistentes (saldo anterior, a precio de compra/costo)
+
 function calcularTotalesGenerales(porCategoria) {
   const todos = Object.values(porCategoria).flat();
   return {
@@ -157,9 +152,7 @@ function calcularTotalesGenerales(porCategoria) {
   };
 }
 
-// La ganancia se calcula como (precio de venta - precio de compra) x vendidas.
-// Un producto sin precio de compra cuenta como si no hubiera costado nada, asi
-// que su ganancia sale inflada: se avisa cuales son para corregirlos.
+
 function renderAvisoSinPrecioCompra(productos) {
   const sinPrecio = (productos || []).filter(p => p.activo !== false && !(Number(p.precioCompra) > 0));
   if (sinPrecio.length === 0) return "";
@@ -170,9 +163,9 @@ function renderAvisoSinPrecioCompra(productos) {
       <span class="icono"><i class="bi bi-exclamation-triangle-fill"></i></span>
       <span>
         <strong>${sinPrecio.length} producto${sinPrecio.length === 1 ? "" : "s"} sin precio de compra.</strong>
-        Su ganancia se calcula como si no te hubieran costado nada, asi que el total sale inflado.
+        Su ganancia se calcula como si no hubiera costado nada, asi que el total sale inflado.
         <small style="display:block; margin-top:4px">${nombres}${resto}</small>
-        <a href="productos?categoria=sin-precio-compra" style="font-weight:600">Corregirlos en Productos</a>
+        <a href="productos?categoria=sin-precio-compra" style="font-weight:600; color:green">Corregirlos en Productos</a>
       </span>
     </div>`;
 }

@@ -814,7 +814,6 @@ button.secundario.activo {
 .stepper { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .stepper .stepper-input { width: 64px; text-align: center; margin-bottom: 0; }
 
-/* ---------- Fila resaltada (resultado final de un bloque: q, efectivo esperado...) ---------- */
 .item.item-resaltado {
   background: #e8eeeb;
   border-bottom: none;
