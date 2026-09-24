@@ -1,6 +1,6 @@
 :root {
   --bg: #f1f5f9;
-  --card: #ffffff;
+  --card: #ffffffdb;
   --sidebar: #f8f9fc;
   --accent: #0d7730;
   --accent-dark: #116b32;
@@ -805,10 +805,6 @@ button.secundario.activo {
 }
 .estado-vacio .bi { display: block; font-size: 30px; margin-bottom: 8px; opacity: .4; margin-right: 0; }
 
-/* ---------- Tarjeta de accion destacada (ej: confirmar cantidad al
-   escanear, producto nuevo) - mismo fondo que .card pero con un acento de
-   color a la izquierda, para que se note que requiere completar algo ahora
-   mismo en vez de ser una tarjeta informativa mas. ---------- */
 .card-accion { border-left: 4px solid var(--accent); }
 .card-accion h2 { display: flex; align-items: center; gap: 8px; }
 .card-accion h2 .bi { color: var(--accent); margin-right: 0; font-size: 17px; }
@@ -817,6 +813,32 @@ button.secundario.activo {
    mismo look que los botones redondos del carrito de Vender. ---------- */
 .stepper { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .stepper .stepper-input { width: 64px; text-align: center; margin-bottom: 0; }
+
+/* ---------- Fila resaltada (resultado final de un bloque: q, efectivo esperado...) ---------- */
+.item.item-resaltado {
+  background: #e8eeeb;
+  border-bottom: none;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 8px 0;
+}
+
+.signo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+  
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.signo.mas { background: #5f9743; color: #ffffff; }
+.signo.menos { background: #bf3a3a; color: #fffefe; }
 
 /* ---------- Deudores: resumen ---------- */
 .titulo-resumen {
@@ -837,6 +859,36 @@ button.secundario.activo {
   font-size: 13px;
   margin-bottom: 0;
 }
+
+/* ---------- Compras: filtros y agrupado por mes del historial ---------- */
+.filtros-fechas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+#btnLimpiarFiltrosCompras { width: auto; padding: 6px 14px; font-size: 13px; margin-bottom: 12px; }
+.resumen-compras, .mes-compras {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+.resumen-compras {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.resumen-compras strong { font-size: 18px; }
+.mes-compras {
+  margin-top: 14px;
+  padding: 6px 2px;
+  border-bottom: 2px solid var(--border);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--muted);
+}
+.mes-compras strong { color: var(--text); font-size: 14px; }
+.resumen-compras small, .mes-compras small { display: block; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); font-size: 12px; }
 
 /* ---------- Compras: fila de item (unidad/caja + cantidad + costo del producto) ---------- */
 .item-compra { flex-wrap: wrap; align-items: center; row-gap: 8px; }
@@ -1089,6 +1141,7 @@ button + div > .msg { margin-top: 12px; }
   overflow: hidden;
   z-index: 0;
 }
+
 .login-fondo .orbe {
   position: absolute;
   border-radius: 50%;
@@ -1123,14 +1176,7 @@ button + div > .msg { margin-top: 12px; }
   .login-fondo .orbe { animation: none; }
 }
 
-/* ---------- 4 puntos de colores: giran juntos 360 grados sin parar, y a
-   la vez se alejan/acercan del centro (se juntan casi en un punto y vuelven
-   a expandirse). Cada "brazo" tiene un angulo fijo (0/90/180/270) y adentro
-   el punto anima su distancia al centro - asi se mueve en linea recta sobre
-   ese angulo, y como el grupo entero gira, se ve como si diera vueltas.
-   Diseño propio, puro CSS, sin imagenes - cero peso de red. Va en linea
-   dentro del encabezado de la tarjeta, del mismo tamaño que tenia el logo
-   (no flota suelto por la pagina). ---------- */
+
 .ia-puntos-grupo {
   position: relative;
   width: 44px;
@@ -1159,10 +1205,6 @@ button + div > .msg { margin-top: 12px; }
   border-radius: 50%;
   animation: juntarYExpandir 2.4s ease-in-out infinite;
 }
-/* .punto-celeste { background: #0045a0; }
-.punto-morado { background: #00e5ff;  }
-.punto-rosado { background: #0045a0; }
-.punto-celeste-opaco { background: #00e5ff;  } */
 
 
 .punto-celeste { background: #00a09d; }
@@ -1192,17 +1234,14 @@ button + div > .msg { margin-top: 12px; }
   padding: 16px;
 }
 
-/* ---------- Tarjeta grande dividida en dos: imagen (la agrega el usuario)
-   a la izquierda + formulario a la derecha, flotando sobre el fondo. ---------- */
+
 .login-card-grande {
   display: flex;
   width: 100%;
   max-width: 860px;
   min-height: 460px;
-  border: 3px solid var(--border);
-  /* Blanco solido y opaco: sobre el fondo en degradado se ve mejor una
-     tarjeta nitida que una de vidrio (el efecto de vidrio se notaba mas
-     sobre una foto, no sobre un color plano). */
+  border: 2px solid var(--border);
+  background: var(--card);
   border-radius: 24px;
   /* box-shadow: 0 1px 10px rgba(0, 0, 0, 0.35); */
   animation: aparecer 0.35s ease;

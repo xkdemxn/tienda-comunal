@@ -115,8 +115,13 @@
 
     <div id="filaStockActual">
       <label class="campo">Stock actual</label>
-      <input type="number" id="editStockActual" min="0" step="1">
+      <input type="number" id="editStockActual" min="0" step="1" oninput="actualizarOpcionCajaStock()">
       <small id="editStockAyuda" style="display:block; color:var(--muted); margin:-4px 0 10px"></small>
+      <!-- Aparece solo cuando se cambia el stock: permite que la correccion tambien mueva la caja -->
+      <label id="filaCajaStock" class="campo oculto" style="display:flex; align-items:flex-start; gap:8px; margin:0 0 10px; cursor:pointer">
+        <input type="checkbox" id="editMoverCaja" style="width:auto; margin:3px 0 0">
+        <span id="editMoverCajaTexto"></span>
+      </label>
     </div>
 
     <label class="campo">Stock minimo</label>
@@ -281,6 +286,41 @@ function actualizarFilaUnidadesCajaEdit() {
   if (!hayCodigo) document.getElementById("editUnidadesPorCaja").value = "";
 }
 
+// Cuando se cambia el stock, ofrece que la correccion tambien mueva la caja:
+//  - baja: fue un error al agregar -> se devuelve el costo al efectivo esperado
+//  - sube: se pago con plata de la caja -> se registra la compra
+function actualizarOpcionCajaStock() {
+  const p = productos.find(x => x.id === productoEditandoId);
+  const fila = document.getElementById("filaCajaStock");
+  if (!p) return;
+  const nuevo = parseInt(document.getElementById("editStockActual").value, 10);
+  const diferencia = Number.isNaN(nuevo) ? 0 : nuevo - p.stockActual;
+  if (diferencia === 0 || p.vendidoPorPeso) {
+    fila.classList.add("oculto");
+    return;
+  }
+  const costo = Number(p.precioCompra) > 0 ? Math.abs(diferencia) * Number(p.precioCompra) : 0;
+  const check = document.getElementById("editMoverCaja");
+  const texto = document.getElementById("editMoverCajaTexto");
+  fila.classList.remove("oculto");
+  if (costo <= 0) {
+    check.checked = false;
+    check.disabled = true;
+    texto.innerHTML = `Este producto no tiene precio de compra, asi que la correccion no puede mover plata de la caja.`;
+    return;
+  }
+  check.disabled = false;
+  if (diferencia < 0) {
+    check.checked = true; // el caso normal: se equivoco al agregar
+    texto.innerHTML = `Fue un error al agregar: devolver <strong>$${costo.toFixed(2)}</strong> a la caja
+      <small style="display:block; color:var(--muted)">Quita esa compra del arqueo. Desmarcalo si el producto se perdio o vencio (la plata no vuelve).</small>`;
+  } else {
+    check.checked = false;
+    texto.innerHTML = `Se pago con plata de la caja: registrar compra de <strong>$${costo.toFixed(2)}</strong>
+      <small style="display:block; color:var(--muted)">Resta esa plata del efectivo esperado en el arqueo.</small>`;
+  }
+}
+
 function abrirEditar(id) {
   const p = productos.find(x => x.id === id);
   if (!p) return;
@@ -299,6 +339,7 @@ function abrirEditar(id) {
   // Los productos por peso no llevan stock exacto (ver VentaService).
   document.getElementById("filaStockActual").classList.toggle("oculto", !!p.vendidoPorPeso);
   document.getElementById("editStockActual").value = p.stockActual;
+  document.getElementById("filaCajaStock").classList.add("oculto");
   document.getElementById("editStockAyuda").innerText =
     `En el sistema hay ${p.stockActual}. Si te equivocaste al agregar, corrige el numero aqui: queda registrado en el historial de inventario.`;
   document.getElementById("modalEditarFondo").classList.remove("oculto");
@@ -376,6 +417,9 @@ async function guardarEdicionProducto() {
           codigoBarras: p.codigoBarras,
           cantidad: Math.abs(diferencia),
           esPositivo: diferencia > 0,
+          registrarComoCompra: diferencia > 0 && document.getElementById("editMoverCaja").checked,
+          revertirCompra: diferencia < 0 && document.getElementById("editMoverCaja").checked,
+          esCorreccion: true, // un cambio hecho desde Editar producto es una correccion, no una perdida
           motivo: `Correccion de stock desde Editar producto (de ${p.stockActual} a ${stockNuevo})`
         })
       });

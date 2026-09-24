@@ -237,7 +237,7 @@ async function cargarFiscalizacion() {
         </div>
         <div class="stat-card">
           <div class="stat-icono color-verde"><i class="bi bi-graph-up-arrow"></i></div>
-          <div class="etiqueta">Ganancia total del periodo</div>
+          <div class="etiqueta">Ganancia bruta del periodo <small>antes de gastos y perdidas</small></div>
           <div class="valor valor-positivo">$${formatoNumero(r.totalGeneralGanancia)}</div>
         </div>
         <div class="stat-card">
@@ -321,8 +321,122 @@ async function cargarFiscalizacion() {
     });
 
     div.innerHTML = html;
+    actualizarCierreDeCaja();
   } catch (e) {
     div.innerHTML = `<div class="msg error"><i class="bi bi-exclamation-circle-fill"></i><span>${e.message}</span></div>`;
+  }
+}
+
+
+const fechaBonita = f => new Date(f + "T00:00:00").toLocaleDateString("es", { day: "numeric", month: "long", year: "numeric" });
+const signo = tipo => `<span class="signo ${tipo}">${tipo === "mas" ? "+" : "−"}</span>`;
+
+function formularioFondo(a) {
+  const fechaDefecto = a.fondoFecha || fechaLocalISO(new Date());
+  const montoDefecto = a.fondoInicial != null ? a.fondoInicial : "";
+  return `
+    <div id="formFondo" class="${a.estado === "SIN_FONDO" ? "" : "oculto"}" style="margin-top:8px">
+      <label class="campo">Efectivo con el que empiezas a llevar la cuenta</label>
+      <input type="number" min="0" step="0.01" id="fondoMonto" value="${montoDefecto}" placeholder="0.00">
+      <label class="campo">Desde que dia</label>
+      <input type="date" id="fondoFecha" value="${fechaDefecto}">
+      <div id="mensajeFondo"></div>
+      <button onclick="guardarFondoInicial()">Guardar fondo inicial</button>
+      ${a.estado === "SIN_FONDO" ? "" : `<button style="margin-top: 10px;" class="secundario" onclick="document.getElementById('formFondo').classList.add('oculto')">Cancelar</button>`}
+    </div>`;
+}
+
+function renderArqueo(r) {
+  const a = r.arqueo || { estado: "SIN_FONDO" };
+  const titulo = `<div class="seccion-titulo"><i class="bi bi-cash-stack"></i> Arqueo de caja</div>`;
+
+  if (a.estado === "SIN_FONDO") {
+    return `${titulo}
+      <div class="card">
+        <p style="color:var(--muted); font-size:13px; margin:-4px 0 12px">
+          Para llevar la cuenta de la caja, confirma <strong>una sola vez</strong> con cuanto efectivo
+          empiezas y desde que dia. Despues el sistema calcula solo el efectivo esperado de cualquier periodo.
+        </p>
+        ${formularioFondo(a)}
+      </div>`;
+  }
+
+  if (a.estado === "ANTES_DEL_FONDO") {
+    return `${titulo}
+      <div class="card">
+        <p style="color:var(--muted); font-size:13px; margin:0">
+          Este periodo termina antes del ${fechaBonita(a.fondoFecha)}, que es cuando empezaste a llevar la
+          cuenta de la caja. Elige un periodo desde esa fecha.
+        </p>
+        <p style="margin:10px 0 0"><a href="#" onclick="mostrarFormFondo(event)" style="font-weight:600; text-decoration: underline; color: green;)">Cambiar el fondo inicial</a></p>
+        ${formularioFondo(a)}
+      </div>`;
+  }
+
+  const empiezaAntes = ultimasFechas && a.desdeEfectivo &&
+    a.desdeEfectivo.slice(0, 10) !== `${ultimasFechas.desde}`;
+  return `${titulo}
+    <div class="card">
+      <p style="color:var(--muted); font-size:13px; margin:-4px 0 12px">
+        El sistema calcula cuanto efectivo deberia haber en la caja.
+      </p>
+      <div class="item">
+        <div>Efectivo al inicio del periodo
+           <small><a href="#" onclick="mostrarFormFondo(event)" style="font-weight:600; text-decoration: underline; color: green;)">cambiar fondo</a></small>
+        </div>
+        <strong>$${formatoNumero(a.efectivoAlInicio)}</strong>
+      </div>
+      ${formularioFondo(a)}
+      <div class="item">
+        <div>${signo("mas")} Ventas en efectivo <small>Sin fiado</small></div>
+        <strong>$${formatoNumero(a.ventasEfectivo)}</strong>
+      </div>
+      <div class="item">
+        <div>${signo("mas")} Abonos cobrados <small>pagos de deudas recibidos</small></div>
+        <strong>$${formatoNumero(a.abonosCobrados)}</strong>
+      </div>
+      <div class="item">
+        <div>${signo("menos")} Gastos del periodo</div>
+        <strong>$${formatoNumero(a.gastos)}</strong>
+      </div>
+      <div class="item">
+        <div>${signo("menos")} Compras a proveedores <small>${r.cantidadCompras || 0} compra${(r.cantidadCompras || 0) === 1 ? "" : "s"}</small></div>
+        <strong>$${formatoNumero(a.compras)}</strong>
+      </div>
+      <div class="item item-resaltado">
+        <div><strong>Efectivo esperado en caja</strong></div>
+        <strong id="arqueoEsperado" class="total-general">$${formatoNumero(a.efectivoEsperado)}</strong>
+      </div>
+      <div class="item">
+        <div>Efectivo contado <small>lo que cuentas fisicamente en la caja</small></div>
+        <input type="number" min="0" step="0.01" id="arqueoContado" value="${arqueoContado}"
+               style="width:120px; margin-bottom:0; text-align:right"
+               oninput="actualizarCierreDeCaja()" placeholder="0.00">
+      </div>
+      <div class="item" style="border-bottom:none">
+        <div><strong id="arqueoDiferenciaTitulo">Diferencia</strong> <small>contado − esperado</small></div>
+        <strong id="arqueoDiferencia">—</strong>
+      </div>
+    </div>`;
+}
+
+function mostrarFormFondo(event) {
+  event.preventDefault();
+  document.getElementById("formFondo").classList.remove("oculto");
+}
+
+async function guardarFondoInicial() {
+  const monto = parseFloat(document.getElementById("fondoMonto").value);
+  const fecha = document.getElementById("fondoFecha").value;
+  if (Number.isNaN(monto) || monto < 0 || !fecha) {
+    mostrarMensajeEn("mensajeFondo", "Escribe el monto (0 o mas) y la fecha", "error");
+    return;
+  }
+  try {
+    await apiFetch("/reportes/fondo-inicial", { method: "PUT", body: JSON.stringify({ monto, fecha }) });
+    await cargarFiscalizacion();
+  } catch (e) {
+    mostrarMensajeEn("mensajeFondo", e.message, "error");
   }
 }
 
@@ -357,33 +471,40 @@ function renderGastosYCierre(r, gastos) {
       </div>
     </div>
 
-    <div class="seccion-titulo"><i class="bi bi-safe2"></i> Cierre de caja</div>
+    <div class="seccion-titulo"><i class="bi bi-safe2"></i> Resultado del periodo</div>
     <div class="card">
       <div class="item">
-        <div>Ganancia del periodo</div>
-        <strong>$${formatoNumero(r.totalGeneralGanancia)}</strong>
+        <div><strong>Ganancia bruta</strong>
+          <small>Ganancia del periodo antes de gastos y perdidas</small>
+        </div>
+        <strong style="color:#15803d; font-size:16px">$${formatoNumero(r.totalGeneralGanancia)}</strong>
       </div>
       <div class="item">
-        <div>Total de gastos</div>
-        <strong>-$${formatoNumero(r.totalGastos)}</strong>
+        <div>${signo("menos")} Gastos del periodo</div>
+        <strong style="color:var(--danger)">$${formatoNumero(r.totalGastos)}</strong>
       </div>
       <div class="item">
-        <div>q (ganancia − gastos)</div>
-        <strong>$${formatoNumero(r.q)}</strong>
+        <div>${signo("menos")} Perdida por caducados / mermas
+          <small><a href="caducados" style="color:#15803d; font-weight:600;">ver detalle</a></small>
+        </div>
+        <strong style="color:var(--danger)">$${formatoNumero(r.totalPerdidaCaducados || 0)}</strong>
       </div>
+      <div class="item item-resaltado">
+        <div><strong>Ganancia neta</strong> <small>q (ganancia bruta − gastos − perdidas)</small></div>
+        <strong class="total-general" style="color:var(--text)">$${formatoNumero(r.q)}</strong>
+      </div>
+    </div>
+
+    ${renderArqueo(r)}
+
+    <div class="card">
       <div class="item">
-        <div>Deudas pendientes (todos los deudores)</div>
+        <div>Deudas pendientes <small>todo lo que falta cobrar de los fiados</small></div>
         <strong>+$${formatoNumero(r.deudasPendientes)}</strong>
       </div>
-      <div class="item">
-        <div>Ingreso en efectivo <small>conteo fisico, se ingresa a mano</small></div>
-        <input type="number" min="0" step="0.01" id="cierreIngresoEfectivo"
-               style="width:120px; margin-bottom:0; text-align:right"
-               oninput="actualizarCierreDeCaja()" placeholder="0.00">
-      </div>
-      <div class="item" style="border-bottom:none">
-        <div><strong>Ingresa al siguiente mes</strong></div>
-        <strong id="cierreSiguienteMes" class="total-general">$${formatoNumero(Number(r.q) + Number(r.deudasPendientes))}</strong>
+      <div class="item item-resaltado">
+        <div><strong>Ingresa al siguiente mes</strong> <small>efectivo contado + deudas pendientes</small></div>
+        <strong id="cierreSiguienteMes" class="total-general">—</strong>
       </div>
     </div>`;
 }
@@ -426,11 +547,57 @@ function renderProductosPorPeso(productos) {
     </div>`;
 }
 
+// Lo contado se recuerda al volver a generar el informe (ej: despues de
+// agregar un gasto), en vez de borrarse.
+let arqueoContado = "";
+
+function datosArqueo() {
+  const a = ultimoReporte.arqueo;
+  const ok = !!a && a.estado === "OK";
+  const hayContado = arqueoContado !== "";
+  const contado = Number(arqueoContado) || 0;
+  const esperado = ok ? Number(a.efectivoEsperado) : 0;
+  return {
+    ok, a, hayContado, contado, esperado,
+    diferencia: contado - esperado,
+    siguienteMes: contado + Number(ultimoReporte.deudasPendientes)
+  };
+}
+
 function actualizarCierreDeCaja() {
   if (!ultimoReporte) return;
-  const ingreso = Number(document.getElementById("cierreIngresoEfectivo").value) || 0;
-  const siguienteMes = Number(ultimoReporte.q) + ingreso + Number(ultimoReporte.deudasPendientes);
-  document.getElementById("cierreSiguienteMes").innerText = `$${formatoNumero(siguienteMes)}`;
+  const campo = document.getElementById("arqueoContado");
+  const sigEl = document.getElementById("cierreSiguienteMes");
+  if (!campo) { // todavia no hay fondo inicial: no hay arqueo que calcular
+    if (sigEl) sigEl.innerText = "—";
+    return;
+  }
+  arqueoContado = campo.value;
+  const d = datosArqueo();
+
+  const difEl = document.getElementById("arqueoDiferencia");
+  const tituloEl = document.getElementById("arqueoDiferenciaTitulo");
+  if (!d.hayContado) {
+    difEl.innerText = "—";
+    difEl.style.color = "";
+    tituloEl.innerText = "Diferencia";
+    sigEl.innerText = "—";
+    return;
+  }
+  if (Math.abs(d.diferencia) < 0.005) {
+    tituloEl.innerText = "Cuadra";
+    difEl.innerText = "$0.00";
+    difEl.style.color = "#16a34a";
+  } else if (d.diferencia > 0) {
+    tituloEl.innerText = "Sobra";
+    difEl.innerText = `+$${formatoNumero(d.diferencia)}`;
+    difEl.style.color = "#d97706";
+  } else {
+    tituloEl.innerText = "Falta";
+    difEl.innerText = `-$${formatoNumero(Math.abs(d.diferencia))}`;
+    difEl.style.color = "#dc2626";
+  }
+  sigEl.innerText = `$${formatoNumero(d.siguienteMes)}`;
 }
 
 async function agregarGasto() {
@@ -460,30 +627,289 @@ async function eliminarGasto(id) {
   }
 }
 
-// ---------- DESCARGAR EXCEL (una sola hoja, todos los productos, con columna Categoria) ----------
-const NUM_COLUMNAS_EXCEL = ENCABEZADOS_FISCALIZACION.length + 1; // + Categoria
+// ---------- DESCARGAR EXCEL (varias hojas: Resumen, Gastos, Productos y Por peso) ----------
+// Colores y formatos compartidos por todas las hojas.
+const XL = {
+  VERDE: "0D7730", VERDE_CLARO: "E8F5EC", GRIS: "F1F5F9", AZUL_CLARO: "EAF2FB",
+  ROJO: "B91C1C", ROJO_CLARO: "FDECEC", TEXTO: "0F172A", MUTED: "64748B",
+  LINEA: "D9E0E7", AMBAR: "B45309", AMBAR_CLARO: "FEF3C7"
+};
+const FMT_DINERO = '"$"#,##0.00;[Red]-"$"#,##0.00';
+const FMT_ENTERO = "#,##0";
+const FMT_DECIMAL = "#,##0.00";
+const BORDE_FINO = { bottom: { style: "thin", color: { rgb: XL.LINEA } } };
 
-function aplicarEstiloFila(hoja, filaIndex, estilo) {
-  for (let c = 0; c < NUM_COLUMNAS_EXCEL; c++) {
-    const addr = XLSX.utils.encode_cell({ r: filaIndex, c });
-    if (!hoja[addr]) hoja[addr] = { t: "s", v: "" };
-    hoja[addr].s = estilo;
-  }
+// Celda con estilo: c(valor, estilo, formatoNumero)
+function c(valor, s, z) {
+  const celda = { v: valor === null || valor === undefined ? "" : valor, s: s || {} };
+  celda.t = typeof celda.v === "number" ? "n" : "s";
+  if (z && celda.t === "n") celda.z = z;
+  return celda;
 }
 
-// Columnas del bloque de datos (0=Categoria, 1=Producto, 2=Codigo quedan en
-// blanco a proposito, son nombres/identificadores, no numeros destacables).
-// 9=Cant. caducada tambien queda sin color: no es parte del flujo de venta.
-const COLUMNAS_AZUL = [3, 4, 5, 12];    // Saldo anterior, Entrada del mes, Total, Prod. neto existente
-const COLUMNAS_VERDE = [6, 7, 13];      // Existencia actual, Valor existencia, Ganancia
-const COLUMNAS_TOMATE = [8, 10, 11];    // Cant. vendida, Salida c/ganancia, Salida p/mercado
+const ESTILO = {
+  titulo: { font: { bold: true, sz: 16, color: { rgb: XL.VERDE } } },
+  subtitulo: { font: { sz: 10, color: { rgb: XL.MUTED } } },
+  seccion: {
+    font: { bold: true, sz: 11, color: { rgb: "FFFFFF" } },
+    fill: { fgColor: { rgb: XL.VERDE } },
+    alignment: { vertical: "center" }
+  },
+  etiqueta: { font: { color: { rgb: XL.TEXTO } }, border: BORDE_FINO, alignment: { vertical: "center" } },
+  nota: { font: { sz: 9, italic: true, color: { rgb: XL.MUTED } }, border: BORDE_FINO, alignment: { vertical: "center", wrapText: true } },
+  monto: { font: { color: { rgb: XL.TEXTO } }, border: BORDE_FINO, alignment: { horizontal: "right", vertical: "center" } },
+  destacadoEtiqueta: {
+    font: { bold: true, sz: 12, color: { rgb: XL.TEXTO } }, fill: { fgColor: { rgb: XL.AZUL_CLARO } },
+    border: BORDE_FINO, alignment: { vertical: "center" }
+  },
+  destacadoNota: {
+    font: { sz: 9, italic: true, color: { rgb: XL.MUTED } }, fill: { fgColor: { rgb: XL.AZUL_CLARO } },
+    border: BORDE_FINO, alignment: { vertical: "center", wrapText: true }
+  },
+  destacadoMonto: {
+    font: { bold: true, sz: 12, color: { rgb: XL.TEXTO } }, fill: { fgColor: { rgb: XL.AZUL_CLARO } },
+    border: BORDE_FINO, alignment: { horizontal: "right", vertical: "center" }
+  },
+  encabezado: {
+    font: { bold: true, color: { rgb: XL.TEXTO } }, fill: { fgColor: { rgb: XL.GRIS } },
+    border: { bottom: { style: "medium", color: { rgb: XL.VERDE } } },
+    alignment: { horizontal: "center", vertical: "center", wrapText: true }
+  },
+  categoria: {
+    font: { bold: true, color: { rgb: XL.VERDE } }, fill: { fgColor: { rgb: XL.VERDE_CLARO } },
+    alignment: { vertical: "center" }
+  },
+  celdaTexto: { border: BORDE_FINO, alignment: { vertical: "center" } },
+  celdaNumero: { border: BORDE_FINO, alignment: { horizontal: "right", vertical: "center" } },
+  subtotal: {
+    font: { bold: true, color: { rgb: XL.TEXTO } }, fill: { fgColor: { rgb: XL.GRIS } },
+    border: BORDE_FINO, alignment: { horizontal: "right", vertical: "center" }
+  },
+  total: {
+    font: { bold: true, sz: 12, color: { rgb: XL.TEXTO } }, fill: { fgColor: { rgb: XL.AZUL_CLARO } },
+    alignment: { horizontal: "right", vertical: "center" }
+  },
+  aviso: {
+    font: { bold: true, color: { rgb: XL.AMBAR } }, fill: { fgColor: { rgb: XL.AMBAR_CLARO } },
+    alignment: { vertical: "center", wrapText: true }
+  }
+};
 
-function aplicarColorColumnas(hoja, filaIndex, columnas, colorHex) {
-  columnas.forEach(c => {
-    const addr = XLSX.utils.encode_cell({ r: filaIndex, c });
-    if (!hoja[addr]) hoja[addr] = { t: "s", v: "" };
-    hoja[addr].s = { fill: { fgColor: { rgb: colorHex } } };
+// Devuelve una copia del estilo con el color de la letra cambiado (ej: rojo/verde en la diferencia).
+function conColor(estilo, rgb) {
+  return { ...estilo, font: { ...(estilo.font || {}), color: { rgb } } };
+}
+
+function hojaExcel(filas, anchos, opciones = {}) {
+  const hoja = XLSX.utils.aoa_to_sheet(filas);
+  hoja["!cols"] = anchos.map(wch => ({ wch }));
+  if (opciones.merges) hoja["!merges"] = opciones.merges;
+  if (opciones.altos) hoja["!rows"] = opciones.altos;
+  return hoja;
+}
+
+function hojaResumenExcel(totales, arqueo) {
+  const r = ultimoReporte;
+  const cols = 3;
+  const filas = [];
+  const merges = [];
+  const altos = [];
+
+  const fila = (a, b, m, tipo) => {
+    const destacado = tipo === "destacado";
+    filas.push([
+      c(a, destacado ? ESTILO.destacadoEtiqueta : ESTILO.etiqueta),
+      c(b || "", destacado ? ESTILO.destacadoNota : ESTILO.nota),
+      c(m, destacado ? ESTILO.destacadoMonto : ESTILO.monto, FMT_DINERO)
+    ]);
+    if (destacado) altos[filas.length - 1] = { hpt: 22 };
+  };
+  const seccion = titulo => {
+    filas.push([]);
+    filas.push([c(titulo, ESTILO.seccion), c("", ESTILO.seccion), c("", ESTILO.seccion)]);
+    merges.push({ s: { r: filas.length - 1, c: 0 }, e: { r: filas.length - 1, c: cols - 1 } });
+    altos[filas.length - 1] = { hpt: 20 };
+  };
+  const unidades = n => `${n} unidad${n === 1 ? "" : "es"}`;
+
+  filas.push([c("Informe de Fiscalizacion", ESTILO.titulo)]);
+  merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: cols - 1 } });
+  altos[0] = { hpt: 26 };
+  filas.push([c(`Periodo: del ${fechaBonita(ultimasFechas.desde)} al ${fechaBonita(ultimasFechas.hasta)}`, ESTILO.subtitulo)]);
+  merges.push({ s: { r: 1, c: 0 }, e: { r: 1, c: cols - 1 } });
+  filas.push([c(`Generado el ${new Date().toLocaleString("es")}`, ESTILO.subtitulo)]);
+  merges.push({ s: { r: 2, c: 0 }, e: { r: 2, c: cols - 1 } });
+
+  seccion("RESUMEN GENERAL");
+  fila("Total de ventas del periodo", "bruto, sin restar costo ni gastos", Number(r.totalVentasBruto));
+  fila("Productos existentes", `${unidades(totales.existentesUnidades)} a precio de venta`, totales.existentesValor);
+  fila("Productos vendidos", "lo vendido, a precio de venta", totales.vendidos);
+  fila("Costo de lo vendido", "lo vendido, a precio de compra", totales.deCompras);
+  fila("Productos netos", "saldo anterior a precio de compra", totales.netos);
+  fila("Comprado a proveedores", `${r.cantidadCompras || 0} compra${(r.cantidadCompras || 0) === 1 ? "" : "s"} · informativo, no resta de la ganancia`, Number(r.totalCompras || 0));
+
+  seccion("RESULTADO DEL PERIODO");
+  fila("Ganancia bruta", "lo vendido menos lo que costo", Number(r.totalGeneralGanancia));
+  fila("(−) Gastos del periodo", "", -Number(r.totalGastos));
+  fila("(−) Perdida por caducados / mermas", `${unidades(r.unidadesCaducadas || 0)} vencidas o daniadas, a precio de compra`, -Number(r.totalPerdidaCaducados || 0));
+  fila("GANANCIA NETA (q)", "ganancia bruta − gastos − perdidas", Number(r.q), "destacado");
+
+  seccion("ARQUEO DE CAJA");
+  if (arqueo.ok) {
+    const a = arqueo.a;
+    fila("Efectivo al inicio del periodo",
+      `fondo inicial de $${Number(a.fondoInicial).toFixed(2)} del ${fechaBonita(a.fondoFecha)} + lo que paso hasta entonces`,
+      Number(a.efectivoAlInicio));
+    fila("(+) Ventas en efectivo", "el fiado no entra: no es plata cobrada", Number(a.ventasEfectivo));
+    fila("(+) Abonos cobrados", "pagos de deudas recibidos", Number(a.abonosCobrados));
+    fila("(−) Gastos del periodo", "", -Number(a.gastos));
+    fila("(−) Compras a proveedores", "incluye compras directas (sin proveedor)", -Number(a.compras));
+    fila("EFECTIVO ESPERADO EN CAJA", "lo que deberia haber en la caja", Number(arqueo.esperado), "destacado");
+    if (arqueo.hayContado) {
+      fila("Efectivo contado", "conteo fisico de la caja", Number(arqueo.contado));
+      const dif = arqueo.diferencia;
+      const cuadra = Math.abs(dif) < 0.005;
+      const texto = cuadra ? "Cuadra" : dif > 0 ? "Sobra" : "Falta";
+      filas.push([
+        c(`Diferencia: ${texto}`, conColor(ESTILO.etiqueta, cuadra ? XL.VERDE : dif > 0 ? XL.AMBAR : XL.ROJO)),
+        c("contado − esperado", ESTILO.nota),
+        c(cuadra ? 0 : dif, conColor(ESTILO.monto, cuadra ? XL.VERDE : dif > 0 ? XL.AMBAR : XL.ROJO), FMT_DINERO)
+      ]);
+    } else {
+      filas.push([c("Efectivo contado", ESTILO.etiqueta), c("no se ingreso el conteo fisico", ESTILO.nota), c("sin contar", ESTILO.monto)]);
+    }
+  } else {
+    filas.push([c("Sin fondo inicial configurado para este periodo (o el periodo termina antes de su fecha).", ESTILO.aviso), c("", ESTILO.aviso), c("", ESTILO.aviso)]);
+    merges.push({ s: { r: filas.length - 1, c: 0 }, e: { r: filas.length - 1, c: cols - 1 } });
+    altos[filas.length - 1] = { hpt: 30 };
+  }
+
+  seccion("CIERRE");
+  fila("Deudas pendientes", "todo lo que falta cobrar de los fiados", Number(r.deudasPendientes));
+  if (arqueo.ok && arqueo.hayContado) {
+    fila("INGRESA AL SIGUIENTE MES", "efectivo contado + deudas pendientes", Number(arqueo.siguienteMes), "destacado");
+  } else {
+    filas.push([c("INGRESA AL SIGUIENTE MES", ESTILO.destacadoEtiqueta), c("efectivo contado + deudas pendientes", ESTILO.destacadoNota), c("sin contar", ESTILO.destacadoMonto)]);
+  }
+
+  return hojaExcel(filas, [40, 58, 17], { merges, altos });
+}
+
+function hojaGastosExcel() {
+  const filas = [
+    [c("Gastos del periodo", ESTILO.titulo)],
+    [c(`Del ${fechaBonita(ultimasFechas.desde)} al ${fechaBonita(ultimasFechas.hasta)}`, ESTILO.subtitulo)],
+    [],
+    [c("Fecha", ESTILO.encabezado), c("Descripcion", ESTILO.encabezado), c("Monto", ESTILO.encabezado)]
+  ];
+  let total = 0;
+  if (ultimosGastos.length === 0) {
+    filas.push([c("Sin gastos registrados en este periodo", ESTILO.nota)]);
+  }
+  ultimosGastos.forEach(g => {
+    total += Number(g.monto);
+    filas.push([
+      c(new Date(g.fecha).toLocaleDateString("es"), ESTILO.celdaTexto),
+      c(g.descripcion, ESTILO.celdaTexto),
+      c(Number(g.monto), ESTILO.celdaNumero, FMT_DINERO)
+    ]);
   });
+  filas.push([c("", ESTILO.total), c("TOTAL DE GASTOS", ESTILO.total), c(total, ESTILO.total, FMT_DINERO)]);
+  return hojaExcel(filas, [14, 46, 16], { altos: [{ hpt: 24 }, null, null, { hpt: 22 }] });
+}
+
+// Columnas de la hoja de productos (el orden es el de la tabla del informe).
+const COLUMNAS_PRODUCTOS_EXCEL = [
+  { titulo: "Producto", ancho: 28, campo: "nombre", tipo: "texto" },
+  { titulo: "Codigo", ancho: 17, campo: "codigoBarras", tipo: "texto" },
+  { titulo: "Saldo anterior", ancho: 11, campo: "saldoAnterior", tipo: "entero" },
+  { titulo: "Entrada del mes", ancho: 11, campo: "entradaDelMes", tipo: "entero" },
+  { titulo: "Total", ancho: 9, campo: "total", tipo: "entero" },
+  { titulo: "Existencia actual", ancho: 11, campo: "existenciaActual", tipo: "entero" },
+  { titulo: "Valor existencia", ancho: 13, campo: "valorExistencia", tipo: "dinero" },
+  { titulo: "Cant. vendida", ancho: 10, campo: "cantidadVendida", tipo: "entero" },
+  { titulo: "Cant. caducada", ancho: 10, campo: "cantidadCaducada", tipo: "entero" },
+  { titulo: "Perdida caducados", ancho: 12, campo: "perdidaCaducados", tipo: "dinero" },
+  { titulo: "Salida c/ganancia", ancho: 13, campo: "salidaConGanancia", tipo: "dinero" },
+  { titulo: "Salida p/mercado", ancho: 13, campo: "salidaPrecioMercado", tipo: "dinero" },
+  { titulo: "Prod. neto existente", ancho: 13, campo: "productoNetoExistentes", tipo: "dinero" },
+  { titulo: "Ganancia", ancho: 12, campo: "sumaGanancia", tipo: "dinero" }
+];
+
+function hojaProductosExcel() {
+  const cols = COLUMNAS_PRODUCTOS_EXCEL;
+  const n = cols.length;
+  const filas = [];
+  const merges = [];
+  const altos = [];
+  const vacias = (estilo, desde) => Array.from({ length: n - desde }, () => c("", estilo));
+
+  filas.push([c("Informe por categorias", ESTILO.titulo)]);
+  filas.push([c(`Del ${fechaBonita(ultimasFechas.desde)} al ${fechaBonita(ultimasFechas.hasta)}`, ESTILO.subtitulo)]);
+  filas.push([]);
+  filas.push(cols.map(col => c(col.titulo, ESTILO.encabezado)));
+  altos[filas.length - 1] = { hpt: 34 };
+
+  let gananciaTotal = 0;
+  let perdidaTotal = 0;
+  Object.entries(ultimoReporte.porCategoria).forEach(([categoria, items]) => {
+    filas.push([
+      c(`${categoria} — ${sumaCampo(items, "existenciaActual")} unidades en existencia · valor si se vendiera todo: $${sumaCampo(items, "valorExistencia").toFixed(2)} · vendido en bruto: $${sumaCampo(items, "salidaConGanancia").toFixed(2)}`, ESTILO.categoria),
+      ...vacias(ESTILO.categoria, 1)
+    ]);
+    merges.push({ s: { r: filas.length - 1, c: 0 }, e: { r: filas.length - 1, c: n - 1 } });
+    altos[filas.length - 1] = { hpt: 20 };
+
+    items.forEach(it => {
+      filas.push(cols.map(col => {
+        const valor = it[col.campo];
+        if (col.tipo === "texto") return c(valor, ESTILO.celdaTexto);
+        return c(Number(valor || 0), ESTILO.celdaNumero, col.tipo === "dinero" ? FMT_DINERO : FMT_ENTERO);
+      }));
+    });
+
+    const gananciaCat = sumaCampo(items, "sumaGanancia");
+    const perdidaCat = sumaCampo(items, "perdidaCaducados");
+    gananciaTotal += gananciaCat;
+    perdidaTotal += perdidaCat;
+    filas.push(cols.map((col, i) => {
+      if (i === 0) return c(`Subtotal — ${categoria}`, { ...ESTILO.subtotal, alignment: { horizontal: "left", vertical: "center" } });
+      if (col.campo === "perdidaCaducados") return c(perdidaCat, ESTILO.subtotal, FMT_DINERO);
+      if (col.campo === "sumaGanancia") return c(gananciaCat, ESTILO.subtotal, FMT_DINERO);
+      return c("", ESTILO.subtotal);
+    }));
+  });
+
+  filas.push([]);
+  filas.push(cols.map((col, i) => {
+    if (i === 0) return c("TOTAL DEL PERIODO", { ...ESTILO.total, alignment: { horizontal: "left", vertical: "center" } });
+    if (col.campo === "perdidaCaducados") return c(perdidaTotal, ESTILO.total, FMT_DINERO);
+    if (col.campo === "sumaGanancia") return c(Number(ultimoReporte.totalGeneralGanancia), ESTILO.total, FMT_DINERO);
+    return c("", ESTILO.total);
+  }));
+  altos[filas.length - 1] = { hpt: 22 };
+
+  return hojaExcel(filas, cols.map(col => col.ancho), { merges, altos });
+}
+
+function hojaPorPesoExcel(productos) {
+  const filas = [
+    [c("Productos por peso", ESTILO.titulo)],
+    [c("No llevan stock exacto: la ganancia sale de comparar lo vendido contra el precio de compra del producto.", ESTILO.subtitulo)],
+    [],
+    ["Producto", "Peso vendido (lb)", "Ingreso", "Ganancia estimada"].map(t => c(t, ESTILO.encabezado))
+  ];
+  productos.forEach(p => {
+    filas.push([
+      c(p.producto, ESTILO.celdaTexto),
+      c(Number(p.pesoVendido), ESTILO.celdaNumero, FMT_DECIMAL),
+      c(Number(p.ingresoTotal), ESTILO.celdaNumero, FMT_DINERO),
+      p.gananciaEstimada != null
+        ? c(Number(p.gananciaEstimada), ESTILO.celdaNumero, FMT_DINERO)
+        : c("N/D", ESTILO.celdaNumero)
+    ]);
+  });
+  return hojaExcel(filas, [28, 18, 16, 20], { altos: [{ hpt: 24 }, null, null, { hpt: 22 }] });
 }
 
 function descargarExcel() {
@@ -493,151 +919,16 @@ function descargarExcel() {
   }
 
   const totales = calcularTotalesGenerales(ultimoReporte.porCategoria);
-
-  const filas = [
-    ["Informe de Fiscalizacion Mensual"],
-    ["Desde", ultimasFechas.desde, "Hasta", ultimasFechas.hasta],
-    [],
-    ["Total de ventas del periodo (bruto)", ultimoReporte.totalVentasBruto],
-    ["Total de productos existentes", totales.existentesValor, "Unidades", totales.existentesUnidades],
-    ["Total de productos vendidos", totales.vendidos],
-    ["Costo de lo vendido (a precio de compra)", totales.deCompras],
-    ["Total de productos netos", totales.netos],
-    ["Ganancia total del periodo", ultimoReporte.totalGeneralGanancia]
-  ];
-  const filasResumenGeneral = [3, 4, 5, 6, 7, 8];
-
-  // Cierre de caja: mismo bloque que se ve en pantalla (gastos, q, deudas e
-  // ingreso en efectivo). El ingreso en efectivo es un dato manual que no se
-  // guarda en el backend, se lee del input tal como esta en el momento de
-  // exportar.
-  const ingresoEfectivo = Number(document.getElementById("cierreIngresoEfectivo").value) || 0;
-  const siguienteMes = Number(ultimoReporte.q) + ingresoEfectivo + Number(ultimoReporte.deudasPendientes);
-
-  filas.push([]);
-  filas.push(["CIERRE DE CAJA"]);
-  const filaCierreTitulo = filas.length - 1;
-  filas.push(["Ganancia del periodo", ultimoReporte.totalGeneralGanancia]);
-  filas.push(["Total de gastos", -Number(ultimoReporte.totalGastos)]);
-  filas.push(["q (ganancia - gastos)", ultimoReporte.q]);
-  filas.push(["Deudas pendientes (todos los deudores)", ultimoReporte.deudasPendientes]);
-  filas.push(["Ingreso en efectivo (conteo fisico)", ingresoEfectivo]);
-  filas.push(["Ingresa al siguiente mes", siguienteMes]);
-  const filaCierreSiguienteMes = filas.length - 1;
-  const filasCierreDatos = [filaCierreTitulo + 1, filaCierreTitulo + 2, filaCierreTitulo + 3, filaCierreTitulo + 4, filaCierreTitulo + 5];
-
-  // Productos por peso (ej: carnes): mismo bloque que se ve en pantalla,
-  // aparte del informe por categoria porque no tienen kardex.
-  const filasPorPeso = [];
-  const productosPorPeso = ultimoReporte.productosPorPeso || [];
-  if (productosPorPeso.length > 0) {
-    filas.push([]);
-    filas.push(["PRODUCTOS POR PESO (ej: carnes)"]);
-    filasPorPeso.push(filas.length - 1);
-    filas.push(["Producto", "Peso vendido (lb)", "Ingreso", "Ganancia estimada"]);
-    filasPorPeso.push(filas.length - 1);
-    productosPorPeso.forEach(p => {
-      filas.push([p.producto, p.pesoVendido, p.ingresoTotal, p.gananciaEstimada != null ? p.gananciaEstimada : "N/D"]);
-    });
-  }
-
-  filas.push([]);
-  filas.push(["Categoria", ...ENCABEZADOS_FISCALIZACION]);
-  const filaEncabezados = filas.length - 1; // fila "Categoria, Producto, ..." recien agregada arriba
-
-  const filasSubtotal = [];
-  const filasDatos = [];
-  Object.entries(ultimoReporte.porCategoria).forEach(([categoria, items]) => {
-    let subtotalGanancia = 0;
-
-    filas.push([`${categoria} — ${sumaCampo(items, "existenciaActual")} unidades en existencia,`
-      + ` valor si se vendiera todo: ${sumaCampo(items, "valorExistencia").toFixed(2)},`
-      + ` vendido en bruto: ${sumaCampo(items, "salidaConGanancia").toFixed(2)}`]);
-    const filaResumenCategoria = filas.length - 1;
-
-    items.forEach(it => {
-      subtotalGanancia += it.sumaGanancia;
-      filas.push([
-        categoria, it.nombre, it.codigoBarras, it.saldoAnterior, it.entradaDelMes, it.total,
-        it.existenciaActual, it.valorExistencia, it.cantidadVendida, it.cantidadCaducada,
-        it.salidaConGanancia, it.salidaPrecioMercado, it.productoNetoExistentes, it.sumaGanancia
-      ]);
-      filasDatos.push(filas.length - 1);
-    });
-
-    filas.push(["", `Subtotal ganancia — ${categoria}`, "", "", "", "", "", "", "", "", "", "", "", subtotalGanancia]);
-    filasSubtotal.push(filas.length - 1);
-    filasSubtotal.push(filaResumenCategoria);
-  });
-
-  filas.push([]);
-  filas.push(["", "GANANCIA TOTAL DEL PERIODO", "", "", "", "", "", "", "", "", "", "", "", ultimoReporte.totalGeneralGanancia]);
-  const filaTotalGeneral = filas.length - 1;
-
-  const hoja = XLSX.utils.aoa_to_sheet(filas);
-
-  // Ancho por columna (si no, Excel corta el texto de encabezados largos
-  // como "Salida c/ganancia" o "Prod. neto existente").
-  hoja["!cols"] = [
-    { wch: 22 }, // Categoria
-    { wch: 24 }, // Producto
-    { wch: 16 }, // Codigo
-    { wch: 14 }, // Saldo anterior
-    { wch: 15 }, // Entrada del mes
-    { wch: 9 },  // Total
-    { wch: 16 }, // Existencia actual
-    { wch: 15 }, // Valor existencia
-    { wch: 13 }, // Cant. vendida
-    { wch: 14 }, // Cant. caducada
-    { wch: 17 }, // Salida c/ganancia
-    { wch: 16 }, // Salida p/mercado
-    { wch: 19 }, // Prod. neto existente
-    { wch: 11 }, // Ganancia
-  ];
-
-  // Paleta minimalista (tonos muy suaves, casi blancos) para que se note el
-  // agrupamiento sin ser un bloque de color fuerte - el vendedor igual
-  // distingue titulo / encabezados / subtotal / total por el tono y el bold.
-  const GRIS_CLARO = "F2F2F7";
-  const VERDE_PALIDO = "F1F8F4";
-  const CREMA_PALIDO = "FFFBF0";
-  const AZUL_DATOS = "EFF6FF";
-  const VERDE_DATOS = "F0FDF4";
-  const TOMATE_DATOS = "FFF4F0";
-  const BORDE_SUAVE = { bottom: { style: "thin", color: { rgb: "E5E5EA" } } };
-
-  // En cada fila de producto: Categoria/Producto/Codigo quedan en blanco, y
-  // las columnas de numeros/valores destacables se colorean por grupo.
-  filasDatos.forEach(fila => {
-    aplicarColorColumnas(hoja, fila, COLUMNAS_AZUL, AZUL_DATOS);
-    aplicarColorColumnas(hoja, fila, COLUMNAS_VERDE, VERDE_DATOS);
-    aplicarColorColumnas(hoja, fila, COLUMNAS_TOMATE, TOMATE_DATOS);
-  });
-
-  aplicarEstiloFila(hoja, 0, { font: { bold: true, sz: 14, color: { rgb: "1D1D1F" } } }); // titulo
-  filasResumenGeneral.forEach(fila =>
-    aplicarEstiloFila(hoja, fila, { font: { bold: true, color: { rgb: "1D1D1F" } }, fill: { fgColor: { rgb: VERDE_PALIDO } } })
-  );
-  aplicarEstiloFila(hoja, filaEncabezados, { // encabezados
-    font: { bold: true, color: { rgb: "1D1D1F" }, sz: 11 },
-    fill: { fgColor: { rgb: GRIS_CLARO } },
-    border: BORDE_SUAVE
-  });
-  filasSubtotal.forEach(fila =>
-    aplicarEstiloFila(hoja, fila, { font: { bold: true, color: { rgb: "1D1D1F" } }, fill: { fgColor: { rgb: CREMA_PALIDO } } })
-  );
-  aplicarEstiloFila(hoja, filaTotalGeneral, { font: { bold: true, sz: 12, color: { rgb: "1D1D1F" } }, fill: { fgColor: { rgb: VERDE_PALIDO } } });
-  aplicarEstiloFila(hoja, filaCierreTitulo, { font: { bold: true, sz: 12, color: { rgb: "1D1D1F" } } });
-  filasCierreDatos.forEach(fila =>
-    aplicarEstiloFila(hoja, fila, { fill: { fgColor: { rgb: CREMA_PALIDO } } })
-  );
-  aplicarEstiloFila(hoja, filaCierreSiguienteMes, { font: { bold: true, color: { rgb: "1D1D1F" } }, fill: { fgColor: { rgb: VERDE_PALIDO } } });
-  filasPorPeso.forEach(fila =>
-    aplicarEstiloFila(hoja, fila, { font: { bold: true, color: { rgb: "1D1D1F" } }, fill: { fgColor: { rgb: TOMATE_DATOS } } })
-  );
+  const arqueo = datosArqueo();
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, hoja, "Fiscalizacion");
+  XLSX.utils.book_append_sheet(wb, hojaResumenExcel(totales, arqueo), "Resumen");
+  XLSX.utils.book_append_sheet(wb, hojaGastosExcel(), "Gastos");
+  XLSX.utils.book_append_sheet(wb, hojaProductosExcel(), "Productos");
+  const porPeso = ultimoReporte.productosPorPeso || [];
+  if (porPeso.length > 0) {
+    XLSX.utils.book_append_sheet(wb, hojaPorPesoExcel(porPeso), "Por peso");
+  }
 
   XLSX.writeFile(wb, `fiscalizacion_${ultimasFechas.desde}_a_${ultimasFechas.hasta}.xlsx`);
 }

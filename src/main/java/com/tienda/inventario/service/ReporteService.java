@@ -1,5 +1,6 @@
 package com.tienda.inventario.service;
 
+import com.tienda.inventario.dto.ArqueoCajaResponse;
 import com.tienda.inventario.dto.FiscalizacionAnualResponse;
 import com.tienda.inventario.dto.FiscalizacionItemDto;
 import com.tienda.inventario.dto.FiscalizacionMesDto;
@@ -7,6 +8,7 @@ import com.tienda.inventario.dto.FiscalizacionPorPesoDto;
 import com.tienda.inventario.dto.FiscalizacionResponse;
 import com.tienda.inventario.dto.ProductoStockBajoDto;
 import com.tienda.inventario.dto.ReporteVentasResponse;
+import com.tienda.inventario.entity.ConfiguracionSistema;
 import com.tienda.inventario.entity.DetalleVenta;
 import com.tienda.inventario.entity.MovimientoInventario;
 import com.tienda.inventario.entity.Producto;
@@ -40,6 +42,7 @@ public class ReporteService {
     private final GastoService gastoService;
     private final DeudorService deudorService;
     private final CompraRepository compraRepository;
+    private final ConfiguracionSistemaService configuracionSistemaService;
 
     /**
      * Reporte de ventas en un rango de fechas: total vendido, cantidad de ventas,
@@ -133,6 +136,7 @@ public class ReporteService {
             int cantidadCaducada = movimientos.stream()
                     .filter(m -> !m.getFecha().isBefore(desde) && !m.getFecha().isAfter(hasta))
                     .filter(m -> m.getTipo() == TipoMovimiento.AJUSTE_NEGATIVO)
+                    .filter(m -> !Boolean.TRUE.equals(m.getCorreccion())) // una correccion de error no es caducado
                     .mapToInt(MovimientoInventario::getCantidad)
                     .sum();
 
@@ -149,7 +153,8 @@ public class ReporteService {
                     producto.getNombre(), producto.getCodigoBarras(),
                     saldoAnterior, entradaDelMes, total, existenciaActual, valorExistencia,
                     cantidadVendida, cantidadCaducada, salidaConGanancia, salidaPrecioMercado,
-                    productoNetoExistentes, sumaGanancia
+                    productoNetoExistentes, sumaGanancia,
+                    precioCompra.multiply(BigDecimal.valueOf(cantidadCaducada))
             );
 
             items.add(item);
@@ -169,7 +174,14 @@ public class ReporteService {
         totalGeneralGanancia = totalGeneralGanancia.add(gananciaPorPeso);
 
         BigDecimal totalGastos = gastoService.totalEnRango(desde, hasta);
-        BigDecimal q = totalGeneralGanancia.subtract(totalGastos);
+        BigDecimal totalPerdidaCaducados = items.stream()
+                .map(FiscalizacionItemDto::getPerdidaCaducados)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        int unidadesCaducadas = items.stream()
+                .mapToInt(FiscalizacionItemDto::getCantidadCaducada)
+                .sum();
+        // Lo caducado/danado es plata ya invertida que no se recupera: resta del resultado.
+        BigDecimal q = totalGeneralGanancia.subtract(totalGastos).subtract(totalPerdidaCaducados);
         BigDecimal deudasPendientes = deudorService.totalPendiente();
 
         BigDecimal totalVentasBruto = ventaRepository.findByFechaBetween(desde, hasta).stream()
@@ -179,7 +191,58 @@ public class ReporteService {
         return new FiscalizacionResponse(porCategoria, totalGeneralGanancia, totalVentasBruto, totalGastos, q,
                 deudasPendientes, productosPorPeso,
                 compraRepository.sumaTotalEnRango(desde, hasta),
-                compraRepository.countByFechaBetween(desde, hasta));
+                compraRepository.countByFechaBetween(desde, hasta),
+                deudorService.cobradoEnRango(desde, hasta),
+                calcularArqueo(desde, hasta),
+                totalPerdidaCaducados,
+                unidadesCaducadas);
+    }
+
+    /**
+     * Efectivo que deberia haber en caja al terminar el periodo. El fondo
+     * inicial se confirma una sola vez (monto + fecha); el efectivo al inicio
+     * de cualquier periodo se calcula solo: fondo + todo lo que entro y salio
+     * entre la fecha del fondo y el inicio del periodo.
+     */
+    private ArqueoCajaResponse calcularArqueo(LocalDateTime desde, LocalDateTime hasta) {
+        ConfiguracionSistema config = configuracionSistemaService.obtener();
+        BigDecimal fondo = config.getFondoInicialMonto();
+        LocalDate fechaFondo = config.getFondoInicialFecha();
+        if (fondo == null || fechaFondo == null) {
+            return new ArqueoCajaResponse("SIN_FONDO", null, null, null, null, null, null, null, null, null);
+        }
+
+        LocalDateTime inicioFondo = fechaFondo.atStartOfDay();
+        if (hasta.isBefore(inicioFondo)) {
+            return new ArqueoCajaResponse("ANTES_DEL_FONDO", fondo, fechaFondo, null, null, null, null, null, null, null);
+        }
+
+        LocalDateTime desdeEfectivo = desde.isAfter(inicioFondo) ? desde : inicioFondo;
+        BigDecimal efectivoAlInicio = fondo;
+        if (desde.isAfter(inicioFondo)) {
+            // todo lo que paso desde la fecha del fondo hasta justo antes de este periodo
+            LocalDateTime finAnterior = desde.minusNanos(1_000);
+            efectivoAlInicio = fondo
+                    .add(sumaVentas(inicioFondo, finAnterior))
+                    .add(deudorService.cobradoEnRango(inicioFondo, finAnterior))
+                    .subtract(gastoService.totalEnRango(inicioFondo, finAnterior))
+                    .subtract(compraRepository.sumaTotalEnRango(inicioFondo, finAnterior));
+        }
+
+        BigDecimal ventas = sumaVentas(desdeEfectivo, hasta);
+        BigDecimal abonos = deudorService.cobradoEnRango(desdeEfectivo, hasta);
+        BigDecimal gastos = gastoService.totalEnRango(desdeEfectivo, hasta);
+        BigDecimal compras = compraRepository.sumaTotalEnRango(desdeEfectivo, hasta);
+        BigDecimal esperado = efectivoAlInicio.add(ventas).add(abonos).subtract(gastos).subtract(compras);
+
+        return new ArqueoCajaResponse("OK", fondo, fechaFondo, desdeEfectivo, efectivoAlInicio,
+                ventas, abonos, gastos, compras, esperado);
+    }
+
+    private BigDecimal sumaVentas(LocalDateTime desde, LocalDateTime hasta) {
+        return ventaRepository.findByFechaBetween(desde, hasta).stream()
+                .map(Venta::getTotalMonedaLocal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private static final String[] NOMBRES_MES = {

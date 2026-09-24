@@ -54,6 +54,11 @@ public class DeudorService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
+    // Abonos (plata cobrada de deudas) recibidos en un rango de fechas.
+    public BigDecimal cobradoEnRango(LocalDateTime desde, LocalDateTime hasta) {
+        return movimientoDeudaRepository.sumaEnRangoPorTipo(TipoMovimientoDeuda.ABONO, desde, hasta);
+    }
+
     // Resumen de fiados: totales generales (deudores activos) + lo fiado y lo
     // cobrado (abonos) en el rango pedido, normalmente "hoy" (lo manda el
     // navegador para respetar la zona horaria de la tienda, no la del servidor).

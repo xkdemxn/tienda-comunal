@@ -43,4 +43,14 @@ public class FiscalizacionResponse {
     // no aparece aca.
     private BigDecimal totalCompras;
     private long cantidadCompras;
+    // Abonos de deudores cobrados en el periodo: es dinero que entro a la caja
+    // aunque no sea una venta (se usa en el arqueo de caja).
+    private BigDecimal abonosCobrados;
+    // Arqueo de caja del periodo (ver ArqueoCajaResponse).
+    private ArqueoCajaResponse arqueo;
+    // Perdida del periodo por productos caducados/danados (sin contar las
+    // correcciones de errores de registro): costo total y unidades. Ya esta
+    // restada dentro de "q".
+    private BigDecimal totalPerdidaCaducados;
+    private int unidadesCaducadas;
 }

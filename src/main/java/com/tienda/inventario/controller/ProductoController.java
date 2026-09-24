@@ -1,11 +1,14 @@
 package com.tienda.inventario.controller;
 
 import com.tienda.inventario.entity.Producto;
+import com.tienda.inventario.security.UsuarioPrincipal;
+import com.tienda.inventario.service.CompraService;
 import com.tienda.inventario.service.ProductoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,6 +19,7 @@ import java.util.List;
 public class ProductoController {
 
     private final ProductoService productoService;
+    private final CompraService compraService;
 
     @GetMapping
     public ResponseEntity<List<Producto>> listar() {
@@ -49,9 +53,25 @@ public class ProductoController {
         return ResponseEntity.ok(productoService.generarImagenCodigoBarras(id));
     }
 
+    // pagadoConCaja=true: el stock inicial se pago con plata de la caja, asi que
+    // en vez de guardarlo directo se registra como una compra directa (suma el
+    // stock y deja el costo para el arqueo de caja).
     @PostMapping
-    public ResponseEntity<Producto> crear(@Valid @RequestBody Producto producto) {
-        return ResponseEntity.ok(productoService.crear(producto));
+    public ResponseEntity<Producto> crear(@Valid @RequestBody Producto producto,
+                                          @RequestParam(defaultValue = "false") boolean pagadoConCaja,
+                                          @AuthenticationPrincipal UsuarioPrincipal principal) {
+        int stockInicial = producto.getStockActual() == null ? 0 : producto.getStockActual();
+        boolean comoCompra = pagadoConCaja && stockInicial > 0
+                && !Boolean.TRUE.equals(producto.getVendidoPorPeso());
+        if (comoCompra) {
+            producto.setStockActual(0);
+        }
+        Producto creado = productoService.crear(producto);
+        if (comoCompra) {
+            compraService.registrarCompraDirecta(creado.getCodigoBarras(), stockInicial, principal.getUsuario());
+            creado = productoService.obtenerPorId(creado.getId());
+        }
+        return ResponseEntity.ok(creado);
     }
 
     @PutMapping("/{id}")

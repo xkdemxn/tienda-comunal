@@ -28,4 +28,7 @@ public class FiscalizacionItemDto {
     private BigDecimal salidaPrecioMercado;
     private BigDecimal productoNetoExistentes;
     private BigDecimal sumaGanancia;
+    // Costo de lo que se perdio por caducado/merma: cantidadCaducada x precio
+    // de compra. Es plata invertida que no se va a recuperar vendiendo.
+    private BigDecimal perdidaCaducados;
 }

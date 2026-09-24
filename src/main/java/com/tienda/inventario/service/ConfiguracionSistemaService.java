@@ -33,4 +33,12 @@ public class ConfiguracionSistemaService {
         config.setActualizadoEn(LocalDateTime.now());
         return repository.save(config);
     }
+
+    public ConfiguracionSistema guardarFondoInicial(java.math.BigDecimal monto, java.time.LocalDate fecha) {
+        ConfiguracionSistema config = obtener();
+        config.setFondoInicialMonto(monto);
+        config.setFondoInicialFecha(fecha);
+        config.setActualizadoEn(LocalDateTime.now());
+        return repository.save(config);
+    }
 }

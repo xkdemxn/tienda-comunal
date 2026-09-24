@@ -6,6 +6,7 @@ import com.tienda.inventario.entity.Producto;
 import com.tienda.inventario.entity.Usuario;
 import com.tienda.inventario.enums.TipoMovimiento;
 import com.tienda.inventario.security.UsuarioPrincipal;
+import com.tienda.inventario.service.CompraService;
 import com.tienda.inventario.service.InventarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ import java.util.List;
 public class InventarioController {
 
     private final InventarioService inventarioService;
+    private final CompraService compraService;
 
     /**
      * Ajuste manual de stock: mermas, productos danados, correcciones de conteo fisico, etc.
@@ -45,12 +47,21 @@ public class InventarioController {
         Usuario usuario = principal.getUsuario();
         Producto producto;
 
-        if (esPositivo) {
+        if (esPositivo && Boolean.TRUE.equals(request.getRegistrarComoCompra())) {
+            // entrada pagada con plata de la caja: suma stock Y registra el costo
+            producto = compraService.registrarCompraDirecta(request.getCodigoBarras(), request.getCantidad(), usuario)
+                    .getDetalles().get(0).getProducto();
+        } else if (esPositivo) {
             producto = inventarioService.aumentarStock(request.getCodigoBarras(), request.getCantidad(),
                     TipoMovimiento.AJUSTE_POSITIVO, usuario, request.getMotivo());
+        } else if (Boolean.TRUE.equals(request.getRevertirCompra())) {
+            // baja por error de registro: baja el stock Y devuelve el costo a la caja
+            producto = compraService.registrarCorreccionDeCompraDirecta(
+                    request.getCodigoBarras(), request.getCantidad(), usuario);
         } else {
             producto = inventarioService.reducirStock(request.getCodigoBarras(), request.getCantidad(),
-                    TipoMovimiento.AJUSTE_NEGATIVO, usuario, request.getMotivo());
+                    TipoMovimiento.AJUSTE_NEGATIVO, usuario, request.getMotivo(),
+                    Boolean.TRUE.equals(request.getEsCorreccion()));
         }
 
         return ResponseEntity.ok(producto);

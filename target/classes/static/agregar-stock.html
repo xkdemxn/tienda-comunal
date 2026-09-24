@@ -83,6 +83,12 @@
             <select id="categoriaSesion">
               <option value="">Sin elegir</option>
             </select>
+            <label class="campo" style="display:flex; align-items:flex-start; gap:8px; margin:6px 0 0; cursor:pointer">
+              <input type="checkbox" id="pagadoConCaja" checked style="width:auto; margin:3px 0 0">
+              <span>Se pago con plata de la caja
+                <small style="display:block; color:var(--muted)">Se registra como compra (precio de compra x cantidad) y resta del efectivo esperado en el arqueo de caja. Desmarcalo si no salio plata de la caja (regalo, correccion, producto que ya tenias).</small>
+              </span>
+            </label>
           </div>
 
           <div class="card">
@@ -299,13 +305,26 @@ async function onCodigoDetectado(codigo) {
   }
 }
 
+// Si la casilla "Se pago con plata de la caja" esta marcada, la entrada se
+// registra como una compra directa (sin proveedor) para que el arqueo la reste.
+function pagadoConCajaMarcado() {
+  return document.getElementById("pagadoConCaja").checked;
+}
+
 async function registrarEntradaRapida(codigoBarras, cantidad, motivo) {
   try {
+    const conCaja = pagadoConCajaMarcado();
     const producto = await apiFetch("/inventario/ajuste", {
       method: "POST",
-      body: JSON.stringify({ codigoBarras, cantidad, motivo, esPositivo: true })
+      body: JSON.stringify({ codigoBarras, cantidad, motivo, esPositivo: true, registrarComoCompra: conCaja })
     });
-    mostrarMensajeEn("mensaje", `Stock actualizado: ${producto.nombre} → ${producto.stockActual}`, "ok");
+    if (conCaja && !(Number(producto.precioCompra) > 0)) {
+      mostrarMensajeEn("mensaje",
+        `Stock actualizado: ${producto.nombre} → ${producto.stockActual}. Ojo: no tiene precio de compra, asi que no se descontó plata de la caja`, "info");
+    } else {
+      mostrarMensajeEn("mensaje",
+        `Stock actualizado: ${producto.nombre} → ${producto.stockActual}${conCaja ? " (compra registrada)" : ""}`, "ok");
+    }
   } catch (e) {
     mostrarMensajeEn("mensaje", e.message, "error");
   }
@@ -499,8 +518,14 @@ async function guardarProductoNuevo() {
   };
 
   try {
-    const producto = await apiFetch("/productos", { method: "POST", body: JSON.stringify(body) });
-    mostrarMensajeEn("mensaje", `Producto creado: ${producto.nombre}`, "ok");
+    const conCaja = pagadoConCajaMarcado();
+    const producto = await apiFetch(`/productos?pagadoConCaja=${conCaja}`, { method: "POST", body: JSON.stringify(body) });
+    const sinCosto = conCaja && !vendidoPorPeso && !(Number(producto.precioCompra) > 0);
+    mostrarMensajeEn("mensaje",
+      sinCosto
+        ? `Producto creado: ${producto.nombre}. Ojo: sin precio de compra no se descontó plata de la caja`
+        : `Producto creado: ${producto.nombre}${conCaja && !vendidoPorPeso ? " (compra registrada)" : ""}`,
+      sinCosto ? "info" : "ok");
     cerrarFormularioNuevo();
 
     // Si no tiene un codigo fisico real, ofrecemos imprimir la etiqueta generada

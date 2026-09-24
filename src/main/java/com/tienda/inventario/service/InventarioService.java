@@ -34,6 +34,16 @@ public class InventarioService {
     @Transactional
     public Producto reducirStock(String codigoBarras, int cantidad, TipoMovimiento tipo,
                                   Usuario usuario, String motivo) {
+        return reducirStock(codigoBarras, cantidad, tipo, usuario, motivo, false);
+    }
+
+    /**
+     * Igual que la anterior; con correccion=true la baja queda marcada como
+     * correccion de un error de registro (no cuenta como caducado ni perdida).
+     */
+    @Transactional
+    public Producto reducirStock(String codigoBarras, int cantidad, TipoMovimiento tipo,
+                                  Usuario usuario, String motivo, boolean correccion) {
         Producto producto = productoRepository.findByCodigoBarras(codigoBarras)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "No existe un producto con el codigo de barras: " + codigoBarras));
@@ -56,7 +66,7 @@ public class InventarioService {
                     "El stock de '" + producto.getNombre() + "' cambio simultaneamente, intenta de nuevo");
         }
 
-        registrarMovimiento(producto, tipo, cantidad, usuario, motivo);
+        registrarMovimiento(producto, tipo, cantidad, usuario, motivo, correccion);
         return producto;
     }
 
@@ -79,12 +89,12 @@ public class InventarioService {
                     "El stock de '" + producto.getNombre() + "' cambio simultaneamente, intenta de nuevo");
         }
 
-        registrarMovimiento(producto, tipo, cantidad, usuario, motivo);
+        registrarMovimiento(producto, tipo, cantidad, usuario, motivo, false);
         return producto;
     }
 
     private void registrarMovimiento(Producto producto, TipoMovimiento tipo, int cantidad,
-                                      Usuario usuario, String motivo) {
+                                      Usuario usuario, String motivo, boolean correccion) {
         MovimientoInventario mov = new MovimientoInventario();
         mov.setProducto(producto);
         mov.setTipo(tipo);
@@ -92,6 +102,7 @@ public class InventarioService {
         mov.setStockResultante(producto.getStockActual());
         mov.setUsuario(usuario);
         mov.setMotivo(motivo);
+        mov.setCorreccion(correccion);
         movimientoRepository.save(mov);
     }
 
@@ -99,6 +110,8 @@ public class InventarioService {
     // para ver productos caducados/mermas registrados).
     public List<MovimientoInventarioResponse> listarPorTipo(TipoMovimiento tipo, LocalDateTime desde, LocalDateTime hasta) {
         return movimientoRepository.findByTipoAndFechaBetweenOrderByFechaDesc(tipo, desde, hasta).stream()
+                // las correcciones de errores de registro no son caducados/mermas
+                .filter(m -> !Boolean.TRUE.equals(m.getCorreccion()))
                 .map(m -> new MovimientoInventarioResponse(
                         m.getId(), m.getProducto().getNombre(), m.getProducto().getCodigoBarras(),
                         m.getCantidad(), m.getMotivo(), m.getFecha()))

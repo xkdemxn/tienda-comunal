@@ -89,6 +89,23 @@
 
       <div class="card">
         <h2><i class="bi bi-clock-history"></i> Historial de compras</h2>
+
+        <label class="campo">Proveedor</label>
+        <select id="filtroProveedorCompras" onchange="renderHistorialCompras()">
+          <option value="">Todos los proveedores</option>
+        </select>
+        <div class="filtros-fechas">
+          <div>
+            <label class="campo">Desde</label>
+            <input type="date" id="filtroComprasDesde" onchange="renderHistorialCompras()">
+          </div>
+          <div>
+            <label class="campo">Hasta</label>
+            <input type="date" id="filtroComprasHasta" onchange="renderHistorialCompras()">
+          </div>
+        </div>
+        <button type="button" class="secundario" id="btnLimpiarFiltrosCompras" onclick="limpiarFiltrosCompras()">Quitar filtros</button>
+
         <div id="historialCompras">Cargando...</div>
       </div>
 
@@ -115,13 +132,15 @@ let resultadosBusqueda = [];
 async function cargarProveedores() {
   try {
     const proveedores = await apiFetch("/proveedores");
-    const select = document.getElementById("proveedorId");
-    proveedores.forEach(p => {
-      const opcion = document.createElement("option");
-      opcion.value = p.id;
-      opcion.innerText = p.nombre;
-      select.appendChild(opcion);
-    });
+    [document.getElementById("proveedorId"), document.getElementById("filtroProveedorCompras")]
+      .forEach(select => {
+        proveedores.forEach(p => {
+          const opcion = document.createElement("option");
+          opcion.value = p.id;
+          opcion.innerText = p.nombre;
+          select.appendChild(opcion);
+        });
+      });
   } catch (e) {
     mostrarMensajeEn("mensajeCompra", "No se pudieron cargar los proveedores", "error");
   }
@@ -321,33 +340,99 @@ async function confirmarCompra() {
   }
 }
 
+// ---------- HISTORIAL: filtros (proveedor, fechas) y agrupado por mes ----------
+let comprasHistorial = [];
+
 async function cargarHistorialCompras() {
   const div = document.getElementById("historialCompras");
   try {
-    const compras = await apiFetch("/compras");
-    if (compras.length === 0) {
-      div.innerHTML = `<div class="estado-vacio"><i class="bi bi-receipt"></i>Sin compras registradas todavia</div>`;
-      return;
-    }
-    div.innerHTML = "";
-    compras.forEach(c => {
+    comprasHistorial = await apiFetch("/compras");
+    renderHistorialCompras();
+  } catch (e) {
+    div.innerHTML = `<div class="msg error"><i class="bi bi-exclamation-circle-fill"></i><span>${e.message}</span></div>`;
+  }
+}
+
+function limpiarFiltrosCompras() {
+  document.getElementById("filtroProveedorCompras").value = "";
+  document.getElementById("filtroComprasDesde").value = "";
+  document.getElementById("filtroComprasHasta").value = "";
+  renderHistorialCompras();
+}
+
+const MESES_COMPRAS = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+function renderHistorialCompras() {
+  const div = document.getElementById("historialCompras");
+  const proveedorId = document.getElementById("filtroProveedorCompras").value;
+  const desde = document.getElementById("filtroComprasDesde").value;
+  const hasta = document.getElementById("filtroComprasHasta").value;
+  const hayFiltros = !!(proveedorId || desde || hasta);
+  document.getElementById("btnLimpiarFiltrosCompras").classList.toggle("oculto", !hayFiltros);
+
+  if (comprasHistorial.length === 0) {
+    div.innerHTML = `<div class="estado-vacio"><i class="bi bi-receipt"></i>Sin compras registradas todavia</div>`;
+    return;
+  }
+
+  // La fecha se compara como texto "YYYY-MM-DD" (el dia local de la compra),
+  // sin pasar por Date, para no correr un dia por la zona horaria.
+  const filtradas = comprasHistorial.filter(c => {
+    if (proveedorId && !(c.proveedor && String(c.proveedor.id) === proveedorId)) return false;
+    const dia = (c.fecha || "").slice(0, 10);
+    if (desde && dia < desde) return false;
+    if (hasta && dia > hasta) return false;
+    return true;
+  });
+
+  if (filtradas.length === 0) {
+    div.innerHTML = `<div class="estado-vacio"><i class="bi bi-search"></i>Ninguna compra coincide con esos filtros</div>`;
+    return;
+  }
+
+  // Agrupa por mes (YYYY-MM); ya vienen de mas reciente a mas antigua.
+  const porMes = new Map();
+  filtradas.forEach(c => {
+    const mes = (c.fecha || "").slice(0, 7);
+    if (!porMes.has(mes)) porMes.set(mes, []);
+    porMes.get(mes).push(c);
+  });
+
+  const totalGeneral = filtradas.reduce((acc, c) => acc + Number(c.total), 0);
+  let html = `
+    <div class="resumen-compras">
+      <span>${hayFiltros ? "Total con los filtros" : "Total de todas las compras"}
+        <small>${filtradas.length} compra${filtradas.length === 1 ? "" : "s"}</small></span>
+      <strong>$${totalGeneral.toFixed(2)}</strong>
+    </div>`;
+
+  porMes.forEach((lista, mes) => {
+    const [anio, numMes] = mes.split("-");
+    const totalMes = lista.reduce((acc, c) => acc + Number(c.total), 0);
+    html += `
+      <div class="mes-compras">
+        <span>${MESES_COMPRAS[Number(numMes) - 1] || mes} ${anio}
+          <small>${lista.length} compra${lista.length === 1 ? "" : "s"}</small></span>
+        <strong>$${totalMes.toFixed(2)}</strong>
+      </div>`;
+    lista.forEach(c => {
       const items = (c.detalles || [])
         .map(d => `${d.producto ? d.producto.nombre : "?"} x${d.cantidad}`)
         .join(", ");
       const fecha = c.fecha ? new Date(c.fecha).toLocaleString() : "";
-      div.innerHTML += `
+      html += `
         <div class="transaccion">
           <div class="transaccion-icono"><i class="bi bi-truck"></i></div>
           <div class="transaccion-info">
-            <strong>${c.proveedor ? c.proveedor.nombre : "Proveedor eliminado"}</strong>
+            <strong>${c.proveedor ? c.proveedor.nombre : "Proveedor eliminado"}${Number(c.total) < 0 ? ' <span class="badge" style="background:#fef3c7; color:#92400e">Correccion</span>' : ""}</strong>
             <small>${fecha}${items ? " · " + items : ""}</small>
           </div>
           <div class="transaccion-monto">$${Number(c.total).toFixed(2)}</div>
         </div>`;
     });
-  } catch (e) {
-    div.innerHTML = `<div class="msg error"><i class="bi bi-exclamation-circle-fill"></i><span>${e.message}</span></div>`;
-  }
+  });
+  div.innerHTML = html;
 }
 
 cargarProveedores();

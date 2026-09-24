@@ -26,5 +26,14 @@ public class ConfiguracionSistema {
     @Column(length = 255)
     private String mensaje = "Servicio suspendido. Contacta a soporte para reactivar tu cuenta.";
 
+    // Fondo inicial de caja: el efectivo con el que se empieza a llevar la
+    // cuenta y desde que dia. Se confirma una sola vez; de ahi en adelante el
+    // arqueo calcula el efectivo esperado de cualquier periodo. Nullable a
+    // proposito (la tabla ya tiene su fila; una columna NOT NULL nueva fallaria).
+    @Column(precision = 12, scale = 2)
+    private java.math.BigDecimal fondoInicialMonto;
+
+    private java.time.LocalDate fondoInicialFecha;
+
     private LocalDateTime actualizadoEn;
 }

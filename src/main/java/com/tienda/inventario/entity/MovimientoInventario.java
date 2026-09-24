@@ -45,6 +45,11 @@ public class MovimientoInventario {
 
     private String motivo; // usado sobre todo en ajustes manuales
 
+    // true = baja hecha para corregir un error de registro (no es un producto
+    // caducado/danado): no debe aparecer en Caducados ni contar como perdida.
+    // Nullable a proposito: la tabla ya tiene filas y "null" se lee como false.
+    private Boolean correccion;
+
     @Column(nullable = false)
     private LocalDateTime fecha;
 
