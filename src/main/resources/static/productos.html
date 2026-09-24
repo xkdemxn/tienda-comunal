@@ -69,6 +69,7 @@
         <select id="filtroCategoria" onchange="filtrarProductos()">
           <option value="todas">Todas las categorias</option>
           <option value="sin-categoria">Sin categoria</option>
+          <option value="sin-precio-compra">Sin precio de compra</option>
         </select>
         <div id="mensajeProductos"></div>
         <div id="listaProductos">Cargando productos...</div>
@@ -192,6 +193,8 @@ function filtrarProductos() {
     let coincideCategoria = true;
     if (filtroCategoria === "sin-categoria") {
       coincideCategoria = !p.categoria;
+    } else if (filtroCategoria === "sin-precio-compra") {
+      coincideCategoria = !(Number(p.precioCompra) > 0);
     } else if (filtroCategoria !== "todas" && filtroCategoria !== "") {
       coincideCategoria = !!p.categoria && Number(p.categoria.id) === Number(filtroCategoria);
     }
@@ -216,6 +219,10 @@ function renderProductos(lista) {
     const inactivo = p.activo ? "" : ` · <span style="color:var(--danger)">inactivo</span>`;
     const categoriaTexto = p.categoria ? `${p.categoria.nombre} · ` : "";
     const porPeso = p.vendidoPorPeso ? " · <strong>por libra</strong>" : "";
+    // Sin precio de compra la ganancia de este producto sale inflada (ver Fiscalizacion)
+    const sinCosto = Number(p.precioCompra) > 0
+      ? ""
+      : ` · <span style="color:var(--danger); font-weight:600">sin precio de compra</span>`;
     const badgeStock = p.vendidoPorPeso
       ? `<span class="badge ok">$${Number(p.precioVenta).toFixed(2)}/lb</span>`
       : `<span class="badge ${bajo ? "bajo" : "ok"}">${p.stockActual} en stock</span>`;
@@ -225,7 +232,7 @@ function renderProductos(lista) {
           <span class="nav-icono g-teal" style="width:34px; height:34px; font-size:15px; border-radius:10px"><i class="bi bi-box-seam"></i></span>
           <div>
             ${p.nombre}
-            <small>${categoriaTexto}${p.codigoBarras}${infoCaja}${inactivo}${porPeso}</small>
+            <small>${categoriaTexto}${p.codigoBarras}${infoCaja}${inactivo}${porPeso}${sinCosto}</small>
           </div>
         </div>
         <div class="item-acciones">

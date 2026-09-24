@@ -12,6 +12,7 @@ import com.tienda.inventario.entity.MovimientoInventario;
 import com.tienda.inventario.entity.Producto;
 import com.tienda.inventario.entity.Venta;
 import com.tienda.inventario.enums.TipoMovimiento;
+import com.tienda.inventario.repository.CompraRepository;
 import com.tienda.inventario.repository.DetalleVentaRepository;
 import com.tienda.inventario.repository.MovimientoInventarioRepository;
 import com.tienda.inventario.repository.ProductoRepository;
@@ -38,6 +39,7 @@ public class ReporteService {
     private final DetalleVentaRepository detalleVentaRepository;
     private final GastoService gastoService;
     private final DeudorService deudorService;
+    private final CompraRepository compraRepository;
 
     /**
      * Reporte de ventas en un rango de fechas: total vendido, cantidad de ventas,
@@ -175,7 +177,9 @@ public class ReporteService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return new FiscalizacionResponse(porCategoria, totalGeneralGanancia, totalVentasBruto, totalGastos, q,
-                deudasPendientes, productosPorPeso);
+                deudasPendientes, productosPorPeso,
+                compraRepository.sumaTotalEnRango(desde, hasta),
+                compraRepository.countByFechaBetween(desde, hasta));
     }
 
     private static final String[] NOMBRES_MES = {

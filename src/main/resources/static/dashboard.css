@@ -666,7 +666,7 @@ button {
   font-weight: 600;
   font-size: 15px;
   cursor: pointer;
-  margin-top:10px;
+
   transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
@@ -903,6 +903,18 @@ button.secundario.activo {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
 }
+/* ---------- Espaciado entre botones, totales y avisos ----------
+   Los botones a ancho completo no traen margen, asi que quedaban pegados
+   entre si (Confirmar / Cancelar), al total de arriba y al aviso de abajo. */
+.card > button + button,
+.modal > button + button,
+.pagina > button + button { margin-top: 10px; }
+/* boton justo debajo de una fila de "Total" (o del aviso que la sigue) */
+.total ~ button { margin-top: 16px; }
+.total ~ button + button { margin-top: 10px; }
+/* aviso (.msg) que aparece justo debajo de un boton */
+button + div > .msg { margin-top: 12px; }
+
 /* !important a proposito: .oculto es una clase utilitaria de "ocultar" que
    debe ganarle siempre a cualquier "display" que defina un componente, sin
    importar el orden en que se declaren en el archivo (esto es justo lo que

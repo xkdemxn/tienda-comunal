@@ -36,4 +36,11 @@ public class FiscalizacionResponse {
     // categoria siempre les daria 0 en todo. Su ganancia real se calcula
     // directo de las ventas y ya esta sumada dentro de totalGeneralGanancia.
     private List<FiscalizacionPorPesoDto> productosPorPeso;
+    // Dinero que salio por compras a proveedores en el periodo (suma del total
+    // de cada Compra). Es solo informativo: NO se resta de la ganancia, porque
+    // el costo ya entra por el margen al vender (restarlo tambien lo contaria
+    // dos veces). Lo que se agrega por "Agregar stock" no tiene costo, asi que
+    // no aparece aca.
+    private BigDecimal totalCompras;
+    private long cantidadCompras;
 }

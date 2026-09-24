@@ -183,24 +183,6 @@ public class DeudorService {
         return pagado;
     }
 
-    // Fiado manual: un monto y una descripcion libre, sin tocar stock (para
-    // casos que no son productos del catalogo, ej. un vuelto fiado).
-    @Transactional
-    public MovimientoDeudaResponse registrarFiado(Long deudorId, MovimientoDeudaRequest request, Usuario usuario) {
-        Deudor deudor = deudorRepository.findById(deudorId)
-                .orElseThrow(() -> new IllegalArgumentException("Deudor no encontrado"));
-
-        MovimientoDeuda movimiento = new MovimientoDeuda();
-        movimiento.setDeudor(deudor);
-        movimiento.setTipo(TipoMovimientoDeuda.FIADO);
-        movimiento.setMonto(request.getMonto());
-        movimiento.setDescripcion(request.getDescripcion());
-        movimiento.setUsuario(usuario);
-
-        movimiento = movimientoDeudaRepository.save(movimiento);
-        return mapear(movimiento);
-    }
-
     // Fiado eligiendo productos del stock (como una venta, pero sin cobrar):
     // reduce el stock de cada item y deja el detalle con fecha, igual que una
     // venta normal.

@@ -90,14 +90,6 @@ public class DeudorController {
         return ResponseEntity.ok(deudorService.fiadoEnRango(desde, hasta));
     }
 
-    @PostMapping("/{id}/fiado")
-    public ResponseEntity<MovimientoDeudaResponse> fiado(@PathVariable Long id,
-                                                           @Valid @RequestBody MovimientoDeudaRequest request,
-                                                           @AuthenticationPrincipal UsuarioPrincipal principal) {
-        Usuario usuario = principal.getUsuario();
-        return ResponseEntity.ok(deudorService.registrarFiado(id, request, usuario));
-    }
-
     // Fiado eligiendo productos del stock (como una venta, pero sin cobrar).
     @PostMapping("/{id}/fiado-productos")
     public ResponseEntity<MovimientoDeudaResponse> fiadoConProductos(@PathVariable Long id,
