@@ -774,9 +774,7 @@ button.secundario.activo {
   margin-bottom: 0;
   white-space: nowrap;
 }
-/* ---------- Fila de "Total" reusable (carrito de venta, fiado, compra,
-   etc.): etiqueta a la izquierda, monto grande y en el color de la marca a
-   la derecha (siempre el ultimo span/strong de la fila). ---------- */
+
 .total {
   display: flex;
   justify-content: space-between;
@@ -1113,24 +1111,22 @@ button + div > .msg { margin-top: 12px; }
 }
 .modal img {
   width: 100%;
-  background: #fff;
+  background: #3c1e1e;
   border-radius: 8px;
   padding: 8px;
   margin-bottom: 12px;
 }
 .modal-fondo.oculto { display: none; }
 
-/* ---------- Pantalla de login (sin sidebar) ----------
-   Mismo fondo claro que el resto de la app (var(--bg)), no un tema oscuro
-   aparte - el unico toque distinto son dos "orbes" difuminados y muy
-   sutiles (puro CSS, sin imagenes ni JS) para que no se sienta 100% plano. */
+
 .login-page {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  /* background: linear-gradient(135deg, #0d7730 0%, #0a5c26 55%, #06371a 100%); */
+
+  background: linear-gradient(135deg, #0d7730 0%, #0a5c26 55%, #06371a 100%); 
 }
 
 
@@ -1231,75 +1227,103 @@ button + div > .msg { margin-top: 12px; }
   align-items: center;
   justify-content: center;
   padding: 16px;
+
 }
 
 
 .login-card-grande {
   display: flex;
   width: 100%;
-  max-width: 860px;
-  min-height: 460px;
-  border: 2px solid var(--border);
+  max-width: 900px;
+  min-height: 500px;
+  border: none;
   background: var(--card);
-  border-radius: 24px;
-  /* box-shadow: 0 1px 10px rgba(0, 0, 0, 0.35); */
+  border-radius: 28px;
+  box-shadow: 0 24px 60px rgba(247, 247, 247, 0.12);
   animation: aparecer 0.35s ease;
-  padding: 15px;
+  padding: 14px;
 }
 .login-imagen {
   position: relative;
-  flex: 1;
+  flex: 1.05;
   min-width: 0;
-  overflow: hidden;
-  /* Marco: la imagen queda separada del borde de la tarjeta por este padding,
-     como una foto dentro de un passe-partout, en vez de pegada borde a borde. */
-  display: flex;
-  /* Fondo detras de la imagen (se nota en el marco y si la imagen tiene
-     transparencia) - aca "flotan" los iconos de abarrotes. */
-  background:#cccccc26;
-  border-radius: 18px;
-
-
+  min-height: 470px;
+  overflow: visible;
 }
 
-.login-imagen img {
-  position: relative;
-  z-index: 1;
+.marca-mancha {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  border-radius: 18px;
-  display: block;
+  z-index: 0;
+  filter: drop-shadow(0 18px 28px rgba(6, 55, 26, 0.22));
+}
+.marca-texto {
+  position: absolute;
+  z-index: 2;
+  top: 8%;
+  left: 9%;
+  color: #ffffff;
+}
+.marca-etiqueta {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  margin-bottom: 12px;
+}
+.marca-texto h2 {
+  margin: 0;
+  font-size: clamp(34px, 4.6vw, 52px);
+  line-height: 1.02;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  color: #ffffff;
 }
 
-/* Iconos de "abarrotes" flotando detras de la foto - puro Bootstrap Icons
-   (ya cargado en la pagina, cero peso extra) con un vaivén suave, cada uno
-   a su propio ritmo. Solo decorativo. */
-.abarrotes-flotantes { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
-.abarrotes-flotantes .bi {
+.marca-objetos { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.obj {
   position: absolute;
-  margin-right: 0;
-  color: #06371a46;
-  animation: flotarAbarrote 6s ease-in-out infinite;
+  display: block;
+  height: auto;
+  rotate: var(--rot, 0deg);
+  filter: drop-shadow(0 16px 18px rgba(4, 45, 20, 0.35));
+  animation: flotarObjeto var(--dur, 6s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
 }
-.ab-1 { top: 8%; left: 10%; font-size: 34px; animation-duration: 7s; }
-.ab-2 { top: 58%; left: 8%; font-size: 26px; animation-duration: 5.5s; animation-delay: .8s; color: rgba(255, 255, 255, .25); }
-.ab-3 { top: 14%; right: 10%; font-size: 30px; animation-duration: 6.5s; animation-delay: 1.6s; }
-.ab-4 { bottom: 10%; right: 16%; font-size: 24px; animation-duration: 5s; animation-delay: .4s; color: rgba(255, 255, 255, .25); }
-.ab-5 { bottom: 20%; left: 22%; font-size: 22px; animation-duration: 6s; animation-delay: 2s; }
-.ab-6 { top: 42%; right: 24%; font-size: 20px; animation-duration: 7.5s; animation-delay: 1s; color: rgba(255, 255, 255, .2); }
-@keyframes flotarAbarrote {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-14px) rotate(8deg); }
+@keyframes flotarObjeto {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -12px; }
 }
+/* Los de "atras" (pollo, papas) van mas chicos y desenfocados: da la
+   sensacion de profundidad, igual que los objetos borrosos del diseno. */
+.obj-pollo {
+  --rot: 22deg; --dur: 7s; --delay: .6s;
+  width: 21%; top: 5%; right: 13%;
+  filter: blur(2.5px) drop-shadow(0 12px 14px rgba(4, 45, 20, 0.3));
+}
+.obj-huevos { --rot: -8deg; --dur: 6.4s; --delay: 1.2s; width: 34%; top: 40%; left: 5%; }
+.obj-papas {
+  --rot: -12deg; --dur: 7.4s; --delay: .3s;
+  width: 25%; bottom: 7%; right: 1%;
+  filter: blur(1.5px) drop-shadow(0 14px 16px rgba(4, 45, 20, 0.32));
+}
+.obj-leche { --rot: 9deg; --dur: 5.8s; --delay: 1.8s; width: 21%; top: 30%; right: 4%; }
+.obj-canasta { --rot: -3deg; --dur: 6.8s; --delay: 0s; width: 50%; bottom: 3%; left: 19%; }
+
 @media (prefers-reduced-motion: reduce) {
-  .abarrotes-flotantes .bi { animation: none; }
+  .obj { animation: none; }
 }
 
 .login-form-col {
   flex: 1;
   min-width: 0;
-  padding: 48px 44px;
+  padding: 48px 44px 48px 60px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -1308,23 +1332,32 @@ button + div > .msg { margin-top: 12px; }
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 28px;
+  margin-bottom: 20px;
 }
 .login-logo-chico { width: 44px; height: 44px; flex-shrink: 0; }
-.login-form-header h1 { margin: 0; font-size: 24px; font-weight: 800; color: #00542f; line-height: 1.2; }
+.login-form-header h1 { margin: 0; font-size: 30px; font-weight: 800; color: #00542f; line-height: 1.2; }
 .login-form-header p { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
 
 @media (max-width: 760px) {
-  /* En celular no se oculta la imagen: pasa a ser un banner arriba (como
-     una pantalla de app movil), con el formulario debajo apilado. */
-  .login-card-grande { flex-direction: column; border-radius: 18px; min-height: 0; }
-  .login-imagen {padding: 24px; }
+  .login-card-grande {height: 85vh; flex-direction: column; border-radius: 22px; min-height: 0; }
+  .login-imagen { flex: none; min-height: 250px; }
+  .marca-mancha { display: none; }
+  .login-marca {
+    background: linear-gradient(135deg, #1a9a48, #0d7730 55%, #064e2a);
+    border-radius: 20px; height:60px;
+  }
+  .marca-texto { top: 14%; left: 7%; }
+  .marca-texto h2 { font-size: 34px; }
+  .obj-huevos { width: 21%; top: auto; bottom: 9%; left: 6%; }
+  .obj-pollo { width: 12.5%; top: 5%; right: 27%; }
+  .obj-canasta { width: 30%; bottom: -14px; left: auto; right: 24%; }
+  .obj-leche { width: 17%; top: 12%; right: 6%; }
+  .obj-papas { width: 20%; bottom: -8px; right: 2%; }
+  .login-form-col { padding: 28px 22px 26px; }
+  .login-form-header h1 { font-size: 26px; }
 
-  /* El banner de arriba ya cumple ese rol - repetir logo/titulo aca abajo
-     es redundante y ocupa espacio de sobra en pantallas chicas. */
 }
 
-/* Etiqueta chica arriba de cada campo (ej. "Correo Electronico") */
 .campo-subrayado { margin-bottom: 20px; }
 .campo-subrayado label {
   margin-top: 10px;
@@ -1335,7 +1368,6 @@ button + div > .msg { margin-top: 12px; }
   margin-bottom: 6px;
 }
 
-/* Campos con icono a la izquierda + boton de mostrar/ocultar contrasena. */
 .campo-icono { position: relative; margin-bottom: 10px; }
 .campo-icono > .bi {
   position: absolute;
@@ -1350,9 +1382,7 @@ button + div > .msg { margin-top: 12px; }
 .campo-icono input { padding-left: 40px; margin-bottom: 0; }
 .campo-icono input.input-password { padding-right: 40px; }
 
-/* Inputs del login: subrayado (sin caja ni fondo), como una linea que se
-   pinta de verde al enfocar - mas minimalista que un input con borde
-   completo alrededor. */
+
 .login-form-col .campo-subrayado { margin-bottom: 0; }
 .login-form-col .campo-icono { margin-bottom: 0; }
 .login-form-col .campo-icono input {
@@ -1374,8 +1404,7 @@ button + div > .msg { margin-top: 12px; }
   box-shadow: none;
 }
 
-/* Boton de "Iniciar sesion": verde mas oscuro que el resto de los botones
-   de la app (aca resalta mejor sobre la tarjeta de vidrio). */
+
 #btnLogin {
   background: rgb(10, 77, 33);;
 
@@ -1414,7 +1443,14 @@ button + div > .msg { margin-top: 12px; }
 }
 
 .login-footer a {
-  color: rgba(0, 0, 0, 0.85);
+  color: rgba(254, 254, 254, 0.85);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+
+.login-footer span {
+  color: rgba(255, 255, 255, 0.85);
   text-decoration: none;
 
 }

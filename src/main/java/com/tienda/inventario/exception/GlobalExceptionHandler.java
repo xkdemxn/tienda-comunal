@@ -11,6 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -71,6 +72,12 @@ public class GlobalExceptionHandler {
         // Ej: borrar una categoria que todavia tiene productos asignados
         return construirRespuesta(HttpStatus.CONFLICT,
                 "No se puede completar la operacion: hay datos relacionados que lo impiden");
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleRecursoNoEncontrado(NoResourceFoundException ex) {
+        // Ej: el navegador pide /favicon.ico y no existe: es un 404, no un error del servidor
+        return construirRespuesta(HttpStatus.NOT_FOUND, "Recurso no encontrado");
     }
 
     @ExceptionHandler(Exception.class)

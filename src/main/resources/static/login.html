@@ -6,7 +6,6 @@
 <title>Iniciar sesion</title>
 <meta name="description" content="Sistema de inventario y ventas de la Tienda Comunal">
 
-<!-- Meta para que al compartir el link se vea el logo y el nombre de la tienda -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="TIENDA COMUNAL GC2026">
 <meta property="og:description" content="Sistema de inventario y ventas de la Tienda Comunal">
@@ -30,16 +29,32 @@
 
   <div class="login-wrap">
     <div class="login-card-grande" id="loginCard">
-      <div class="login-imagen">
-        <div class="abarrotes-flotantes" aria-hidden="true">
-          <i class="bi bi-basket3 ab-1"></i>
-          <i class="bi bi-bag-fill ab-2"></i>
-          <i class="bi bi-cup-straw ab-3"></i>
-          <i class="bi bi-egg-fried ab-4"></i>
-          <i class="bi bi-box-seam ab-5"></i>
-          <i class="bi bi-basket2 ab-6"></i>
+      <div class="login-imagen login-marca">
+        <!-- Mancha verde con borde ondulado: es el "fondo" del panel de marca -->
+        <svg class="marca-mancha" viewBox="0 0 460 560" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="gradMancha" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#1a9a48"/>
+              <stop offset="0.55" stop-color="#0d7730"/>
+              <stop offset="1" stop-color="#064e2a"/>
+            </linearGradient>
+          </defs>
+          <path fill="url(#gradMancha)"
+                d="M0 28 C0 12 12 0 28 0 H300 C424 0 462 92 432 192 C402 292 470 346 420 444 C388 506 328 560 258 560 H28 C12 560 0 548 0 532 Z"/>
+        </svg>
+
+        <div class="marca-texto">
+          <span class="marca-etiqueta">Comunidad Naranjito</span>
+          <h2>Tienda<br>Comunal</h2>
         </div>
-        <img src="img/controltienda.png" alt="Control de tienda" class="login-card-img">
+
+        <div class="marca-objetos" aria-hidden="true">
+          <img class="obj obj-pollo" src="img/login/pollo.webp" alt="">
+          <img class="obj obj-huevos" src="img/login/huevos.webp" alt="">
+          <img class="obj obj-papas" src="img/login/papas.webp" alt="">
+          <img class="obj obj-leche" src="img/login/leche.webp" alt="">
+          <img class="obj obj-canasta" src="img/login/canasta.webp" alt="">
+        </div>
       </div>
 
       <div class="login-form-col">
@@ -52,7 +67,7 @@
           </div>
           <div>
             <h1>Iniciar sesión</h1>
-            <p>Comunidad Naranjito</p>
+            <p>MOOD PRUEBA...</p>
           </div>
         </div>
 
@@ -60,7 +75,7 @@
           <label for="email">Usuario de Acceso</label>
           <div class="campo-icono">
             <i class="bi bi-person"></i>
-            <input type="text" id="email" autocomplete="username" placeholder="Usuario de acceso" onkeydown="if(event.key==='Enter') login()">
+            <input type="text" id="email" autocomplete="username" placeholder="Usuario asignado" onkeydown="if(event.key==='Enter') login()">
           </div>
         </div>
         <div class="campo-subrayado">
@@ -81,7 +96,7 @@
     </div>
   </div>
   <footer class="login-footer">
-    <span>Derechos Reservados Gobierno Comunitario Gestión ©2026</span>
+    <span>DRA XXXX ART.22ZXSAD ©2026</span>
     <a href="https://ceroxnueve.com/" target="_blank">Powered By: <strong>CERO NUEVE</strong></a>
   </footer>
 </div>
